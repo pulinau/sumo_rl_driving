@@ -14,19 +14,19 @@ import sumolib
 
 
 def get_vehicle_state():
-  veh_id_list = traci.vehivle.getIDList()
+  veh_id_list = traci.vehicle.getIDList()
   veh_state_dict = {}
   for veh_id in veh_id_list:
     veh_state_dict[veh_id] = {}
     veh_state_dict[veh_id]["type"] = "vehicle"
-    veh_state_dict[vehicle]["location"] = traci.vehicle.getPosition(vehicle)
-    veh_state_dict[vehicle]["velocity"] = traci.vehicle.getSpeed(vehicle)
-    veh_state_dict[vehicle]["dimension"]  = [traci.vehicle.getLength(vehicle),traci.vehicle.getWidth(vehicle)]
-    veh_state_dict[vehicle]["edge"] = traci.vehicle.getRoadID(vehicle)
-    veh_state_dict[vehicle]["lane"] = traci.vehicle.getLaneID(vehicle)
-    veh_state_dict[vehicle]["lane_length"] = traci.vehicle.getLaneLength(veh_state_dict[vehicle]["lane"])
-    veh_state_dict[vehicle]["lane_position"] = traci.vehicle.getLanePosition(vehicle)
-    veh_state_dict[vehicle]["route"] = troute.getEdges(traci.vehicle.getRouteID(vehicle))
+    veh_state_dict[veh_id]["location"] = traci.vehicle.getPosition(veh_id)
+    veh_state_dict[veh_id]["velocity"] = traci.vehicle.getSpeed(veh_id)
+    veh_state_dict[veh_id]["dimension"]  = (traci.vehicle.getLength(veh_id),traci.vehicle.getWidth(veh_id))
+    veh_state_dict[veh_id]["edge"] = traci.vehicle.getRoadID(veh_id)
+    veh_state_dict[veh_id]["lane"] = traci.vehicle.getLaneID(veh_id)
+    veh_state_dict[veh_id]["lane_length"] = traci.lane.getLength(veh_state_dict[veh_id]["lane"])
+    veh_state_dict[veh_id]["lane_position"] = traci.vehicle.getLanePosition(veh_id)
+    veh_state_dict[veh_id]["route"] = traci.route.getEdges(traci.vehicle.getRouteID(veh_id))
   return veh_state_dict
 
 def get_lanelet_graph(sumo_net_xml_file):
