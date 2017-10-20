@@ -12,7 +12,10 @@ with descending priority. The first four dimensions are hardcoded as part of the
 
 ## `r_safety`
 Deal with hard safety constraints, which means keeping a safety distance at all time.
-$|| (\mathbf{v}_e - \mathbf{v})t_{gap} + \mathbf{p}_e - \mathbf{p}||$
+$m  = ||\mathbf{p}_e - \mathbf{p}|| - \frac{(\mathbf{v}_e - \mathbf{v})(\mathbf{p}_e - \mathbf{p})t_{gap}}{||\mathbf{p}_e - \mathbf{p}||}$
+if $m > 0$, then there's no reward incurred. Otherwise, it grows exponentially to negative infinity
+$r_{safety} = e^{\alpha  m}$
+The hyperparameters are $t_{gap}$ and $\alpha$
 
 ## `r_regulation`
 
