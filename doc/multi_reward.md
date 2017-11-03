@@ -30,7 +30,7 @@ Which translates to the following concrete rules:
   *  if there's no traffic ahead or beside in the correct lane OR distance from intersection is less than 3 meters, large negative reward for staying in the wrong lane
 
 ## `r_mission`
-help train the ego vehicle to learn the fastest route to get to the destination (not included in the current version of code).
+help train the ego vehicle to learn the fastest route to get to the destination (not included in the current implementation).
 
 ## `r_speed`
 The vehicle should be moving as close to the maximum speed as possible if situation allows.
@@ -39,4 +39,4 @@ The vehicle should be moving as close to the maximum speed as possible if situat
 Avoid jerk in speed. The reward is the negative of the speed variance in the last 10 steps.
 
 ## `r_curiosity`
-Novelty-based exploration. The reward is not hard-coded into the environment, rather, its generated dynamically depending on the ego vehicle's familiarity with the current state (not included in the current version of code).
+Novelty-based exploration. The reward is not hard-coded into the environment, rather, its generated dynamically depending on the ego vehicle's familiarity with the current implementation).
