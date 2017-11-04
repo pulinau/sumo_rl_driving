@@ -1,4 +1,5 @@
 #!python3
+__author__ = "Changjian Li"
 
 SUMO_TOOLS_DIR = "/home/ken/project/sumo-0.30.0/tools"
 EGO_VEH_ID = "ego"
@@ -14,12 +15,19 @@ import sumolib
 
 
 def get_vehicle_state():
+  """
+  get the current state of all the vehicles.
+  Returns:
+    veh_state_dict:
+    {"type": "vehicle", "location": ...}
+  """
   veh_id_list = traci.vehicle.getIDList()
   veh_state_dict = {}
   for veh_id in veh_id_list:
     veh_state_dict[veh_id] = {}
     veh_state_dict[veh_id]["type"] = "vehicle"
     veh_state_dict[veh_id]["location"] = traci.vehicle.getPosition(veh_id)
+    veh_state_dict[veh_id]["angle"] = traci.vehicle.getAngle(veh_id) #in degree. North is zero, clockwise
     veh_state_dict[veh_id]["velocity"] = traci.vehicle.getSpeed(veh_id)
     veh_state_dict[veh_id]["dimension"]  = (traci.vehicle.getLength(veh_id),traci.vehicle.getWidth(veh_id))
     veh_state_dict[veh_id]["edge"] = traci.vehicle.getRoadID(veh_id)
@@ -31,15 +39,17 @@ def get_vehicle_state():
 
 def get_lanelet_graph(sumo_net_xml_file):
   """
-  Create the lanelet graph from net.xml file using sumolib
+  Create the lanelet graph from net.xml file using sumolib.
+  lanelet ids are the vertices of the graph and lanelet connections are the edges
   Args:
-    file path net.xml
+    file path of net.xml file
   Returns:
-  
-    [{"src_lanelet_id": src_lanelet_id, "dst_lanelet_id": dst_lanelet_id, "connection_type": "next"}, ...]
+    (lanelet_id_list, connection_list)
+    lanelet_id_list:
+      [lanelet_id_0, lanelet_id_1...]
+    connection_list:
+      [{"src_lanelet_id": src_lanelet_id, "dst_lanelet_id": dst_lanelet_id, "connection_type": "next"}, ...]
   """
-# lanelet ids are the vertices of the graph
-# lanelet connections are the edges of the graph
   sumo_net = sumolib.net.readNet(sumo_net_xml_file)
   lanelet_id_list = []
   connection_list = []
@@ -55,7 +65,6 @@ def get_lanelet_graph(sumo_net_xml_file):
         connection["dst_lanelet_id"] = sumo_connection.getToLane().getID()
         connection["connection_type"] = "next"
         connection_list += [connection.copy()]
-        
         # add the reverse connection
         connection["src_lanelet_id"] = connection["dst_lanelet_id"]
         connection["dst_lanelet_id"] = sumo_lane.getID()
