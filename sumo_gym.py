@@ -21,6 +21,7 @@ import numpy as np
 import sys
 import time
 from math import pi
+import re
 
 try:
   sys.path.append(SUMO_TOOLS_DIR)
@@ -64,12 +65,11 @@ Class SumoEnv(gym.Env):
          RIGHT[6]: to the right of ego lane
          IRRELEVANT[7]: the lane is irrelevant to ego vehicle, e.g. opposite lane, in or approaching other intersections, 
                       or in the same intersection but with no conflict with ego route
-         since a lane can have several of the above relationship with the ego lane at the same time, 8 of them is needed per vehicle
+         since a lane can have several of the above relationship with the ego lane at the same time, MultiBinary object of size 8 is needed per vehicle
   If we feed the observation space to a neural network, the weights connecting to the same key (of the observation space dictionary) should be identical
   If the value of "exists_vehicle" is zero for index i, then the value of all other keys at index i are set to zero
   The weight connection to key "exists_vehicle" should cancel out the effect of other keys, 
   so that if a vehicle doesn't exists at index i, then weighted sum for index i is zero 
-  #object_space is an occupancy grid of the environment centred at the ego vehicle
   """
   def __init__(self):
 # TO DO: let lanelet information further restrict action space
@@ -86,7 +86,7 @@ Class SumoEnv(gym.Env):
                                          "relative_position": spaces.Box(float("-inf"), float("inf"), (NUM_VEHICLE_CONSIDERED, 2)),
                                          "relative_heading": spaces.Box(-pi, pi, (NUM_VEHICLE_CONSIDERED,)),
                                          "dist_to_end_of_lane": spaces.Box(0, float("inf"), (NUM_VEHICLE_CONSIDERED,)),
-                                         "lane_relation": spaces.MultiDiscrete([[0,7]] * 8 * NUM_VEHICLE_CONSIDERED)
+                                         "lane_relation": spaces.Tuple(tuple([spaces.MultiBinary(8)] * NUM_VEHICLE_CONSIDERED))
                                          })
     #self.obsevation_space = spaces.Dict({
                                          ##TO DO: define MultiBox
@@ -159,6 +159,15 @@ def get_observation():
   obs_dict["relative_heading"] = []
   obs_dict["dist_to_end_of_lane"] = []
   obs_dict["lane_relation"] = []
+  def get_veh_next_edge_id(veh_id):
+    route = traci.getRoute() #route is an edge id list of the vehicle's route
+    if len(route) == traci.vehicle.getRouteIndex() + 1
+      return None
+    else:
+      return route[traci.vehicle.getRouteIndex() + 1]
+  ego_edge_id = veh_state_dict["ego"]["edge"]
+  ego_next_edge_id = get_next_edge_id("ego")
+  lane_id_list_ego_next_edge = [for x in lane_id_list if re.sub(r'_[0-9]{,}$', '', x) == ego_next_edge_id]
   for veh_id, state_dict in veh_state_dict_ROI.items():
     obs_dict["exists_vehicle"] += [1]
     obs_dict["speed"] += [state_dict["speed"]]
@@ -166,5 +175,20 @@ def get_observation():
     obs_dict["relative_heading"] += [-(state_dict["angle"] - veh_state_dict["ego"]["angle"])/180 * pi]
     obs_dict["dist_to_end_of_lane"] += state_dict[veh_id]["lane_length"] - state_dict[veh_id]["lane_position"]
     #check if the each of the possible relationship holds for the vehicle lane 
+    relation_list = [0] * 8
+    #PEER if vehicle share the same next lane, since we only have edge (not lane) information within the route, we need to
+    #search inside the next edge to see if there're any lanes whose previous lane belongs to the current edge of ego and veh
+    if get_next_edge_id(veh_id) == ego_next_edge_id:
+      lane_id_list_ego_edge = [for x in lane_id_list if re.sub(r'_[0-9]{,}$', '', x) == ego_edge_id]
+      lane_id_list_veh_edge = [for x in lane_id_list if re.sub(r'_[0-9]{,}$', '', x) == veh_state_dict[veh_id]["edge_id"]]
+      for x in lane_id_list_ego_next_edge:
+        src_lane_id_set = set([conn["dst_lanelet_id"] for conn in connection_list if conn["src_lanelet_id"] == x and conn["type"] == "previous"])
+        if len(src_lane_id_set & set(lane_id_list_ego_edge)) > 0 and
+           len(src_lane_id_set & set(lane_id_list_veh_edge)) > 0:
+             relation_list[0] = 1 #PEER
+             break
+    #CONFLICT if
+            
     obs_dict["lane_relation"] = 
+  obs_dict["lane_relation"] = tuple(obs_dict["lane_relation"]) #change list to tuple
   pass
