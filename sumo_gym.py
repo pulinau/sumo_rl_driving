@@ -5,6 +5,7 @@ SUMO_TOOLS_DIR = "/home/ken/project/sumo-0.30.0/tools"
 SUMO_BIN = "/home/ken/project/sumo-0.30.0/bin/sumo"
 SUMO_CONFIG = "/home/ken/project/sumo/test.sumocfg"
 SUMO_CMD = [SUMO_BIN, "-c", SUMO_CONFIG, "--time-to-teleport", "-1"]
+NET_XML_FILE = "/home/ken/project/sumo/test0.net.xml"
 
 #OCCUPANCY_GRID_NUM_RING = 10
 #OCCUPANCY_GRID_NUM_GRID_PER_RING = 8
@@ -29,7 +30,7 @@ except ImportError:
   print("Please modify SUMO_TOOLS_DIR to the location of sumo tools")
 import traci
 
-from get_env_state import get_vehicle_state, get_lanelet_graph
+from get_env_state import get_vehicle_state, Lanelet_graph, get_veh_next_edge_id
 
 Class InvalidAction(Exception):
   pass
@@ -57,8 +58,8 @@ Class SumoEnv(gym.Env):
     7) "dist_to_end_of_lane"
     8) "lane_relation": the relationship between the vehicle lane and the ego lane. Possible reltionships are:
          PEER[0]: share the same NEXT lane with the ego lane
-         CONFLICT[1]: share the same intersection with the ego lane, and its route conflict that of the ego route
-         CONFLICT_INTERSECTION[2]: the lane is inside the intersection ego is approaching, and conflicts with ego route
+         CONFLICT[1]: #CONFLICT if approaching the same intersection as the ego lane, and its route conflict that of the ego route
+         CONFLICT_INTERSECTION[2]: the lane is already inside the intersection ego is approaching/is in, and conflicts with ego route
          NEXT[3]: the next lane of ego lane
          PREV[4]: the previous lane of ego lane
          LEFT[5]: to the left of ego lane
@@ -129,13 +130,12 @@ Class SumoEnv(gym.Env):
 
 def get_observation():
   veh_state_dict = get_vehicle_state()
-  (lane_id_list, connection_list) = get_lanelet_graph()
+  lanelet_graph = Lanelet_graph(NET_XML_FILE)
   obs_dict = {}
   obs_dict["ego_speed"] = veh_state_dict["ego"]["speed"]
   obs_dict["ego_dist_to_end_of_lane"] = veh_state_dict["ego"]["lane_length"] - veh_state_dict["ego"]["lane_position"]
-  #if the ego lane is not in the lanelet list returned by sumolib, then it's an intersection
-  #sumolib only return normal (non-internal) edges
-  if veh_state_dict["ego_speed"]["lane"] not in lane_id_list:
+  #lanes inside intersections have ids that start with ":"
+  if veh_state_dict["ego"]["lane_id"][0] == ":":
     obs_dict["ego_in_intersection"] = 1
   else:
     obs_dict["ego_in_intersection"] = 0
@@ -149,7 +149,7 @@ def get_observation():
       return True
     return False
   veh_state_dict_ROI = {k: v for k, v in veh_state_dict.items()
-                        if k!="ego" and in_ROI(veh_state_dict["ego"]["position"], v["position"][0])
+                        if k!="ego" and in_ROI(veh_state_dict["ego"]["position"], v["position"])
                         }
   
   #now deal with the relavant vehicles
@@ -159,36 +159,48 @@ def get_observation():
   obs_dict["relative_heading"] = []
   obs_dict["dist_to_end_of_lane"] = []
   obs_dict["lane_relation"] = []
-  def get_veh_next_edge_id(veh_id):
-    route = traci.getRoute() #route is an edge id list of the vehicle's route
-    if len(route) == traci.vehicle.getRouteIndex() + 1
-      return None
-    else:
-      return route[traci.vehicle.getRouteIndex() + 1]
-  ego_edge_id = veh_state_dict["ego"]["edge"]
+
+  ego_edge_id = veh_state_dict["ego"]["edge_id"]
   ego_next_edge_id = get_next_edge_id("ego")
-  lane_id_list_ego_next_edge = [for x in lane_id_list if re.sub(r'_[0-9]{,}$', '', x) == ego_next_edge_id]
+  lane_id_list_ego_next_edge = lanelet_graph.get_lane_id_list_in_edge(ego_next_edge_id)
+  lane_id_list_ego_edge = lanelet_graph.get_lane_id_list_in_edge(ego_edge_id)
   for veh_id, state_dict in veh_state_dict_ROI.items():
     obs_dict["exists_vehicle"] += [1]
     obs_dict["speed"] += [state_dict["speed"]]
     obs_dict["relative_position"] += [state_dict["position"] - veh_state_dict["ego"]["position"]]
     obs_dict["relative_heading"] += [-(state_dict["angle"] - veh_state_dict["ego"]["angle"])/180 * pi]
-    obs_dict["dist_to_end_of_lane"] += state_dict[veh_id]["lane_length"] - state_dict[veh_id]["lane_position"]
+    obs_dict["dist_to_end_of_lane"] += state_dict["lane_length"] - state_dict["lane_position"]
     #check if the each of the possible relationship holds for the vehicle lane 
     relation_list = [0] * 8
+    lane_id_list_veh_edge = lanelet_graph.get_lane_id_list_in_edge(state_dict["edge_id"])
+    veh_next_edge_id = get_next_edge_id(veh_id)
+    lane_id_list_veh_next_edge = lanelet_graph.get_lane_id_list_in_edge(veh_next_edge_id)
     #PEER if vehicle share the same next lane, since we only have edge (not lane) information within the route, we need to
     #search inside the next edge to see if there're any lanes whose previous lane belongs to the current edge of ego and veh
-    if get_next_edge_id(veh_id) == ego_next_edge_id:
-      lane_id_list_ego_edge = [for x in lane_id_list if re.sub(r'_[0-9]{,}$', '', x) == ego_edge_id]
-      lane_id_list_veh_edge = [for x in lane_id_list if re.sub(r'_[0-9]{,}$', '', x) == veh_state_dict[veh_id]["edge_id"]]
+    if veh_next_edge_id == ego_next_edge_id and ego_next_edge_id != None:
       for x in lane_id_list_ego_next_edge:
-        src_lane_id_set = set([conn["dst_lanelet_id"] for conn in connection_list if conn["src_lanelet_id"] == x and conn["type"] == "previous"])
-        if len(src_lane_id_set & set(lane_id_list_ego_edge)) > 0 and
-           len(src_lane_id_set & set(lane_id_list_veh_edge)) > 0:
+        prev_lane_id_set = set(lanelet_graph.get_prev_lane_id_list(x))
+        if len(prev_lane_id_set & set(lane_id_list_ego_edge)) > 0 and
+           len(prev_lane_id_set & set(lane_id_list_veh_edge)) > 0:
              relation_list[0] = 1 #PEER
              break
-    #CONFLICT if
-            
+    
+    #if the to lanes are appoaching the same intersection
+    if lanelet_graph.get_to_node_id(veh_state_dict["ego"]["lane_id"]) == lanelet_graph.get_to_node_id(state_dict["lane_id"]):
+      #CONFLICT if approaching the same intersection as the ego lane, and its route conflict that of the ego route
+      for u in lane_id_list_veh_next_edge:
+        for p in lanelet_graph.get_prev_lane_id_list(u):
+          for v in lane_id_list_ego_next_edge:
+            for q in lanelet_graph.get_prev_lane_id_list(v):
+              if intersects((lanelet_graph.get_waypoint(u), lanelet_graph.get_waypoint(p)), 
+                            (lanelet_graph.get_waypoint(v), lanelet_graph.get_waypoint(q))
+                            ):
+                if state_dict["lane_id"][0] == ":":
+                  relation_list[1] = 1 #CONFLICT
+                else:
+                  relation_list[2] = 1 #CONFLICT_INTERSECTION
+    
+    #NEXT, PREV, LEFT, RIGHT
     obs_dict["lane_relation"] = 
   obs_dict["lane_relation"] = tuple(obs_dict["lane_relation"]) #change list to tuple
   pass

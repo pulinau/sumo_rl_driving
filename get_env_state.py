@@ -37,7 +37,14 @@ def get_vehicle_state():
     veh_state_dict[veh_id]["route"] = traci.route.getEdges(traci.vehicle.getRouteID(veh_id))
   return veh_state_dict
 
-class lanelet_graph:
+def get_veh_next_edge_id(veh_id):
+  route = traci.vehicle.getRoute(veh_id) #route is an edge id list of the vehicle's route
+  if len(route) == traci.vehicle.getRouteIndex() + 1
+    return None
+  else:
+    return route[traci.vehicle.getRouteIndex() + 1]
+
+class Lanelet_graph:
   """
   lanelet graph class 
   """
