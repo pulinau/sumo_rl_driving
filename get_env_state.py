@@ -79,7 +79,7 @@ class lanelet_graph:
         self.lanelet_dict[lane_id]["next_lane_id_list"] = [conn.getToLane().getID() for conn in lane.getOutgoing()] 
         for next_lane_id in self.lanelet_dict[lane_id]["next_lane_id_list"]:
           self.lanelet_dict[next_lane_id]["previous_lane_id_list"] += [lane_id]
-        if lane_index == len(edge.getLanes()):
+        if lane_index == len(edge.getLanes()) - 1:
           self.lanelet_dict[lane_id]["left_lane_id"] = None
         else:
           self.lanelet_dict[lane_id]["left_lane_id"] = edge.getLanes()[lane_index+1].getID()
