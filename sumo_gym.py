@@ -55,8 +55,9 @@ Class SumoEnv(gym.Env):
     4) "speed": absolute speed of each vehicle
     5) "relative_position": space.Box object of size (NUM_VEHICLE_CONSIDERED, 2), each the position of the vehicle relative to the ego vehicle 
     6) "relative_heading": in radius, anticlockwise
-    7) "dist_to_end_of_lane"
-    8) "lane_relation": the relationship between the vehicle lane and the ego lane. Possible reltionships are:
+    7) "has_priority"
+    8) "dist_to_end_of_lane"
+    9) "lane_relation": the relationship between the vehicle lane and the ego lane. Possible reltionships are:
          PEER[0]: share the same NEXT lane with the ego lane
          CONFLICT[1]: #CONFLICT if approaching the same intersection as the ego lane, and its route conflict that of the ego route
          CONFLICT_INTERSECTION[2]: the lane is already inside the intersection ego is approaching/is in, and conflicts with ego route
@@ -82,12 +83,13 @@ Class SumoEnv(gym.Env):
     self.obsevation_space = spaces.Dict({"ego_speed": spaces.Box(0, MAX_VEHICLE_SPEED),
                                          "ego_dist_to_end_of_lane": spaces.Box(0, float("inf")),
                                          "ego_in_intersection": spaces.Discrete(2)
-                                         "exists_vehicle": spaces.MultiDiscrete([[0,1]] * NUM_VEHICLE_CONSIDERED)
+                                         "exists_vehicle": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED)
                                          "speed": spaces.Box(0, MAX_VEHICLE_SPEED, (NUM_VEHICLE_CONSIDERED,))
                                          "relative_position": spaces.Box(float("-inf"), float("inf"), (NUM_VEHICLE_CONSIDERED, 2)),
                                          "relative_heading": spaces.Box(-pi, pi, (NUM_VEHICLE_CONSIDERED,)),
+                                         "has_priority": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED)
                                          "dist_to_end_of_lane": spaces.Box(0, float("inf"), (NUM_VEHICLE_CONSIDERED,)),
-                                         "lane_relation": spaces.Tuple(tuple([spaces.MultiBinary(8)] * NUM_VEHICLE_CONSIDERED))
+                                         "lane_relation": spaces.MultiBinary(8 * NUM_VEHICLE_CONSIDERED)
                                          })
     #self.obsevation_space = spaces.Dict({
                                          ##TO DO: define MultiBox
@@ -157,18 +159,22 @@ def get_observation():
   obs_dict["speed"] = []
   obs_dict["relative_position"] = []
   obs_dict["relative_heading"] = []
+  obs_dict["has_priority"] = []
   obs_dict["dist_to_end_of_lane"] = []
   obs_dict["lane_relation"] = []
 
-  ego_edge_id = veh_state_dict["ego"]["edge_id"]
   ego_next_edge_id = get_next_edge_id("ego")
   lane_id_list_ego_next_edge = lanelet_graph.get_lane_id_list_in_edge(ego_next_edge_id)
-  lane_id_list_ego_edge = lanelet_graph.get_lane_id_list_in_edge(ego_edge_id)
+  lane_id_list_ego_edge = lanelet_graph.get_lane_id_list_in_edge(veh_state_dict["ego"]["edge_id"])
   for veh_id, state_dict in veh_state_dict_ROI.items():
     obs_dict["exists_vehicle"] += [1]
     obs_dict["speed"] += [state_dict["speed"]]
     obs_dict["relative_position"] += [state_dict["position"] - veh_state_dict["ego"]["position"]]
     obs_dict["relative_heading"] += [-(state_dict["angle"] - veh_state_dict["ego"]["angle"])/180 * pi]
+    if lanelet_graph.get_priority(state_dict["lane_id"]) > lanelet_graph.get_priority(veh_state_dict["ego"]["lane_id"]):
+      obs_dict["has_priority"] += [1]
+    else:
+      obs_dict["has_priority"] += [1]
     obs_dict["dist_to_end_of_lane"] += state_dict["lane_length"] - state_dict["lane_position"]
     #check if the each of the possible relationship holds for the vehicle lane 
     relation_list = [0] * 8
@@ -186,21 +192,38 @@ def get_observation():
              break
     
     #if the to lanes are appoaching the same intersection
+    def intersect(P0, P1, Q0, Q1):
+      def ccw(A,B,C):
+        """check if the three points are in counterclockwise order"""
+        return (C.y-A.y)*(B.x-A.x) > (B.y-A.y)*(C.x-A.x)
+      return ccw(P0,Q0,Q1) != ccw(P1,Q0,Q1) and ccw(P0,P1,Q0) != ccw(P0,P1,Q1)
     if lanelet_graph.get_to_node_id(veh_state_dict["ego"]["lane_id"]) == lanelet_graph.get_to_node_id(state_dict["lane_id"]):
       #CONFLICT if approaching the same intersection as the ego lane, and its route conflict that of the ego route
       for u in lane_id_list_veh_next_edge:
         for p in lanelet_graph.get_prev_lane_id_list(u):
           for v in lane_id_list_ego_next_edge:
             for q in lanelet_graph.get_prev_lane_id_list(v):
-              if intersects((lanelet_graph.get_waypoint(u), lanelet_graph.get_waypoint(p)), 
-                            (lanelet_graph.get_waypoint(v), lanelet_graph.get_waypoint(q))
-                            ):
-                if state_dict["lane_id"][0] == ":":
+              if intersect(lanelet_graph.get_waypoint(u), lanelet_graph.get_waypoint(p), 
+                           lanelet_graph.get_waypoint(v), lanelet_graph.get_waypoint(q)
+                           ):
+                if state_dict["lane_id"][0] != ":":
                   relation_list[1] = 1 #CONFLICT
                 else:
                   relation_list[2] = 1 #CONFLICT_INTERSECTION
     
     #NEXT, PREV, LEFT, RIGHT
-    obs_dict["lane_relation"] = 
-  obs_dict["lane_relation"] = tuple(obs_dict["lane_relation"]) #change list to tuple
+    if state_dict["lane_id"] in lane_id_list_ego_next_edge:
+      if len(set(lanelet_graph.get_prev_lane_id_list(state_dict["lane_id"])) & set(lane_id_list_ego_edge)) > 0:
+        relation_list[3] = 1 #NEXT
+    if veh_next_edge_id == veh_state_dict["ego"]["edge_id"]:
+      if len(set(lanelet_graph.get_prev_lane_id_list(veh_state_dict["ego"]["lane_id"])) & set(lane_id_list_veh_edge)) > 0:
+        relation_list[4] = 1 #PREV
+    if state_dict["lane_id"] == lanelet_graph.get_left_lane_id:
+      relation_list[5] = 1 #LEFT
+    if state_dict["lane_id"] == lanelet_graph.get_right_lane_id:
+      relation_list[6] = 1 #RIGHT
+    if sum(relation_list[:-1]) == 0:
+      relation_list[7] = 1 #IRRELEVANT
+    
+    obs_dict["lane_relation"] += relation_list
   pass

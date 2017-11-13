@@ -32,6 +32,7 @@ def get_vehicle_state():
     veh_state_dict[veh_id]["dimension"]  = (traci.vehicle.getLength(veh_id),traci.vehicle.getWidth(veh_id))
     veh_state_dict[veh_id]["edge_id"] = traci.vehicle.getRoadID(veh_id)
     veh_state_dict[veh_id]["lane_id"] = traci.vehicle.getLaneID(veh_id)
+    veh_state_dict[veh_id]["lane_priority"] = traci.vehicle.getPriority(veh_state_dict[veh_id]["lane_id"])
     veh_state_dict[veh_id]["lane_length"] = traci.lane.getLength(veh_state_dict[veh_id]["lane"]) #position in the lane
     veh_state_dict[veh_id]["lane_position"] = traci.vehicle.getLanePosition(veh_id)
     veh_state_dict[veh_id]["route"] = traci.route.getEdges(traci.vehicle.getRouteID(veh_id))
@@ -83,6 +84,7 @@ class Lanelet_graph:
         self.lanelet_dict[lane_id]["from_node_id"] = edge.getFromNode().getID()
         self.lanelet_dict[lane_id]["to_node_id"] = edge.getToNode().getID()
         self.lanelet_dict[lane_id]["edge_id"] = edge.getID()
+        self.lanelet_dict[lane_id]["edge_priority"] = edge.getPriority()
         self.lanelet_dict[lane_id]["next_lane_id_list"] = [conn.getToLane().getID() for conn in lane.getOutgoing()] 
         for next_lane_id in self.lanelet_dict[lane_id]["next_lane_id_list"]:
           self.lanelet_dict[next_lane_id]["previous_lane_id_list"] += [lane_id]
@@ -100,7 +102,7 @@ class Lanelet_graph:
   def get_next_lane_id_list(self, lane_id):
     return self.lanelet_dict[lane_id]["next_lane_id_list"]
   
-  def get_previous_lane_id_list(self, lane_id):
+  def get_prev_lane_id_list(self, lane_id):
     return self.lanelet_dict[lane_id]["previous_lane_id_list"]
   
   def get_left_lane_id(self, lane_id):
@@ -123,3 +125,6 @@ class Lanelet_graph:
   
   def get_lane_id_list_in_edge(self, edge_id):
     return [lane_id for lane_id in lanelet_dict if lanelet_dict[lane_id]["edge_id"] == edge_id]
+  
+  def get_priority(self, lane_id):
+    return self.lanelet_dict[lane_id]["edge_priority"]
