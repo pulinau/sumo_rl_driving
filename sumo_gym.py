@@ -11,7 +11,7 @@ NET_XML_FILE = "/home/ken/project/sumo/test0.net.xml"
 #OCCUPANCY_GRID_NUM_GRID_PER_RING = 8
 #OCCUPANCY_GRID_NUM_GRID = OCCUPANCY_GRID_NUM_GRID_PER_RING * OCCUPANCY_GRID_NUM_RING
 
-MAX_VEHICLE_SPEED = 200
+MAX_ACCELERATION = 20
 MAX_LANE_PRIORITY = 2
 NUM_VEHICLE_CONSIDERED = 16
 OBSERVATION_RADIUS = 600
@@ -65,7 +65,9 @@ Class SumoEnv(gym.Env):
          PREV[4]: the previous lane of ego lane
          LEFT[5]: to the left of ego lane
          RIGHT[6]: to the right of ego lane
-         IRRELEVANT[7]: the lane is irrelevant to ego vehicle, e.g. opposite lane, in or approaching other intersections, 
+         AHEAD[7]: ahead of the ego on the same lane
+         BEHIND[8] behind the ego on the same lane
+         IRRELEVANT[9]: the lane is irrelevant to ego vehicle, e.g. opposite lane, in or approaching other intersections, 
                       or in the same intersection but with no conflict with ego route
          since a lane can have several of the above relationship with the ego lane at the same time, MultiBinary object of size 8 is needed per vehicle
   If we feed the observation space to a neural network, the weights connecting to the same key (of the observation space dictionary) should be identical
@@ -89,7 +91,7 @@ Class SumoEnv(gym.Env):
                                          "relative_heading": spaces.Box(-pi, pi, (NUM_VEHICLE_CONSIDERED,)),
                                          "has_priority": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED)
                                          "dist_to_end_of_lane": spaces.Box(0, float("inf"), (NUM_VEHICLE_CONSIDERED,)),
-                                         "lane_relation": spaces.MultiBinary(8 * NUM_VEHICLE_CONSIDERED)
+                                         "lane_relation": spaces.MultiBinary(10 * NUM_VEHICLE_CONSIDERED)
                                          })
     #self.obsevation_space = spaces.Dict({
                                          ##TO DO: define MultiBox
@@ -218,12 +220,19 @@ def get_observation():
     if veh_next_edge_id == veh_state_dict["ego"]["edge_id"]:
       if len(set(lanelet_graph.get_prev_lane_id_list(veh_state_dict["ego"]["lane_id"])) & set(lane_id_list_veh_edge)) > 0:
         relation_list[4] = 1 #PREV
-    if state_dict["lane_id"] == lanelet_graph.get_left_lane_id:
+    if state_dict["lane_id"] == lanelet_graph.get_left_lane_id():
       relation_list[5] = 1 #LEFT
-    if state_dict["lane_id"] == lanelet_graph.get_right_lane_id:
+    if state_dict["lane_id"] == lanelet_graph.get_right_lane_id():
       relation_list[6] = 1 #RIGHT
+    if state_dict["lane_id"] == veh_state_dict["ego"]["lane_id"]:
+      if state_dict["lane_position"] > veh_state_dict["ego"]["lane_id"]:
+        relation_list[7] = 1 #AHEAD
+      else:
+        relation_list[8] = 1 #BEHIND
     if sum(relation_list[:-1]) == 0:
-      relation_list[7] = 1 #IRRELEVANT
+      relation_list[9] = 1 #IRRELEVANT
     
     obs_dict["lane_relation"] += relation_list
+  
   pass
+  return obs_dict
