@@ -1,4 +1,5 @@
 import numpy as np
+from copy import deepcopy
 
 class History:
   def __init__(self, config):
@@ -12,4 +13,4 @@ class History:
     self.history *= 0
 
   def get(self):
-    return self.history
+    return deepcopy(self.history)
