@@ -26,8 +26,8 @@ Currently there are only a bunch of uncontrolled intersections in the road netwo
 Which translates to the following concrete rules:
   
   * if the distance to the intersection is less than 3 meters AND there's traffic on the relevant lane AND on low priority road, then large negative reward for speed higher than 0
-  *  if distance to the intersection is less than 3 meters, no lane change is allowed
-  *  if there's no traffic ahead or beside in the correct lane OR distance from intersection is less than 3 meters, large negative reward for staying in the wrong lane
+  * if distance to the intersection is less than 3 meters, no lane change is allowed
+  * if there's no traffic ahead or beside in the correct lane OR distance from intersection is less than 3 meters, large negative reward for staying in the wrong lane
 
 ## `r_mission`
 help train the ego vehicle to learn the fastest route to get to the destination (not included in the current implementation).

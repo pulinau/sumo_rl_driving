@@ -28,3 +28,4 @@ Some combinations of actions are not always valid, namely:
 * accel at maximum speed is treated as an noop, same for deccel at zero speed (no reverse support)
 
 Invalid actions are treated as noop | maintain | noop
+left/right turn is currently not implemented
