@@ -38,9 +38,9 @@ def dec_speed(speed, dec, min_speed):
     return speed - dec
 
 def act(action):
-  assert traci.simulation.getCollisionNumber() > 0, "collision already occurred"
+  assert traci.simulation.getCollisionsNumber() == 0, "collision already occurred"
   
-  check_action()
+  check_action(action)
     
   # Lane Change
   if action["lane_change"] == 1:
@@ -69,7 +69,7 @@ def act(action):
   # Turn not implemented
 
   traci.simulationStep()
-  if traci.simulation.getCollisionNumber() > 0:
+  if traci.simulation.getCollisionsNumber() > 0:
     collision = True
   else:
     collision = False
