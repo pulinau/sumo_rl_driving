@@ -23,7 +23,6 @@ NUM_VEHICLE_CONSIDERED = 16
 OBSERVATION_RADIUS = 600
 NUM_VEH_RELATION = len(["peer", 
                         "conflict", 
-                        "conflict_intersection", 
                         "next", 
                         "left", 
                         "right", 
