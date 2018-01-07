@@ -11,7 +11,7 @@ spaces.Dict({"ego_speed": spaces.Box(0, MAX_VEH_SPEED, shape=(1,)),
              "ego_in_intersection": spaces.Discrete(2),
              "ego_exists_left_lane": spaces.Discrete(2),
              "ego_exists_right_lane": spaces.Discrete(2),
-             "ego_correct_lane": spaces.Discrete(2 * NUM_LANE_CONSIDERED + 1),
+             "ego_correct_lane_gap": spaces.Box(float("-inf"), float("inf"), shape=(1,)),
              "exists_vehicle": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED),
              "speed": spaces.Box(0, MAX_VEH_SPEED, (NUM_VEHICLE_CONSIDERED,)),  # absolute speed
              "dist_to_end_of_lane": spaces.Box(0, float("inf"), (NUM_VEHICLE_CONSIDERED,)),

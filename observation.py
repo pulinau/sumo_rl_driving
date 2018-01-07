@@ -23,7 +23,7 @@ observation_space = spaces.Dict({"ego_speed": spaces.Box(0, MAX_VEH_SPEED, shape
              "ego_in_intersection": spaces.Discrete(2),
              "ego_exists_left_lane": spaces.Discrete(2),
              "ego_exists_right_lane": spaces.Discrete(2),
-             "ego_correct_lane": spaces.Discrete(2 * NUM_LANE_CONSIDERED + 1),
+             "ego_correct_lane_gap": spaces.Box(float("-inf"), float("inf"), shape=(1,)),
              "exists_vehicle": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED),
              "speed": spaces.Box(0, MAX_VEH_SPEED, (NUM_VEHICLE_CONSIDERED,)),  # absolute speed
              "dist_to_end_of_lane": spaces.Box(0, float("inf"), (NUM_VEHICLE_CONSIDERED,)),
@@ -48,6 +48,7 @@ def get_veh_dict():
     veh_dict[veh_id]["dimension"]  = (traci.vehicle.getLength(veh_id),traci.vehicle.getWidth(veh_id))
     veh_dict[veh_id]["edge_id"] = traci.vehicle.getRoadID(veh_id)
     veh_dict[veh_id]["lane_id"] = traci.vehicle.getLaneID(veh_id)
+    veh_dict[veh_id]["lane_index"] = traci.vehicle.getLaneIndex(veh_id)
     veh_dict[veh_id]["lane_length"] = traci.lane.getLength(veh_dict[veh_id]["lane_id"]) 
     veh_dict[veh_id]["lane_position"] = traci.vehicle.getLanePosition(veh_id) # position in the lane
     veh_dict[veh_id]["route"] = traci.vehicle.getRoute(veh_id)
@@ -80,20 +81,22 @@ def get_lanelet_dict(sumo_net_xml_file):
       lanelet_dict[lane_id]["from_node_id"] = edge.getFromNode().getID()
       lanelet_dict[lane_id]["to_node_id"] = edge.getToNode().getID()
       lanelet_dict[lane_id]["edge_id"] = edge.getID()
+      lanelet_dict[lane_id]["lane_index"] = lane_index
       
       if lane_id[0] == ':':
         lanelet_dict[lane_id]["edge_priority"] = float("inf")
       else:
         lanelet_dict[lane_id]["edge_priority"] = edge.getPriority()        
       
-      lanelet_dict[lane_id]["next_lane_id_list"] = [conn.getToLane().getID() for conn in lane.getOutgoing()] 
+      lanelet_dict[lane_id]["next_normal_lane_id_list"] = [conn.getToLane().getID() for conn in lane.getOutgoing()]
       if lane_id[0] == ':':
-        lanelet_dict[lane_id]["next_normal_lane_id_list"] = [conn.getToLane().getID() for conn in lane.getOutgoing()] 
-      
+        lanelet_dict[lane_id]["next_lane_id_list"] = [conn.getToLane().getID() for conn in lane.getOutgoing()]
+      else:
+        lanelet_dict[lane_id]["next_lane_id_list"] = [conn.getViaLaneID() for conn in lane.getOutgoing()] 
+        for next_lane_id in lanelet_dict[lane_id]["next_normal_lane_id_list"] + lanelet_dict[lane_id]["next_lane_id_list"]:
+           lanelet_dict[next_lane_id]["prev_normal_lane_id_list"] += [lane_id]        
       for next_lane_id in lanelet_dict[lane_id]["next_lane_id_list"]:
-        lanelet_dict[next_lane_id]["prev_lane_id_list"] += [lane_id]
-        if lane_id[0] == ':':
-          lanelet_dict[next_lane_id]["prev_normal_lane_id_list"] += [lane_id]
+          lanelet_dict[next_lane_id]["prev_lane_id_list"] += [lane_id]
       
       if lane_index == len(edge.getLanes()) - 1:
         lanelet_dict[lane_id]["left_lane_id"] = None
@@ -153,16 +156,27 @@ def get_obs():
   else:
     obs_dict["ego_in_intersection"] = 0
 
-  if traci.vehicle.couldChangeLane(EGO_VEH_ID, 1) == True:
+  if traci.vehicle.couldChangeLane(EGO_VEH_ID, 1):
     obs_dict["ego_exists_left_lane"] = 1
   else:
     obs_dict["ego_exists_left_lane"] = 0
-  if traci.vehicle.couldChangeLane(EGO_VEH_ID, -1) == True:
+  if traci.vehicle.couldChangeLane(EGO_VEH_ID, -1):
     obs_dict["ego_exists_right_lane"] = 1
   else:
     obs_dict["ego_exists_right_lane"] = 0
   
+  lane_id_list_ego_edge = edge_dict[ego_dict["edge_id"]]["lane_id_list"]
+  if ego_dict["next_normal_edge_id"] != None:
+    lane_id_list_ego_next_normal_edge = edge_dict[ego_dict["next_normal_edge_id"]]["lane_id_list"]
+  else:
+    lane_id_list_ego_next_normal_edge = []
   # correct lane
+  # if next normal edge doesn't exist, consider ego to be already in correct lane
+  obs_dict["ego_correct_lane_gap"] = 0
+  for x in lane_id_list_ego_next_normal_edge:
+    for y in lane_id_list_ego_edge:
+      if internal_lane_id_between_lanes(y, x, lanelet_dict)!= None:
+        obs_dict["ego_correct_lane_gap"] = lanelet_dict[y]["lane_index"] - ego_dict["lane_index"]
   
   # vehicles inside region of insterest
   def in_ROI(ego_position, veh_position):
@@ -178,77 +192,74 @@ def get_obs():
                         }
 
   # now deal with the relavant vehicles
-  obs_dict["exists_vehicle"] = []
-  obs_dict["speed"] = []
-  obs_dict["dist_to_end_of_lane"] = []
-  obs_dict["in_intersection"] = []
-  obs_dict["relative_position"] = []
-  obs_dict["relative_heading"] = []
-  obs_dict["has_priority"] = []
-  obs_dict["veh_relation"] = []
+  obs_dict["exists_vehicle"] = [0] * NUM_VEHICLE_CONSIDERED
+  obs_dict["speed"] = [0] * NUM_VEHICLE_CONSIDERED
+  obs_dict["dist_to_end_of_lane"] = [0] * NUM_VEHICLE_CONSIDERED
+  obs_dict["in_intersection"] = [0] * NUM_VEHICLE_CONSIDERED
+  obs_dict["relative_position"] = [[0, 0]] * NUM_VEHICLE_CONSIDERED
+  obs_dict["relative_heading"] = [0] * NUM_VEHICLE_CONSIDERED
+  obs_dict["has_priority"] = [0] * NUM_VEHICLE_CONSIDERED
+  obs_dict["veh_relation"] = [0] * (NUM_VEH_RELATION * NUM_VEHICLE_CONSIDERED)
 
-  lane_id_list_ego_edge = edge_dict[ego_dict["edge_id"]]["lane_id_list"]
-  ego_next_normal_edge_id = ego_dict["next_normal_edge_id"]
-  lane_id_list_ego_next_normal_edge = edge_dict[ego_next_normal_edge_id]["lane_id_list"]
-  for veh_id, state_dict in veh_dict_ROI.items():
-    obs_dict["exists_vehicle"] += [1]
-    obs_dict["speed"] += [state_dict["speed"]]
-    obs_dict["dist_to_end_of_lane"] += [state_dict["lane_length"] - state_dict["lane_position"]]
+  
+  for veh_index, (veh_id, state_dict) in enumerate(veh_dict_ROI.items()):
+    if veh_index >= NUM_VEHICLE_CONSIDERED:
+      break
+    
+    obs_dict["exists_vehicle"][veh_index] = 1
+    obs_dict["speed"][veh_index] = state_dict["speed"]
+    obs_dict["dist_to_end_of_lane"][veh_index] = state_dict["lane_length"] - state_dict["lane_position"]
     
     if state_dict["edge_id"][0] == ':':
-      obs_dict["in_intersection"] += [1]    
-    else:
-      obs_dict["in_intersection"] += [0]  
+      obs_dict["in_intersection"][veh_index] = 1
     
-    obs_dict["relative_position"] += [np.array(state_dict["position"]) - np.array(ego_dict["position"])]
+    # transform the position to ego coordinate
+    ego_angle_rad = ego_dict["angle"]/180 * pi
+    rotation_mat = np.array([[np.cos(ego_angle_rad), -np.sin(ego_angle_rad)],
+                             [np.sin(ego_angle_rad), np.cos(ego_angle_rad)]])
+    relative_position = np.array(state_dict["position"]) - np.array(ego_dict["position"])
+    relative_position = np.matmul(rotation_mat,relative_position)
+    obs_dict["relative_position"][veh_index] = relative_position
+    
     relative_heading = -(state_dict["angle"] - ego_dict["angle"])/180 * pi
     if relative_heading > pi:
       relative_heading -= 2*pi
     elif relative_heading < -pi:
       relative_heading += 2*pi
-    obs_dict["relative_heading"] += [relative_heading]
+    obs_dict["relative_heading"][veh_index] = relative_heading
     
     # vehicle has priority over ego if the vehicle is
     # approaching/in the same intersection and it's inside a lane of higher priority
     if edge_dict[state_dict["edge_id"]]["to_node_id"] == edge_dict[ego_dict["edge_id"]]["to_node_id"] and \
        edge_dict[state_dict["edge_id"]]["priority"] > edge_dict[ego_dict["edge_id"]]["priority"]:
-      obs_dict["has_priority"] += [1]
-    else:
-      obs_dict["has_priority"] += [0]
+      obs_dict["has_priority"][veh_index] = 1
     
     # check if the each of the possible relationship holds for the vehicle
     relation_list = [0] * NUM_VEH_RELATION
     lane_id_list_veh_edge = edge_dict[state_dict["edge_id"]]["lane_id_list"]
-    veh_next_normal_edge_id = state_dict["next_normal_edge_id"]
-    lane_id_list_veh_next_normal_edge = edge_dict[veh_next_normal_edge_id]["lane_id_list"]
+    if state_dict["next_normal_edge_id"] != None:
+      lane_id_list_veh_next_normal_edge = edge_dict[state_dict["next_normal_edge_id"]]["lane_id_list"]
+    else:
+      lane_id_list_veh_next_normal_edge = []
     # PEER if vehicle share the same next lane, since we only have edge (not lane) information within the route, we need to
-    # search inside the next edge to see if there're any lanes whose previous lane belongs to the current edge of ego and veh
-    if veh_next_normal_edge_id == ego_next_normal_edge_id and ego_next_normal_edge_id != None:
+    # search inside the next edge to see if there're any lanes whose previous lane belongs to the current edge of veh
+    if state_dict["next_normal_edge_id"] == ego_dict["next_normal_edge_id"] and ego_dict["next_normal_edge_id"] != None:
       for x in lane_id_list_ego_next_normal_edge:
-        prev_lane_id_set = set(lanelet_dict[x]["prev_lane_id_list"]) | set(lanelet_dict[x]["prev_normal_lane_id_list"])
-        if ((len(prev_lane_id_set & set(lane_id_list_ego_edge)) > 0) and
-            (len(prev_lane_id_set & set(lane_id_list_veh_edge)) > 0)
-            ):
-          relation_list[0] = 1 # PEER
-          break
+        for y in lane_id_list_veh_edge:
+          if internal_lane_id_between_lanes(y, x, lanelet_dict) != None:
+            relation_list[0] = 1 # PEER
     
-    # if the to lanes are appoaching the same intersection
-    def intersect(P0, P1, Q0, Q1):
-      def ccw(A,B,C):
-        """check if the three points are in counterclockwise order"""
-        return (C[1]-A[1])*(B[0]-A[0]) > (B[1]-A[1])*(C[0]-A[0])
-      return ccw(P0,Q0,Q1) != ccw(P1,Q0,Q1) and ccw(P0,P1,Q0) != ccw(P0,P1,Q1)
-    
+    # CONFLICT if approaching/in the same intersection as the ego lane, and its route conflict that of the ego route
     if edge_dict[ego_dict["edge_id"]]["to_node_id"] == edge_dict[state_dict["edge_id"]]["to_node_id"]:
-      # CONFLICT if approaching/in the same intersection as the ego lane, and its route conflict that of the ego route
       for u in lane_id_list_veh_next_normal_edge:
-        for p in lanelet_dict[u]["prev_lane_id_list"]:
-          for v in lane_id_list_ego_next_normal_edge:
-            for q in lanelet_dict[v]["prev_lane_id_list"]:
-              if intersect(lanelet_dict[p]["waypoint"][0], lanelet_dict[p]["waypoint"][-1], 
-                           lanelet_dict[q]["waypoint"][0], lanelet_dict[q]["waypoint"][-1]
-                           ):
-                relation_list[1] = 1 # CONFLICT
+        for v in lane_id_list_veh_edge:
+          lane_id0 = internal_lane_id_between_lanes(v, u, lanelet_dict)
+          for p in lane_id_list_ego_next_normal_edge:
+            for q in lane_id_list_ego_edge:
+              lane_id1 = internal_lane_id_between_lanes(q, p, lanelet_dict)
+              if lane_id0 != None and lane_id1 != None:
+                if waypoint_intersect(lanelet_dict[lane_id0]["waypoint"], lanelet_dict[lane_id1]["waypoint"]) == True:
+                  relation_list[1] = 1 # CONFLICT
     
     # NEXT, LEFT, RIGHT
     if state_dict["lane_id"] in lanelet_dict[ego_dict["lane_id"]]["next_lane_id_list"]:
@@ -265,9 +276,37 @@ def get_obs():
         relation_list[6] = 1 # BEHIND
     
     if sum(relation_list[:-1]) == 0:
-      relation_list[7] = 1 # IRRELEVANT
+      relation_list[-1] = 1 # IRRELEVANT
     
-    obs_dict["veh_relation"] += relation_list
+    obs_dict["veh_relation"][(veh_index * NUM_VEH_RELATION):((veh_index+1) * NUM_VEH_RELATION)] = relation_list
   
   pass
   return obs_dict
+
+def intersect(p0, p1, q0, q1):
+  """check if two line segments p0-p1, q0-q1 intersect"""
+  def ccw(a,b,c):
+    """check if the three points are in counterclockwise order"""
+    return (c[1]-a[1])*(b[0]-a[0]) > (b[1]-a[1])*(c[0]-a[0])
+  return ccw(p0,q0,q1) != ccw(p1,q0,q1) and ccw(p0,p1,q0) != ccw(p0,p1,q1)
+
+def waypoint_intersect(waypoints0, waypoints1):
+  for m in range(len(waypoints0)-1):
+    for n in range(len(waypoints1)-1):
+      if intersect(waypoints0[m], waypoints0[m+1], waypoints1[n], waypoints1[n+1]):
+        return True
+  return  False
+
+def internal_lane_id_between_lanes(from_lane_id, to_lane_id, lanelet_dict):
+  if from_lane_id[0] == ':':
+    if to_lane_id in lanelet_dict[from_lane_id]["next_lane_id_list"]:
+      return from_lane_id
+  elif to_lane_id[0] == ':':
+    if to_lane_id in lanelet_dict[from_lane_id]["next_lane_id_list"]:
+      return to_lane_id
+  else:
+    for lane_id in lanelet_dict[from_lane_id]["next_lane_id_list"]:
+      if lane_id in lanelet_dict[to_lane_id]["prev_lane_id_list"]:
+        return lane_id
+    return None
+  
