@@ -5,6 +5,7 @@ import numpy as np
 import sys
 import time
 from math import pi
+import heapq
 
 import gym
 from gym import spaces
@@ -187,9 +188,7 @@ def get_obs():
         ):
       return True
     return False
-  veh_dict_ROI = {k: v for k, v in veh_dict.items()
-                        if k!=EGO_VEH_ID and in_ROI(ego_dict["position"], v["position"])
-                        }
+  veh_id_list_ROI = [k for k, v in veh_dict.items() if k!=EGO_VEH_ID and in_ROI(ego_dict["position"], v["position"])]
 
   # now deal with the relavant vehicles
   obs_dict["exists_vehicle"] = [0] * NUM_VEHICLE_CONSIDERED
@@ -201,10 +200,15 @@ def get_obs():
   obs_dict["has_priority"] = [0] * NUM_VEHICLE_CONSIDERED
   obs_dict["veh_relation"] = [0] * (NUM_VEH_RELATION * NUM_VEHICLE_CONSIDERED)
 
+  # sort veh within ROI by distance to ego
+  veh_heap = []
+  for veh_id in veh_id_list_ROI:
+    state_dict = veh_dict[veh_id]
+    heapq.heappush(veh_heap, (np.linalg.norm(np.array(state_dict["position"]) - np.array(ego_dict["position"])), veh_id))
   
-  for veh_index, (veh_id, state_dict) in enumerate(veh_dict_ROI.items()):
-    if veh_index >= NUM_VEHICLE_CONSIDERED:
-      break
+  for veh_index in range(min(NUM_VEHICLE_CONSIDERED, len(veh_heap))):
+    _, veh_id = heapq.heappop(veh_heap)
+    state_dict = veh_dict[veh_id]
     
     obs_dict["exists_vehicle"][veh_index] = 1
     obs_dict["speed"][veh_index] = state_dict["speed"]
@@ -270,7 +274,7 @@ def get_obs():
       relation_list[4] = 1 # RIGHT
     
     if state_dict["lane_id"] == ego_dict["lane_id"]:
-      if state_dict["lane_position"] > ego_dict["lane_id"]:
+      if state_dict["lane_position"] > ego_dict["lane_position"]:
         relation_list[5] = 1 # AHEAD
       else:
         relation_list[6] = 1 # BEHIND
