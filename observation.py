@@ -19,6 +19,19 @@ import traci
 
 import sumolib
 
+class VehRelation(Flag):
+  PEER = auto()
+  CONFLICT = auto()
+  NEXT = auto()
+  PREV = auto()
+  LEFT = auto()  
+  RIGHT = auto()
+  AHEAD = auto()
+  BEHIND = auto()
+  IRRELEVANT = auto()  
+
+NUM_VEH_RELATION = len(VehRelation)
+
 observation_space = spaces.Dict({"ego_speed": spaces.Box(0, MAX_VEH_SPEED, shape=(1,)),
              "ego_dist_to_end_of_lane": spaces.Box(0, float("inf"), shape=(1,)),
              "ego_in_intersection": spaces.Discrete(2),
@@ -32,7 +45,8 @@ observation_space = spaces.Dict({"ego_speed": spaces.Box(0, MAX_VEH_SPEED, shape
              "relative_position": spaces.Box(-OBSERVATION_RADIUS, OBSERVATION_RADIUS, (NUM_VEHICLE_CONSIDERED, 2)),
              "relative_heading": spaces.Box(-pi, pi, (NUM_VEHICLE_CONSIDERED,)),
              "has_priority": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED),
-             "veh_relation": spaces.MultiBinary(NUM_VEH_RELATION * NUM_VEHICLE_CONSIDERED)
+             "veh_relation_peer": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED),
+             
              })
 
 def get_veh_dict():
@@ -139,7 +153,7 @@ def get_edge_dict(sumo_net_xml_file):
     
   return edge_dict
 
-def get_obs():
+def get_obs_dict():
   
   veh_dict = get_veh_dict()
   lanelet_dict = get_lanelet_dict(NET_XML_FILE)
@@ -148,6 +162,12 @@ def get_obs():
   obs_dict = {}
   
   ego_dict = veh_dict[EGO_VEH_ID]
+  lane_id_list_ego_edge = edge_dict[ego_dict["edge_id"]]["lane_id_list"]
+  if ego_dict["next_normal_edge_id"] != None:
+    lane_id_list_ego_next_normal_edge = edge_dict[ego_dict["next_normal_edge_id"]]["lane_id_list"]
+  else:
+    lane_id_list_ego_next_normal_edge = []
+    
   obs_dict["ego_speed"] = ego_dict["speed"]
   obs_dict["ego_dist_to_end_of_lane"] = ego_dict["lane_length"] - ego_dict["lane_position"]
   
@@ -157,20 +177,17 @@ def get_obs():
   else:
     obs_dict["ego_in_intersection"] = 0
 
-  if traci.vehicle.couldChangeLane(EGO_VEH_ID, 1):
+  # couldChangeLane has a time lag of one step, a workaround is needed until this is fixed
+  #if traci.vehicle.couldChangeLane(EGO_VEH_ID, 1):
+  if ego_dict["lane_index"] < len(lane_id_list_ego_edge)-1:
     obs_dict["ego_exists_left_lane"] = 1
   else:
     obs_dict["ego_exists_left_lane"] = 0
-  if traci.vehicle.couldChangeLane(EGO_VEH_ID, -1):
+  if ego_dict["lane_index"] != 0:
     obs_dict["ego_exists_right_lane"] = 1
   else:
     obs_dict["ego_exists_right_lane"] = 0
   
-  lane_id_list_ego_edge = edge_dict[ego_dict["edge_id"]]["lane_id_list"]
-  if ego_dict["next_normal_edge_id"] != None:
-    lane_id_list_ego_next_normal_edge = edge_dict[ego_dict["next_normal_edge_id"]]["lane_id_list"]
-  else:
-    lane_id_list_ego_next_normal_edge = []
   # correct lane
   # if next normal edge doesn't exist, consider ego to be already in correct lane
   obs_dict["ego_correct_lane_gap"] = 0
@@ -265,19 +282,23 @@ def get_obs():
                 if waypoint_intersect(lanelet_dict[lane_id0]["waypoint"], lanelet_dict[lane_id1]["waypoint"]) == True:
                   relation_list[1] = 1 # CONFLICT
     
-    # NEXT, LEFT, RIGHT
+    # NEXT, PREV
     if state_dict["lane_id"] in lanelet_dict[ego_dict["lane_id"]]["next_lane_id_list"]:
       relation_list[2] = 1 # NEXT
+    if ego_dict["lane_id"] in lanelet_dict[state_dict["lane_id"]]["next_lane_id_list"]:
+      relation_list[3] = 1 # PREV
+    
+    # LEFT, RIGHT
     if state_dict["lane_id"] == lanelet_dict[ego_dict["lane_id"]]["left_lane_id"]:
-      relation_list[3] = 1 # LEFT
+      relation_list[4] = 1 # LEFT
     if state_dict["lane_id"] == lanelet_dict[ego_dict["lane_id"]]["right_lane_id"]:
-      relation_list[4] = 1 # RIGHT
+      relation_list[5] = 1 # RIGHT
     
     if state_dict["lane_id"] == ego_dict["lane_id"]:
       if state_dict["lane_position"] > ego_dict["lane_position"]:
-        relation_list[5] = 1 # AHEAD
+        relation_list[6] = 1 # AHEAD
       else:
-        relation_list[6] = 1 # BEHIND
+        relation_list[7] = 1 # BEHIND
     
     if sum(relation_list[:-1]) == 0:
       relation_list[-1] = 1 # IRRELEVANT

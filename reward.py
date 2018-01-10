@@ -2,19 +2,19 @@
 __author__ = "Changjian Li"
 
 import numpy as np
-from get_env_state import get_vehicle_state, Lanelet_graph, get_veh_next_edge_id, NUM_VEHICLE_CONSIDERED, MAX_ACCELERATION
+from observation import get_vehicle_state, Lanelet_graph, get_veh_next_edge_id, NUM_VEHICLE_CONSIDERED, MAX_ACCELERATION
 
 t_gap = 3
 
-def get_reward(env):
-  r_safety = get_reward_safety(env)
+def get_reward(self):
+  r_safety = get_reward_safety(self)
 #  r_regulation = get_reward_regulation()
 #  r_mission = get_reward_mission()
 #  r_comfort = get_reward_comfort()
 #  return [r_safety, r_regulation, r_mission, r_comfort, r_speed]
   return
   
-def get_reward_safety(env):
+def get_reward_safety(self):
   veh_state_dict = get_vehicle_state()
   ego_state_dict = veh_state_dict["ego"]
   r = 0
@@ -74,8 +74,8 @@ def get_reward_regulation(env):
 #def get_reward_mission():
 #  return
 
-def get_reward_comfort(past_vel_list):
-  return -np.std(past_vel_list)/np.abs(np.mean(past_vel_list))
+def get_reward_comfort():
+ 
 
 def get_reward_speed(vel, max_vel):
   return vel-max_vel
