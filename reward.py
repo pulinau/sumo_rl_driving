@@ -1,17 +1,17 @@
 #!/bin/python3
 __author__ = "Changjian Li"
 
-
+from include import *
 
 def get_reward_list(env):
   r_safety = get_reward_safety(env)
-  r_regulation = get_reward_regulation()
-  r_comfort = get_reward_comfort()
-  r_speed = get_reward_speed()
+  r_regulation = get_reward_regulation(env)
+  r_comfort = get_reward_comfort(env)
+  r_speed = get_reward_speed(env)
   return [r_safety, r_regulation, r_comfort, r_speed]
   
 def get_reward_safety(env):
-  if env.state == EnvState.CRASH:
+  if env.env_state == EnvState.CRASH:
     return -1
   return 0
 
@@ -26,12 +26,16 @@ def get_reward_regulation(env):
     for i in range(env.NUM_VEHICLE_CONSIDERED):
       if obs_dict["exists_vehicle"][i] == 1 and \
          obs_dict["has_priority"][i] == 1 and \
-         (obs_dict["lane_relation_peer"][i] == 1 or obs_dict["lane_relation_conflict"][i] == 1):
+         (obs_dict["lane_relation_peer"][i] == 1 or obs_dict["lane_relation_conflict"][i] == 1) and \
+         obs_dict["dist_to_end_of_lane"][i] < 10 * obs_dict["speed"][i]:
         return -1
 
   return 0
 
 def get_reward_comfort(env):
+  if env.veh_dict_hist.size < 2:
+    return 0
+  
   if env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["edge_id"] == env.veh_dict_hist.get(-2)[env.EGO_VEH_ID]["edge_id"] and \
      env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["lane_id"] != env.veh_dict_hist.get(-2)[env.EGO_VEH_ID]["lane_id"]:
     return -1
@@ -50,4 +54,7 @@ def get_reward_comfort(env):
 
 def get_reward_speed(env):
   ego_max_speed = min(env.tc.vehicle.getAllowedSpeed(env.EGO_VEH_ID), env.MAX_VEH_SPEED)
-  return (env.ego_dict_hist.get(-1)["speed"] - ego_max_speed) / ego_max_speed
+  if env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["speed"] < ego_max_speed and \
+     env.action_hist.get(-1)["accel_level"].value <= ActionAccel.NOOP.value:
+       return -1
+  return 0

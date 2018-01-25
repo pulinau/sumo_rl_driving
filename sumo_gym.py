@@ -13,19 +13,23 @@ from include import *
 
 class History:
   def __init__(self, length):
-    self.history = []
+    self._history = []
+    self.size = 0
     self.length = length
     
   def add(self, current):
-    if len(self.history) >= self.length:
-      self.history = self.history[:-1]
-    self.history += [current]
+    if self.size >= self.length:
+      self._history = self._history[:-1]
+    else:
+      self.size += 1
+    self._history += [current]
 
   def reset(self):
-    self.history = []
+    self._history = []
+    self.size = 0
 
   def get(self, index):
-    return deepcopy(self.history[index])
+    return deepcopy(self._history[index])
 
 def class_vars(obj):
   return {k:v for k, v in inspect.getmembers(obj)
@@ -81,4 +85,4 @@ class MultiObjSumoEnv(SumoGymEnv):
     self.veh_dict_hist.add(get_veh_dict(self))
     self.obs_dict_hist.add(obs_dict)
     info = None
-    # return get_obs_and_rewards_list(self), self.done, info
+    return obs_dict, get_reward_list(self), self.env_state, info
