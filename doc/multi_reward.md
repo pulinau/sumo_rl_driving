@@ -25,9 +25,11 @@ Currently there are only a bunch of uncontrolled intersections in the road netwo
 
 Which translates to the following concrete rules:
   
-  * if the distance to the intersection is less than 3 meters AND there's traffic on the relevant lane AND on low priority road, then large negative reward for speed higher than 0
-  * if distance to the intersection is less than 3 meters, no lane change is allowed
-  * if there's no traffic ahead or beside in the correct lane OR distance from intersection is less than 3 meters, large negative reward for staying in the wrong lane
+  * if the distance to intersection is less than 0.5 meters AND there's traffic on the relevant lane AND on low priority road,  negative reward is given for ego speed higher than 0
+  * if the distance to intersection is less than 0.5 meters, negative reward for staying in the wrong lane (no lane change allowed within 0.5 meters from the intersection 
+  * if there's no traffic ahead or beside in the correct lane, 
+
+Some the regulations are difficult to encode in the form of traditional reward function, so we can consider making it rule based and output a series of acceptable actions, which is still compatible with the rest of the learning architecture
 
 ## `r_mission`
 help train the ego vehicle to learn the fastest route to get to the destination (not included in the current implementation).
@@ -36,7 +38,7 @@ help train the ego vehicle to learn the fastest route to get to the destination 
 The vehicle should be moving as close to the maximum speed as possible if situation allows.
 
 ## `r_comfort`
-Avoid jerk in speed. The reward is the negative of the speed variance in the last 10 steps.
+Avoid frequent lane change and jerk in speed. The reward is the negative of the speed variance in the last 10 steps.
 
 ## `r_curiosity`
 Novelty-based exploration. The reward is not hard-coded into the environment, rather, its generated dynamically depending on the ego vehicle's familiarity with the current implementation).

@@ -19,23 +19,28 @@ spaces.Dict({"ego_speed": spaces.Box(0, MAX_VEH_SPEED, shape=(1,)),
              "relative_position": spaces.Box(-OBSERVATION_RADIUS, OBSERVATION_RADIUS, (NUM_VEHICLE_CONSIDERED, 2)),
              "relative_heading": spaces.Box(-pi, pi, (NUM_VEHICLE_CONSIDERED,)),
              "has_priority": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED),
-             "veh_relation": spaces.MultiBinary(NUM_VEH_RELATION * NUM_VEHICLE_CONSIDERED)
+             "veh_relation_peer": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED),
+             "veh_relation_conflict": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED),
+             "veh_relation_next": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED),
+             "veh_relation_prev": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED),
+             "veh_relation_left": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED),
+             "veh_relation_right": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED),
+             "veh_relation_ahead": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED),
+             "veh_relation_behind": spaces.MultiBinary(NUM_VEHICLE_CONSIDERED)
              })
 ```
 
 `"veh relation"` describes the relation between the considered car and ego
-| `"veh_relation"` name          | index  | meaning                                                                 |
-| ------------------------------ | ------ | ----------------------------------------------------------------------- |
-| peer                           | 0      | shares the same next lane with ego                                      |
-| conflict                       | 1      | approaching/in the same intersection and its route conflict with ego    |
-| next                           | 3      | in the next lane of ego                                                 |
-| left                           | 4      | to the left of ego                                                      |
-| right                          | 5      | to the right of ego                                                     |
-| ahead                          | 6      | in the same lane with ego and ahead                                     |
-| behind                         | 7      | in the same lane with ego and behind                                    |
-| irrelevant                     | 8      | none of the above, e.g. opposite lane/in other intersection/no conflict |
-
-A vehicle can have several of the above relations with ego at the same time.
+| `"veh_relation"` name          | meaning                                                                 |
+| ------------------------------ | ----------------------------------------------------------------------- |
+| peer                           | shares the same next lane with ego                                      |
+| conflict                       | approaching/in the same intersection and its route conflict with ego    |
+| next                           | in the next lane of ego                                                 |
+| prev                           | in the next lane of ego                                                 |
+| left                           | to the left of ego                                                      |
+| right                          | to the right of ego                                                     |
+| ahead                          | in the same lane with ego and ahead                                     |
+| behind                         | in the same lane with ego and behind                                    |
 
 If we feed the observation space to a neural network, the weights connecting to the same key (of the observation space dictionary) 
 should be identical. If a vehicle doesn't exist, all the relevant field is set to zero
