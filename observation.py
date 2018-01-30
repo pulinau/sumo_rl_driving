@@ -7,18 +7,18 @@ from math import pi
 from include import *
 
 def get_observation_space(env):
-  observation_space = spaces.Dict({"ego_speed": spaces.Box(0, env.MAX_VEH_SPEED, shape=(1,)),
-             "ego_dist_to_end_of_lane": spaces.Box(0, float("inf"), shape=(1,)),
+  observation_space = spaces.Dict({"ego_speed": spaces.Box(0, env.MAX_VEH_SPEED, shape=(1,), dtype=np.float32),
+             "ego_dist_to_end_of_lane": spaces.Box(0, float("inf"), shape=(1,), dtype=np.float32),
              "ego_in_intersection": spaces.Discrete(2),
              "ego_exists_left_lane": spaces.Discrete(2),
              "ego_exists_right_lane": spaces.Discrete(2),
-             "ego_correct_lane_gap": spaces.Box(float("-inf"), float("inf"), shape=(1,)),
+             "ego_correct_lane_gap": spaces.Box(float("-inf"), float("inf"), shape=(1,), dtype=np.float32),
              "exists_vehicle": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
              "speed": spaces.Box(0, env.MAX_VEH_SPEED, (env.NUM_VEHICLE_CONSIDERED,)),  # absolute speed
-             "dist_to_end_of_lane": spaces.Box(0, float("inf"), (env.NUM_VEHICLE_CONSIDERED,)),
+             "dist_to_end_of_lane": spaces.Box(0, float("inf"), (env.NUM_VEHICLE_CONSIDERED,), dtype=np.float32),
              "in_intersection": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
-             "relative_position": spaces.Box(-env.OBSERVATION_RADIUS, env.OBSERVATION_RADIUS, (env.NUM_VEHICLE_CONSIDERED, 2)),
-             "relative_heading": spaces.Box(-pi, pi, (env.NUM_VEHICLE_CONSIDERED,)),
+             "relative_position": spaces.Box(-env.OBSERVATION_RADIUS, env.OBSERVATION_RADIUS, (env.NUM_VEHICLE_CONSIDERED, 2), dtype=np.float32),
+             "relative_heading": spaces.Box(-pi, pi, (env.NUM_VEHICLE_CONSIDERED,), dtype=np.float32),
              "has_priority": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
              "veh_relation_peer": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
              "veh_relation_conflict": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
@@ -241,6 +241,7 @@ def get_obs_dict(env):
     
     # vehicle has priority over ego if the vehicle is
     # approaching/in the same intersection and it's inside a lane of higher priority
+    # note that intersections (internal edges) are assigned the highest priority 
     if edge_dict[state_dict["edge_id"]]["to_node_id"] == edge_dict[ego_dict["edge_id"]]["to_node_id"] and \
        edge_dict[state_dict["edge_id"]]["priority"] > edge_dict[ego_dict["edge_id"]]["priority"]:
       obs_dict["has_priority"][veh_index] = 1
@@ -319,4 +320,3 @@ def internal_lane_id_between_lanes(from_lane_id, to_lane_id, lanelet_dict):
       if lane_id in lanelet_dict[to_lane_id]["prev_lane_id_list"]:
         return lane_id
     return None
-  

@@ -49,40 +49,53 @@ class SumoGymEnv(gym.Env):
     self.veh_dict_hist = History(2)
     self.obs_dict_hist = History(2)
     self.action_hist = History(2)
-    
-    sim_label = "sim" + str(random.randint(0, 65536))
-    traci.start(self.SUMO_CMD, label = sim_label)
-    self.tc = traci.getConnection(sim_label) 
-    self.tc.simulationStep()
-    disable_collision_check(self, self.EGO_VEH_ID)
-    pass
 
-  def _step(self, action):
+    try:  
+      sim_label = "sim" + str(random.randint(0, 65536))
+      traci.start(self.SUMO_CMD, label = sim_label)
+      self.tc = traci.getConnection(sim_label)
+    except (traci.FatalTraCIError, traci.TraCIException):
+      self.env_state = EnvState.ERROR
+      raise
+
+  def step(self, action):
     obs = 0
     done = 0
     reward = 0
     info = None
     return obs, reward, done, info
 
-  def _reset(self):
-    self.tc.close()
-    self.env_state = EnvState.NOT_STARTED
+  def reset(self):
     self.action_hist.reset()
     self.veh_dict_hist.reset()
     self.obs_dict_hist.reset()
-    sim_label = "sim" + str(random.randint(0, 65536))
-    traci.start(self.SUMO_CMD, label = sim_label)
-    self.tc = traci.getConnection(sim_label) 
+    try:
+      self.tc.load(self.SUMO_CMD[1:])
+      self.tc.simulationStep()
+      disable_collision_check(self, self.EGO_VEH_ID)
+      self.env_state = EnvState.NORMAL
+    except (traci.FatalTraCIError, traci.TraCIException):
+      self.env_state = EnvState.ERROR
+      raise
 
-  def _close(self):
-    self.tc.close()
+  def close(self):
+    try:  
+      self.tc.close()
+    except (traci.FatalTraCIError, traci.TraCIException):
+      self.env_state = EnvState.ERROR
+      raise
     
 class MultiObjSumoEnv(SumoGymEnv):
   def step(self, action):
-    self.env_state = act(self, self.EGO_VEH_ID, action)
-    obs_dict =  get_obs_dict(self)
-    self.action_hist.add(action)
-    self.veh_dict_hist.add(get_veh_dict(self))
-    self.obs_dict_hist.add(obs_dict)
+    assert self.env_state == EnvState.NORMAL, "env.env_state is not EnvState.NORMAL"
+    try:
+      self.env_state = act(self, self.EGO_VEH_ID, action)
+      obs_dict =  get_obs_dict(self)
+      self.action_hist.add(action)
+      self.veh_dict_hist.add(get_veh_dict(self))
+      self.obs_dict_hist.add(obs_dict)
+    except (traci.FatalTraCIError, traci.TraCIException):
+      self.env_state = EnvState.ERROR
+      raise    
     info = None
     return obs_dict, get_reward_list(self), self.env_state, info
