@@ -89,5 +89,8 @@ def act(env, veh_id, action):
   if env.tc.simulation.getCollidingVehiclesNumber() > 0:
     if veh_id in env.tc.simulation.getCollidingVehiclesIDList():
       return EnvState.CRASH
+  # if the subject vehicle goes out of scene, set env.env_state to EnvState.DONE
+  if veh_id not in env.tc.vehicle.getIDList():
+    return EnvState.DONE
   
   return EnvState.NORMAL

@@ -71,6 +71,9 @@ class SumoGymEnv(gym.Env):
     self.obs_dict_hist.reset()
     try:
       self.tc.load(self.SUMO_CMD[1:])
+      # 1st time step starts the simulation, 
+      # 2nd makes sure that all initial vehicles (departure time < SUMO_TIME_STEP) are in scene
+      self.tc.simulationStep()
       self.tc.simulationStep()
       disable_collision_check(self, self.EGO_VEH_ID)
       self.env_state = EnvState.NORMAL
