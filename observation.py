@@ -8,26 +8,26 @@ from include import *
 
 def get_observation_space(env):
   observation_space = spaces.Dict({"ego_speed": spaces.Box(0, env.MAX_VEH_SPEED, shape=(1,), dtype=np.float32),
-             "ego_dist_to_end_of_lane": spaces.Box(0, float("inf"), shape=(1,), dtype=np.float32),
+             "ego_dist_to_end_of_lane": spaces.Box(0, env.OBSERVATION_RADIUS, shape=(1,), dtype=np.float32),
              "ego_in_intersection": spaces.Discrete(2),
              "ego_exists_left_lane": spaces.Discrete(2),
              "ego_exists_right_lane": spaces.Discrete(2),
-             "ego_correct_lane_gap": spaces.Box(float("-inf"), float("inf"), shape=(1,), dtype=np.float32),
-             "exists_vehicle": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
-             "speed": spaces.Box(0, env.MAX_VEH_SPEED, (env.NUM_VEHICLE_CONSIDERED,)),  # absolute speed
-             "dist_to_end_of_lane": spaces.Box(0, float("inf"), (env.NUM_VEHICLE_CONSIDERED,), dtype=np.float32),
-             "in_intersection": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
-             "relative_position": spaces.Box(-env.OBSERVATION_RADIUS, env.OBSERVATION_RADIUS, (env.NUM_VEHICLE_CONSIDERED, 2), dtype=np.float32),
-             "relative_heading": spaces.Box(-pi, pi, (env.NUM_VEHICLE_CONSIDERED,), dtype=np.float32),
-             "has_priority": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
-             "veh_relation_peer": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
-             "veh_relation_conflict": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
-             "veh_relation_next": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
-             "veh_relation_prev": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
-             "veh_relation_left": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
-             "veh_relation_right": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
-             "veh_relation_ahead": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED),
-             "veh_relation_behind": spaces.MultiBinary(env.NUM_VEHICLE_CONSIDERED)
+             "ego_correct_lane_gap": spaces.Box(-env.NUM_LANE_CONSIDERED, env.NUM_LANE_CONSIDERED, shape=(1,), dtype=np.int16),
+             "exists_vehicle": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "speed": spaces.Box(0, env.MAX_VEH_SPEED, (env.NUM_VEH_CONSIDERED,)),  # absolute speed
+             "dist_to_end_of_lane": spaces.Box(0, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),
+             "in_intersection": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "relative_position": spaces.Box(-env.OBSERVATION_RADIUS, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED, 2), dtype=np.float32),
+             "relative_heading": spaces.Box(-pi, pi, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),
+             "has_priority": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "veh_relation_peer": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "veh_relation_conflict": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "veh_relation_next": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "veh_relation_prev": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "veh_relation_left": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "veh_relation_right": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "veh_relation_ahead": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "veh_relation_behind": spaces.MultiBinary(env.NUM_VEH_CONSIDERED)
              })
   return observation_space
 
@@ -151,7 +151,7 @@ def get_obs_dict(env):
     lane_id_list_ego_next_normal_edge = []
     
   obs_dict["ego_speed"] = ego_dict["speed"]
-  obs_dict["ego_dist_to_end_of_lane"] = ego_dict["lane_length"] - ego_dict["lane_position"]
+  obs_dict["ego_dist_to_end_of_lane"] = min(ego_dict["lane_length"] - ego_dict["lane_position"], env.OBSERVATION_RADIUS)
   
   # lanes inside intersections have ids that start with ":"
   if ego_dict["lane_id"][0] == ":":
@@ -177,6 +177,10 @@ def get_obs_dict(env):
     for y in lane_id_list_ego_edge:
       if internal_lane_id_between_lanes(y, x, lanelet_dict)!= None:
         obs_dict["ego_correct_lane_gap"] = lanelet_dict[y]["lane_index"] - ego_dict["lane_index"]
+        if obs_dict["ego_correct_lane_gap"] > 0:
+          obs_dict["ego_correct_lane_gap"] = min(obs_dict["ego_correct_lane_gap"], env.NUM_LANE_CONSIDERED)
+        else:
+          obs_dict["ego_correct_lane_gap"] = max(obs_dict["ego_correct_lane_gap"], -env.NUM_LANE_CONSIDERED)
   
   # vehicles inside region of insterest
   def in_ROI(ego_position, veh_position):
@@ -190,22 +194,22 @@ def get_obs_dict(env):
   veh_id_list_ROI = [k for k, v in veh_dict.items() if k!=env.EGO_VEH_ID and in_ROI(ego_dict["position"], v["position"])]
 
   # now deal with the relavant vehicles
-  obs_dict["exists_vehicle"] = [0] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["speed"] = [0] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["dist_to_end_of_lane"] = [0] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["in_intersection"] = [0] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["relative_position"] = [[0, 0]] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["relative_heading"] = [0] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["has_priority"] = [0] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["veh_relation_peer"] = [0] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["veh_relation_conflict"] = [0] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["veh_relation_next"] = [0] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["veh_relation_prev"] = [0] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["veh_relation_left"] = [0] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["veh_relation_right"] = [0] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["veh_relation_ahead"] = [0] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["veh_relation_behind"] = [0] * env.NUM_VEHICLE_CONSIDERED
-  obs_dict["veh_relation_irrelevant"] = [0] * env.NUM_VEHICLE_CONSIDERED
+  obs_dict["exists_vehicle"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["speed"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["dist_to_end_of_lane"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["in_intersection"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["relative_position"] = [[0, 0]] * env.NUM_VEH_CONSIDERED
+  obs_dict["relative_heading"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["has_priority"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["veh_relation_peer"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["veh_relation_conflict"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["veh_relation_next"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["veh_relation_prev"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["veh_relation_left"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["veh_relation_right"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["veh_relation_ahead"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["veh_relation_behind"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["veh_relation_irrelevant"] = [0] * env.NUM_VEH_CONSIDERED
 
   # sort veh within ROI by distance to ego
   veh_heap = []
@@ -213,13 +217,13 @@ def get_obs_dict(env):
     state_dict = veh_dict[veh_id]
     heapq.heappush(veh_heap, (np.linalg.norm(np.array(state_dict["position"]) - np.array(ego_dict["position"])), veh_id))
   
-  for veh_index in range(min(env.NUM_VEHICLE_CONSIDERED, len(veh_heap))):
+  for veh_index in range(min(env.NUM_VEH_CONSIDERED, len(veh_heap))):
     _, veh_id = heapq.heappop(veh_heap)
     state_dict = veh_dict[veh_id]
     
     obs_dict["exists_vehicle"][veh_index] = 1
     obs_dict["speed"][veh_index] = state_dict["speed"]
-    obs_dict["dist_to_end_of_lane"][veh_index] = state_dict["lane_length"] - state_dict["lane_position"]
+    obs_dict["dist_to_end_of_lane"][veh_index] = min(state_dict["lane_length"] - state_dict["lane_position"], env.OBSERVATION_RADIUS)
     
     if state_dict["edge_id"][0] == ':':
       obs_dict["in_intersection"][veh_index] = 1

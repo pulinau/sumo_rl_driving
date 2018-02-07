@@ -18,7 +18,7 @@ for i in range(1):
     
     os.remove("trips.trips.xml")
 
-    period += 0.01
+    period = 2
     temp1_file_name = "temp1.rou.xml"
     randomTripArg = " -n test.net.xml -r " + temp1_file_name + \
                     ' --prefix 1_' + \

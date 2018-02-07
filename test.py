@@ -28,7 +28,7 @@ MAX_VEH_SPEED = 120
 #        observation
 # --------------------------
 NUM_LANE_CONSIDERED = 3 # number of lanes considered on each side of ego
-NUM_VEHICLE_CONSIDERED = 16
+NUM_VEH_CONSIDERED = 16
 OBSERVATION_RADIUS = 600
 
 # --------------------------
@@ -37,7 +37,7 @@ OBSERVATION_RADIUS = 600
 MAX_COMFORT_ACCEL = 10
 MAX_COMFORT_DECEL = 10
 
-config = SumoGymConfig(
+sumo_cfg = SumoGymConfig(
                # sumo
                SUMO_CMD, 
                SUMO_TIME_STEP, 
@@ -48,7 +48,7 @@ config = SumoGymConfig(
                MAX_VEH_SPEED, 
                # observation
                NUM_LANE_CONSIDERED, 
-               NUM_VEHICLE_CONSIDERED, 
+               NUM_VEH_CONSIDERED, 
                OBSERVATION_RADIUS, 
                # reward
                MAX_COMFORT_ACCEL, 

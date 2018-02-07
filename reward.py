@@ -8,7 +8,7 @@ def get_reward_list(env):
   r_regulation = get_reward_regulation(env)
   r_comfort = get_reward_comfort(env)
   r_speed = get_reward_speed(env)
-  return [r_safety, r_regulation, r_speed, r_comfort]
+  return [r_safety, r_regulation, r_comfort, r_speed]
   
 def get_reward_safety(env):
   if env.env_state == EnvState.CRASH:
@@ -38,8 +38,9 @@ def get_reward_comfort(env):
   if env.veh_dict_hist.size < 2:
     return r
   
-  if env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["edge_id"] == env.veh_dict_hist.get(-2)[env.EGO_VEH_ID]["edge_id"] and \
-     env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["lane_id"] != env.veh_dict_hist.get(-2)[env.EGO_VEH_ID]["lane_id"]:
+  if (env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["edge_id"] == env.veh_dict_hist.get(-2)[env.EGO_VEH_ID]["edge_id"] and 
+      env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["lane_id"] != env.veh_dict_hist.get(-2)[env.EGO_VEH_ID]["lane_id"]
+      ) or env.env_state == EnvState.CRASH:
     r += -0.5
   
   accel = (env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["speed"] - env.veh_dict_hist.get(-2)[env.EGO_VEH_ID]["speed"])/env.SUMO_TIME_STEP

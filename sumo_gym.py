@@ -3,11 +3,11 @@ __author__ = "Changjian Li"
 
 from copy import deepcopy
 import random
-import inspect
 
 from action import get_action_space, disable_collision_check, act, EnvState
 from observation import get_observation_space, get_veh_dict, get_obs_dict
 from reward import get_reward_list
+from utils import class_vars
 
 from include import *
 
@@ -31,9 +31,37 @@ class History:
   def get(self, index):
     return deepcopy(self._history[index])
 
-def class_vars(obj):
-  return {k:v for k, v in inspect.getmembers(obj)
-      if not k.startswith('__') and not callable(k)}
+class SumoCfg():
+  def __init__(self, 
+               # sumo
+               SUMO_CMD, 
+               SUMO_TIME_STEP, 
+               NET_XML_FILE, 
+               EGO_VEH_ID, 
+               MAX_VEH_ACCEL, 
+               MAX_VEH_DECEL, 
+               MAX_VEH_SPEED, 
+               # observation
+               NUM_LANE_CONSIDERED, 
+               NUM_VEH_CONSIDERED, 
+               OBSERVATION_RADIUS, 
+               # reward
+               MAX_COMFORT_ACCEL, 
+               MAX_COMFORT_DECEL):
+    self.SUMO_CMD = SUMO_CMD
+    self.SUMO_TIME_STEP = SUMO_TIME_STEP
+    self.NET_XML_FILE = NET_XML_FILE
+    self.EGO_VEH_ID = EGO_VEH_ID
+    self.MAX_VEH_ACCEL = MAX_VEH_ACCEL
+    self.MAX_VEH_DECEL = MAX_VEH_DECEL
+    self.MAX_VEH_SPEED = MAX_VEH_SPEED
+    
+    self.NUM_LANE_CONSIDERED = NUM_LANE_CONSIDERED
+    self.NUM_VEH_CONSIDERED = NUM_VEH_CONSIDERED
+    self.OBSERVATION_RADIUS = OBSERVATION_RADIUS
+    
+    self.MAX_COMFORT_ACCEL = MAX_COMFORT_ACCEL
+    self.MAX_COMFORT_DECEL = MAX_COMFORT_DECEL
 
 class SumoGymEnv(gym.Env):
   """SUMO environment"""
@@ -77,6 +105,7 @@ class SumoGymEnv(gym.Env):
       self.tc.simulationStep()
       disable_collision_check(self, self.EGO_VEH_ID)
       self.env_state = EnvState.NORMAL
+      return get_obs_dict(self)
     except (traci.FatalTraCIError, traci.TraCIException):
       self.env_state = EnvState.ERROR
       raise
