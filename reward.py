@@ -23,7 +23,7 @@ def get_reward_regulation(env):
     if obs_dict["ego_correct_lane_gap"] != 0:
       return -1
     
-    for i in range(env.NUM_VEHICLE_CONSIDERED):
+    for i in range(env.NUM_VEH_CONSIDERED):
       if obs_dict["exists_vehicle"][i] == 1 and \
          obs_dict["has_priority"][i] == 1 and \
          (obs_dict["veh_relation_peer"][i] == 1 or obs_dict["veh_relation_conflict"][i] == 1) and \

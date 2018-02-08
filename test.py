@@ -1,5 +1,4 @@
 #!python3
-from sumo_gym_config import *
 from action import *
 from observation import *
 from sumo_gym import *
@@ -37,7 +36,7 @@ OBSERVATION_RADIUS = 600
 MAX_COMFORT_ACCEL = 10
 MAX_COMFORT_DECEL = 10
 
-sumo_cfg = SumoGymConfig(
+sumo_cfg = SumoCfg(
                # sumo
                SUMO_CMD, 
                SUMO_TIME_STEP, 
@@ -55,7 +54,7 @@ sumo_cfg = SumoGymConfig(
                MAX_COMFORT_DECEL)
 
 
-env = MultiObjSumoEnv(config)
+env = MultiObjSumoEnv(sumo_cfg)
 env.reset()
 
 get_obs_dict(env)
