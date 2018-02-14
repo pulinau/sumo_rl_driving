@@ -74,6 +74,7 @@ class SumoGymEnv(gym.Env):
     self.obsevation_space = get_observation_space(self)
     
     self.env_state = EnvState.NOT_STARTED
+    self.agent_control = False # if the ego car is controlled by RL agent
     self.veh_dict_hist = History(2)
     self.obs_dict_hist = History(2)
     self.action_hist = History(2)

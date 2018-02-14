@@ -34,13 +34,13 @@ class DQNCfg():
     self.reshape = reshape
 
 class DQNAgent:
-  def __init__(self, dqn_cfg):
+  def __init__(self, sumo_cfg, dqn_cfg):
     _attrs = class_vars(dqn_cfg)
     for _attr in _attrs:
       setattr(self, _attr, getattr(dqn_cfg, _attr))
     
     self.memory = deque(maxlen = self.memory_size)
-    self.model = self._build_model(dqn_cfg)
+    self.model = self._build_model(sumo_cfg, dqn_cfg)
 
   def remember(self, state, action, reward, next_state, env_state):
     self.memory.append((state, action, reward, next_state, env_state))
@@ -55,7 +55,16 @@ class DQNAgent:
         out_action_set = out_action_set or {action}
     out_action_set = out_action_set or (set(np.where(act_values < self.threshold)[0]) and in_action_set)
     return out_action_set
-    
+  
+  def learn(self, state, action, reward, next_state, env_state):
+    target = reward
+    if env_state == EnvState.NORMAL:
+      target = (reward + self.gamma *
+                np.amax(self.model.predict(next_state)[0]))
+    target_f = self.model.predict(state)
+    target_f[0][action] = target
+    self.model.fit(state, target_f, epochs=1, verbose=0)
+  
   def replay(self, batch_size):
     minibatch = random.sample(self.memory, batch_size)
     for state, action, reward, next_state, env_state in minibatch:

@@ -5,8 +5,10 @@ from action import *
 from observation import *
 from sumo_gym import *
 
-from keras.models import Sequential
-from keras.layers import Dense
+import tensorflow as tf
+import keras
+from keras.layers import Input, Dense, Conv1D, Lambda
+from keras.models import Model, Sequential
 from keras.optimizers import Adam
 from keras import utils
 
@@ -46,69 +48,86 @@ OBSERVATION_RADIUS = 600
 MAX_COMFORT_ACCEL = 10
 MAX_COMFORT_DECEL = 10
 
-def build_model_safety(dqn_cfg):
-  model = Sequential()
-  model.add(Dense(8, input_dim=dqn_cfg.state_size, activation='sigmoid'))
-  model.add(Dense(8, activation='sigmoid'))
-  model.add(Dense(dqn_cfg.action_size, activation='linear'))
+def build_model_safety(sumo_cfg, dqn_cfg):
+  ego_input = Input(shape=(4, ))
+  env_input = Input(shape=(10*sumo_cfg.NUM_VEH_CONSIDERED, 1))
+  l1_0 = Dense(16, activation = None)(ego_input)
+  l1_1 = Conv1D(16, kernel_size = 10, 
+                strides = 10, padding = 'valid', 
+                activation = None)(env_input)
+  l1_1 = Lambda(lambda x: tf.reduce_sum(x, axis=1))(l1_1)
+  l1 = keras.layers.add([l1_0, l1_1])
+  l1 = keras.layers.Activation(activation="sigmoid")(l1)
+  l2 = Dense(16, activation='sigmoid')(l1)
+  y = Dense(dqn_cfg.action_size, activation='linear')(l2)
+  model = Model(inputs = [ego_input, env_input], outputs=y)
   model.compile(loss='mse',
                 optimizer=Adam(lr=0.001))
   return model
 
 def reshape_safety(sumo_cfg, obs_dict):
   """reshape gym observation to keras neural network input"""
-  out = np.array([], dtype = np.float32)
-  out  = np.append(out, np.array(obs_dict["ego_speed"])/sumo_cfg.MAX_VEH_SPEED)
-  out  = np.append(out, np.array(obs_dict["ego_dist_to_end_of_lane"])/sumo_cfg.OBSERVATION_RADIUS)
-  out  = np.append(out, np.array(obs_dict["ego_exists_left_lane"]))
-  out  = np.append(out, np.array(obs_dict["ego_exists_right_lane"]))
-  out  = np.append(out, np.array(obs_dict["exists_vehicle"]))
-  out  = np.append(out, np.array(obs_dict["speed"])/sumo_cfg.MAX_VEH_SPEED)
-  out  = np.append(out, np.array(obs_dict["dist_to_end_of_lane"])/sumo_cfg.OBSERVATION_RADIUS)
-  out  = np.append(out, np.reshape(np.array(obs_dict["relative_position"]), (-1, 1))/sumo_cfg.OBSERVATION_RADIUS)
-  out  = np.append(out, np.array(obs_dict["relative_heading"])/pi)
-  out  = np.append(out, np.array(obs_dict["veh_relation_left"]))
-  out  = np.append(out, np.array(obs_dict["veh_relation_right"]))
-  out  = np.append(out, np.array(obs_dict["veh_relation_ahead"]))
-  out  = np.append(out, np.array(obs_dict["veh_relation_behind"]))
-  return np.reshape(out, (1, -1)) 
+  out0 = np.array([], dtype = np.float32)
+  out0  = np.append(out0, np.array(obs_dict["ego_speed"])/sumo_cfg.MAX_VEH_SPEED)
+  out0  = np.append(out0, np.array(obs_dict["ego_dist_to_end_of_lane"])/sumo_cfg.OBSERVATION_RADIUS)
+  out0  = np.append(out0, np.array(obs_dict["ego_exists_left_lane"]))
+  out0  = np.append(out0, np.array(obs_dict["ego_exists_right_lane"]))
+  out1 = np.reshape(np.array([], dtype = np.float32), (0, sumo_cfg.NUM_VEH_CONSIDERED))
+  out1  = np.append(out1, np.array([obs_dict["exists_vehicle"]]), axis=0)
+  out1  = np.append(out1, np.array([obs_dict["speed"]])/sumo_cfg.MAX_VEH_SPEED, axis=0)
+  out1  = np.append(out1, np.array([obs_dict["dist_to_end_of_lane"]])/sumo_cfg.OBSERVATION_RADIUS, axis=0)
+  out1  = np.append(out1, np.array(obs_dict["relative_position"]).T/sumo_cfg.OBSERVATION_RADIUS, axis=0)
+  out1  = np.append(out1, np.array([obs_dict["relative_heading"]])/pi, axis=0)
+  out1  = np.append(out1, np.array([obs_dict["veh_relation_left"]]), axis=0)
+  out1  = np.append(out1, np.array([obs_dict["veh_relation_right"]]), axis=0)
+  out1  = np.append(out1, np.array([obs_dict["veh_relation_ahead"]]), axis=0)
+  out1  = np.append(out1, np.array([obs_dict["veh_relation_behind"]]), axis=0)
+  return [np.reshape(out0, (1,) + out0.shape), np.reshape(out1.T, (1, -1, 1))]
 
-def build_model_regulation(dqn_cfg):
-  model = Sequential()
-  model.add(Dense(24, input_dim=dqn_cfg.state_size, activation='sigmoid'))
-  model.add(Dense(24, activation='sigmoid'))
-  model.add(Dense(dqn_cfg.action_size, activation='linear'))
+def build_model_regulation(sumo_cfg, dqn_cfg):
+  ego_input = Input(shape=(6 + 2*sumo_cfg.NUM_LANE_CONSIDERED, ))
+  env_input = Input(shape=(16*sumo_cfg.NUM_VEH_CONSIDERED, 1))
+  l1_0 = Dense(24, activation = None)(ego_input)
+  l1_1 = Conv1D(24, kernel_size = 16, strides = 16, padding = 'valid', 
+                activation = None)(env_input)
+  l1_1 = Lambda(lambda x: tf.reduce_sum(x, axis=1))(l1_1)
+  l1 = keras.layers.add([l1_0, l1_1])
+  l1 = keras.layers.Activation(activation="sigmoid")(l1)
+  l2 = Dense(24, activation='sigmoid')(l1)
+  y = Dense(dqn_cfg.action_size, activation='linear')(l2)
+  model = Model(inputs = [ego_input, env_input], outputs=y)
   model.compile(loss='mse',
                 optimizer=Adam(lr=0.001))
   return model
 
 def reshape_regulation(sumo_cfg, obs_dict):
-  out = np.array([], dtype = np.float32)
-  out = np.append(out, np.array(obs_dict["ego_speed"])/sumo_cfg.MAX_VEH_SPEED)
-  out = np.append(out, np.array(obs_dict["ego_dist_to_end_of_lane"])/sumo_cfg.OBSERVATION_RADIUS)
-  out = np.append(out, np.array(obs_dict["ego_in_intersection"]))
-  out = np.append(out, np.array(obs_dict["ego_exists_left_lane"]))
-  out = np.append(out, np.array(obs_dict["ego_exists_right_lane"]))
-  out = np.append(out, utils.to_categorical(obs_dict["ego_correct_lane_gap"] + sumo_cfg.NUM_LANE_CONSIDERED, 
+  out0 = np.array([], dtype = np.float32)
+  out0 = np.append(out0, np.array(obs_dict["ego_speed"])/sumo_cfg.MAX_VEH_SPEED)
+  out0 = np.append(out0, np.array(obs_dict["ego_dist_to_end_of_lane"])/sumo_cfg.OBSERVATION_RADIUS)
+  out0 = np.append(out0, np.array(obs_dict["ego_in_intersection"]))
+  out0 = np.append(out0, np.array(obs_dict["ego_exists_left_lane"]))
+  out0 = np.append(out0, np.array(obs_dict["ego_exists_right_lane"]))
+  out0 = np.append(out0, utils.to_categorical(obs_dict["ego_correct_lane_gap"] + sumo_cfg.NUM_LANE_CONSIDERED, 
                                       2*sumo_cfg.NUM_LANE_CONSIDERED + 1))
-  out = np.append(out, np.array(obs_dict["exists_vehicle"]))
-  out = np.append(out, np.array(obs_dict["speed"])/sumo_cfg.MAX_VEH_SPEED)
-  out = np.append(out, np.array(obs_dict["dist_to_end_of_lane"])/sumo_cfg.OBSERVATION_RADIUS)
-  out = np.append(out, np.array(obs_dict["in_intersection"]))
-  out  = np.append(out, np.reshape(np.array(obs_dict["relative_position"]), (-1, 1))/env.OBSERVATION_RADIUS)
-  out  = np.append(out, np.array(obs_dict["relative_heading"])/pi)
-  out  = np.append(out, np.array(obs_dict["has_priority"]))
-  out  = np.append(out, np.array(obs_dict["veh_relation_peer"]))
-  out  = np.append(out, np.array(obs_dict["veh_relation_conflict"]))
-  out  = np.append(out, np.array(obs_dict["veh_relation_next"]))
-  out  = np.append(out, np.array(obs_dict["veh_relation_prev"]))
-  out  = np.append(out, np.array(obs_dict["veh_relation_left"]))
-  out  = np.append(out, np.array(obs_dict["veh_relation_right"]))
-  out  = np.append(out, np.array(obs_dict["veh_relation_ahead"]))
-  out  = np.append(out, np.array(obs_dict["veh_relation_behind"]))
-  return np.reshape(out, (1, -1)) 
+  out1 = np.reshape(np.array([], dtype = np.float32), (0, sumo_cfg.NUM_VEH_CONSIDERED))
+  out1 = np.append(out1, np.array([obs_dict["exists_vehicle"]]), axis=0)
+  out1 = np.append(out1, np.array([obs_dict["speed"]])/sumo_cfg.MAX_VEH_SPEED, axis=0)
+  out1 = np.append(out1, np.array([obs_dict["dist_to_end_of_lane"]])/sumo_cfg.OBSERVATION_RADIUS, axis=0)
+  out1 = np.append(out1, np.array([obs_dict["in_intersection"]]), axis=0)
+  out1  = np.append(out1, np.array(obs_dict["relative_position"]).T/sumo_cfg.OBSERVATION_RADIUS, axis=0)
+  out1  = np.append(out1, np.array([obs_dict["relative_heading"]])/pi, axis=0)
+  out1  = np.append(out1, np.array([obs_dict["has_priority"]]), axis=0)
+  out1  = np.append(out1, np.array([obs_dict["veh_relation_peer"]]), axis=0)
+  out1  = np.append(out1, np.array([obs_dict["veh_relation_conflict"]]), axis=0)
+  out1  = np.append(out1, np.array([obs_dict["veh_relation_next"]]), axis=0)
+  out1  = np.append(out1, np.array([obs_dict["veh_relation_prev"]]), axis=0)
+  out1  = np.append(out1, np.array([obs_dict["veh_relation_left"]]), axis=0)
+  out1  = np.append(out1, np.array([obs_dict["veh_relation_right"]]), axis=0)
+  out1  = np.append(out1, np.array([obs_dict["veh_relation_ahead"]]), axis=0)
+  out1  = np.append(out1, np.array([obs_dict["veh_relation_behind"]]), axis=0)
+  return [np.reshape(out0, (1, -1)), np.reshape(out1.T, (1, -1, 1))]
 
-def build_model_comfort(dqn_cfg):
+def build_model_comfort(sumo_cfg, dqn_cfg):
   model = Sequential()
   model.add(Dense(8, input_dim=dqn_cfg.state_size, activation='sigmoid'))
   model.add(Dense(8, activation='sigmoid'))
@@ -120,7 +139,7 @@ def build_model_comfort(dqn_cfg):
 def reshape_comfort(sumo_cfg, obs_dict):
   return np.reshape(np.array([0], dtype = np.float32), (1, -1)) 
 
-def build_model_speed(dqn_cfg):
+def build_model_speed(sumo_cfg, dqn_cfg):
   model = Sequential()
   model.add(Dense(8, input_dim=dqn_cfg.state_size, activation='sigmoid'))
   model.add(Dense(8, activation='sigmoid'))
@@ -193,12 +212,12 @@ sumo_cfg = SumoCfg(
 
 env = MultiObjSumoEnv(sumo_cfg)
 
-agent_list = [DQNAgent(cfg_safety), DQNAgent(cfg_regulation), DQNAgent(cfg_comfort), DQNAgent(cfg_speed)]
+agent_list = [DQNAgent(sumo_cfg, cfg_safety), DQNAgent(sumo_cfg, cfg_regulation), DQNAgent(sumo_cfg, cfg_comfort), DQNAgent(sumo_cfg, cfg_speed)]
 
 # agent.load("./save/cartpole-dqn.h5")
 
 env_state = EnvState.NORMAL
-batch_size = 32
+batch_size = 1
 
 for e in range(EPISODES):
   obs_dict = env.reset()
@@ -209,11 +228,16 @@ for e in range(EPISODES):
     action_set = set(range(action_size))
     for agt, state in zip(agent_list, state_list):
       action_set = agt.get_action_set(state, action_set)
-    action = random.sample(action_set, 1)[0]
+    if len(action_set) >= 1:
+      action = random.sample(action_set, 1)[0]
+    else:
+      print("no action available")
+      action = random.randint(0, action_size-1)
     next_obs_dict, reward_list, env_state, _ = env.step({"lane_change":ActionLaneChange(action//7), "accel_level":ActionAccel(action%7)})
     next_state_list = [agt.reshape(sumo_cfg, next_obs_dict) for agt in agent_list]
     for agt, state, reward, next_state in zip(agent_list, state_list, reward_list, next_state_list):
       agt.remember(state, action, reward, next_state, env_state)
+      agt.learn(state, action, reward, next_state, env_state)
     
     if env_state != EnvState.NORMAL:
       print("episode: {}/{}, step: {}"
@@ -226,4 +250,7 @@ for e in range(EPISODES):
       if e % 10 == 0:
         agt.save()
     state_list = next_state_list
+    
+    print("memory: ", agt.memory)
+    print("lane_change: ", ActionLaneChange(action//7), "accel_level: ", ActionAccel(action%7))
 

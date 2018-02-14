@@ -22,7 +22,7 @@ def is_illegal_action(env, veh_id, action):
   num_lanes_veh_edge = env.tc.edge.getLaneNumber(env.tc.vehicle.getRoadID(veh_id))
   if (action["lane_change"] == ActionLaneChange.LEFT and env.tc.vehicle.getLaneIndex(veh_id) == num_lanes_veh_edge - 1) or \
      (action["lane_change"] == ActionLaneChange.RIGHT and env.tc.vehicle.getLaneIndex(veh_id) == 0):
-    return True
+    return Trueestablished control topics, corrections to papers and notes published in the Transactions.
   return False 
 
 def is_invalid_action(env, veh_id, action):
@@ -78,7 +78,8 @@ def act(env, veh_id, action):
   elif accel_level.value < ActionAccel.NOOP.value:
     ego_next_speed = dec_speed(ego_speed, (-accel_level.value + ActionAccel.NOOP.value)/len(ActionAccel) * ego_max_decel * env.SUMO_TIME_STEP, 0)
     env.tc.vehicle.slowDown(veh_id, ego_next_speed, int(env.SUMO_TIME_STEP * 1000)-1)
-  else:
+  elif env.agent_control == True: 
+    #if the car is controlled by RL agent, then ActionAccel.NOOP maintains the current speed
     ego_next_speed = ego_speed
     env.tc.vehicle.slowDown(veh_id, ego_next_speed, int(env.SUMO_TIME_STEP * 1000))
 
