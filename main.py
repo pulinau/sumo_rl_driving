@@ -31,9 +31,9 @@ SUMO_CMD = [SUMO_BIN, "-c", SUMO_CONFIG,
 NET_XML_FILE = "/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test.net.xml"
 
 EGO_VEH_ID = "ego"
-MAX_VEH_ACCEL = 20
-MAX_VEH_DECEL = 20
-MAX_VEH_SPEED = 120
+MAX_VEH_ACCEL = 2.6
+MAX_VEH_DECEL = 4.5
+MAX_VEH_SPEED = 55.55
 
 # --------------------------
 #        observation
@@ -45,8 +45,8 @@ OBSERVATION_RADIUS = 600
 # --------------------------
 #         reward
 # --------------------------
-MAX_COMFORT_ACCEL = 10
-MAX_COMFORT_DECEL = 10
+MAX_COMFORT_ACCEL = 2.0
+MAX_COMFORT_DECEL = 2.0
 
 def build_model_safety(sumo_cfg, dqn_cfg):
   ego_input = Input(shape=(4, ))
