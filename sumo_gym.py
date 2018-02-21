@@ -4,7 +4,7 @@ __author__ = "Changjian Li"
 from copy import deepcopy
 import random
 
-from action import get_action_space, disable_collision_check, act, EnvState
+from action import get_action_space, disable_collision_check, enable_collision_check, act, EnvState
 from observation import get_observation_space, get_veh_dict, get_obs_dict
 from reward import get_reward_list
 from utils import class_vars
@@ -74,7 +74,7 @@ class SumoGymEnv(gym.Env):
     self.obsevation_space = get_observation_space(self)
     
     self.env_state = EnvState.NOT_STARTED
-    self.agent_control = False # if the ego car is controlled by RL agent
+    self._agt_ctrl = False # if the ego car is controlled by RL agent
     self.veh_dict_hist = History(2)
     self.obs_dict_hist = History(2)
     self.action_hist = History(2)
@@ -87,6 +87,20 @@ class SumoGymEnv(gym.Env):
       self.env_state = EnvState.ERROR
       raise
 
+  @property
+  def agt_ctrl(self):
+    return self._agt_ctrl
+  @agt_ctrl.setter
+  def agt_ctrl(self, value):
+    if value == True:
+      disable_collision_check(self, self.EGO_VEH_ID)
+      self._agt_ctrl = value
+    elif value == False:
+      enable_collision_check(self, self.EGO_VEH_ID)
+      self._agt_ctrl = value
+    else:
+      raise ValueError("SumoGymEnv.agt_ctrl must be either True or False")
+      
   def step(self, action):
     obs = 0
     done = 0
@@ -104,7 +118,9 @@ class SumoGymEnv(gym.Env):
       # 2nd makes sure that all initial vehicles (departure time < SUMO_TIME_STEP) are in scene
       self.tc.simulationStep()
       self.tc.simulationStep()
-      disable_collision_check(self, self.EGO_VEH_ID)
+      self.veh_dict_hist.add(get_veh_dict(self))
+      self.obs_dict_hist.add(get_obs_dict(self))      
+      self.agt_ctrl = True
       self.env_state = EnvState.NORMAL
       return get_obs_dict(self)
     except (traci.FatalTraCIError, traci.TraCIException):
@@ -123,9 +139,14 @@ class MultiObjSumoEnv(SumoGymEnv):
     assert self.env_state == EnvState.NORMAL, "env.env_state is not EnvState.NORMAL"
     try:
       self.env_state = act(self, self.EGO_VEH_ID, action)
-      obs_dict =  get_obs_dict(self)
+      if self.env_state == EnvState.DONE:
+        obs_dict = self.obs_dict_hist.get(-1)
+        veh_dict = self.veh_dict_hist.get(-1)
+      else:
+        obs_dict =  get_obs_dict(self)
+        veh_dict = get_veh_dict(self)
       self.action_hist.add(action)
-      self.veh_dict_hist.add(get_veh_dict(self))
+      self.veh_dict_hist.add(veh_dict)
       self.obs_dict_hist.add(obs_dict)
     except (traci.FatalTraCIError, traci.TraCIException):
       self.env_state = EnvState.ERROR

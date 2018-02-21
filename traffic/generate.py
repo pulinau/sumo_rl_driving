@@ -7,7 +7,7 @@ randomTrip = "~/project/sumo-bin/tools/randomTrips.py"
 #mean = "4"
 #" --binomial=" + mean + \
 
-for i in range(1):
+for i in range(1024):
     period = random.randrange(2, 6)/1000
     temp0_file_name = "temp0.rou.xml"
     randomTripArg = " -n test.net.xml -r " + temp0_file_name + \

@@ -24,7 +24,7 @@ SUMO_CONFIG = "/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test.sumocfg"
 SUMO_TIME_STEP = 0.1
 SUMO_CMD = [SUMO_BIN, "-c", SUMO_CONFIG, 
             "--time-to-teleport", "-1", 
-            "--collision.action", "warn", 
+            "--collision.action", "none", 
             "--collision.check-junctions", "true", 
             "--step-length", str(SUMO_TIME_STEP)]
 #            "--lanechange.duration", "2"]
@@ -57,9 +57,10 @@ def build_model_safety(sumo_cfg, dqn_cfg):
                 activation = None)(env_input)
   l1_1 = Lambda(lambda x: tf.reduce_sum(x, axis=1))(l1_1)
   l1 = keras.layers.add([l1_0, l1_1])
-  l1 = keras.layers.Activation(activation="sigmoid")(l1)
+  l1 = keras.layers.Activation(activation="relu")(l1)
   l2 = Dense(16, activation='sigmoid')(l1)
-  y = Dense(dqn_cfg.action_size, activation='linear')(l2)
+  l3 = Dense(16, activation='sigmoid')(l2)
+  y = Dense(dqn_cfg.action_size, activation='linear')(l3)
   model = Model(inputs = [ego_input, env_input], outputs=y)
   model.compile(loss='mse',
                 optimizer=Adam(lr=0.001))
@@ -92,9 +93,10 @@ def build_model_regulation(sumo_cfg, dqn_cfg):
                 activation = None)(env_input)
   l1_1 = Lambda(lambda x: tf.reduce_sum(x, axis=1))(l1_1)
   l1 = keras.layers.add([l1_0, l1_1])
-  l1 = keras.layers.Activation(activation="sigmoid")(l1)
-  l2 = Dense(24, activation='sigmoid')(l1)
-  y = Dense(dqn_cfg.action_size, activation='linear')(l2)
+  l1 = keras.layers.Activation(activation="relu")(l1)
+  l2 = Dense(16, activation='sigmoid')(l1)
+  l3 = Dense(16, activation='sigmoid')(l2)
+  y = Dense(dqn_cfg.action_size, activation='linear')(l3)
   model = Model(inputs = [ego_input, env_input], outputs=y)
   model.compile(loss='mse',
                 optimizer=Adam(lr=0.001))
@@ -210,6 +212,44 @@ sumo_cfg = SumoCfg(
                MAX_COMFORT_ACCEL, 
                MAX_COMFORT_DECEL)
 
+def infer_action(env):
+  veh_dict = env.veh_dict_hist.get(-2)
+  new_veh_dict = env.veh_dict_hist.get(-1)
+  if new_veh_dict[env.EGO_VEH_ID]["edge_id"] == veh_dict[env.EGO_VEH_ID]["edge_id"]:
+    if new_veh_dict[env.EGO_VEH_ID]["lane_index"] - veh_dict[env.EGO_VEH_ID]["lane_index"] == 1:
+      lane_change = ActionLaneChange.LEFT.value 
+    elif new_veh_dict[env.EGO_VEH_ID]["lane_index"] - veh_dict[env.EGO_VEH_ID]["lane_index"] == -1:
+      lane_change = ActionLaneChange.RIGHT.value
+    else:
+      lane_change = ActionLaneChange.NOOP.value
+  else:
+    lane_change = ActionLaneChange.NOOP.value
+  ego_max_accel = min(env.tc.vehicle.getAccel(env.EGO_VEH_ID), env.MAX_VEH_ACCEL)
+  ego_max_decel = min(env.tc.vehicle.getDecel(env.EGO_VEH_ID), env.MAX_VEH_DECEL)
+  accel = (new_veh_dict[env.EGO_VEH_ID]["speed"] - veh_dict[env.EGO_VEH_ID]["speed"])/env.SUMO_TIME_STEP
+  if accel >= 0:
+    if accel/ego_max_accel <= 1/6:
+      accel_level = ActionAccel.NOOP.value
+    elif accel/ego_max_accel > 1/6 and accel/ego_max_accel <= 1/2:
+      accel_level = ActionAccel.MINACCEL.value
+    elif accel/ego_max_accel > 1/2 and accel/ego_max_accel <= 5/6:
+      accel_level = ActionAccel.MEDACCEL.value
+    else:
+      accel_level = ActionAccel.MAXACCEL.value
+  if accel < 0:
+    accel = -accel
+    if accel/ego_max_decel <= 1/6:
+      accel_level = ActionAccel.NOOP.value
+    elif accel/ego_max_accel > 1/6 and accel/ego_max_accel <= 1/2:
+      accel_level = ActionAccel.MINDECEL.value
+    elif accel/ego_max_accel > 1/2 and accel/ego_max_accel <= 5/6:
+      accel_level = ActionAccel.MEDDECEL.value
+    else:
+      accel_level = ActionAccel.MAXDECEL.value
+  action = lane_change*7 + accel_level
+  return action
+
+
 env = MultiObjSumoEnv(sumo_cfg)
 
 agent_list = [DQNAgent(sumo_cfg, cfg_safety), DQNAgent(sumo_cfg, cfg_regulation), DQNAgent(sumo_cfg, cfg_comfort), DQNAgent(sumo_cfg, cfg_speed)]
@@ -217,27 +257,42 @@ agent_list = [DQNAgent(sumo_cfg, cfg_safety), DQNAgent(sumo_cfg, cfg_regulation)
 # agent.load("./save/cartpole-dqn.h5")
 
 env_state = EnvState.NORMAL
-batch_size = 1
+batch_size = 64
+
+EPISODES = 10000
 
 for e in range(EPISODES):
   obs_dict = env.reset()
   state_list = [agt.reshape(sumo_cfg, obs_dict) for agt in agent_list]
   
-  
   for step in range(6400):
-    action_set = set(range(action_size))
-    for agt, state in zip(agent_list, state_list):
-      action_set = agt.get_action_set(state, action_set)
-    if len(action_set) >= 1:
-      action = random.sample(action_set, 1)[0]
+    print(step, env.agt_ctrl)
+    if env.agt_ctrl == True:
+      action_set = set(range(action_size))
+      for agt, state in zip(agent_list, state_list):
+        action_set = agt.get_action_set(state, action_set)
+      if len(action_set) >= 1:
+        action = random.sample(action_set, 1)[0]
+      else:
+        print("no action available")
+        action = random.randint(0, action_size-1)
     else:
-      print("no action available")
-      action = random.randint(0, action_size-1)
+      action = 3 # {"lane_change":ActionLaneChange(action//7), "accel_level":ActionAccel(action%7)}
     next_obs_dict, reward_list, env_state, _ = env.step({"lane_change":ActionLaneChange(action//7), "accel_level":ActionAccel(action%7)})
     next_state_list = [agt.reshape(sumo_cfg, next_obs_dict) for agt in agent_list]
+    if env.agt_ctrl == False:
+      action = infer_action(env)
     for agt, state, reward, next_state in zip(agent_list, state_list, reward_list, next_state_list):
       agt.remember(state, action, reward, next_state, env_state)
       agt.learn(state, action, reward, next_state, env_state)
+    
+    print({"lane_change":ActionLaneChange(action//7), "accel_level":ActionAccel(action%7)}, reward_list, env_state)
+    
+    if random.uniform(0, 1) < 0.1:
+      if env.agt_ctrl == True:
+        env.agt_ctrl = False
+      else:
+        env.agt_ctrl = True
     
     if env_state != EnvState.NORMAL:
       print("episode: {}/{}, step: {}"
@@ -251,6 +306,7 @@ for e in range(EPISODES):
         agt.save()
     state_list = next_state_list
     
-    print("memory: ", agt.memory)
-    print("lane_change: ", ActionLaneChange(action//7), "accel_level: ", ActionAccel(action%7))
+    #print("memory: ", agt.memory)
+    #print("lane_change: ", ActionLaneChange(action//7), "accel_level: ", ActionAccel(action%7))
+    
 

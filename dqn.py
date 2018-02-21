@@ -10,8 +10,6 @@ from keras.layers import Dense
 from keras.optimizers import Adam
 import inspect
 
-EPISODES = 1000
-
 class DQNCfg():
   def __init__(self, 
                name, 
