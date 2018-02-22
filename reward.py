@@ -42,18 +42,21 @@ def get_reward_comfort(env):
       env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["lane_id"] != env.veh_dict_hist.get(-2)[env.EGO_VEH_ID]["lane_id"]
       ) or env.env_state == EnvState.CRASH:
     r += -0.5
+
+  ego_max_accel = min(env.tc.vehicle.getAccel(env.EGO_VEH_ID), env.MAX_VEH_ACCEL)
+  ego_max_decel = min(env.tc.vehicle.getDecel(env.EGO_VEH_ID), env.MAX_VEH_DECEL)  
   
   accel = (env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["speed"] - env.veh_dict_hist.get(-2)[env.EGO_VEH_ID]["speed"])/env.SUMO_TIME_STEP
   if accel > 0 and abs(accel) > env.MAX_COMFORT_ACCEL:
-    r += -0.5 * (abs(accel) - env.MAX_COMFORT_ACCEL)/(env.MAX_VEH_ACCEL - env.MAX_COMFORT_ACCEL)
+    r += -0.5 * (abs(accel) - env.MAX_COMFORT_ACCEL)/(ego_max_accel - env.MAX_COMFORT_ACCEL)
   elif accel < 0 and abs(accel) > env.MAX_COMFORT_DECEL:
-    r += -0.5 * (abs(accel) - env.MAX_COMFORT_DECEL)/(env.MAX_VEH_DECEL - env.MAX_COMFORT_DECEL)
+    r += -0.5 * (abs(accel) - env.MAX_COMFORT_DECEL)/(ego_max_decel - env.MAX_COMFORT_DECEL)
 
   return r
   
 def get_reward_speed(env):
   ego_max_speed = min(env.tc.vehicle.getAllowedSpeed(env.EGO_VEH_ID), env.MAX_VEH_SPEED)
   if env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["speed"] < ego_max_speed and \
-     env.action_hist.get(-1)["accel_level"].value <= ActionAccel.NOOP.value:
+     env.action_dict_hist.get(-1)["accel_level"].value <= ActionAccel.NOOP.value:
        return -1
   return 0
