@@ -212,44 +212,6 @@ sumo_cfg = SumoCfg(
                MAX_COMFORT_ACCEL, 
                MAX_COMFORT_DECEL)
 
-def infer_action(env):
-  veh_dict = env.veh_dict_hist.get(-2)
-  new_veh_dict = env.veh_dict_hist.get(-1)
-  if new_veh_dict[env.EGO_VEH_ID]["edge_id"] == veh_dict[env.EGO_VEH_ID]["edge_id"]:
-    if new_veh_dict[env.EGO_VEH_ID]["lane_index"] - veh_dict[env.EGO_VEH_ID]["lane_index"] == 1:
-      lane_change = ActionLaneChange.LEFT.value 
-    elif new_veh_dict[env.EGO_VEH_ID]["lane_index"] - veh_dict[env.EGO_VEH_ID]["lane_index"] == -1:
-      lane_change = ActionLaneChange.RIGHT.value
-    else:
-      lane_change = ActionLaneChange.NOOP.value
-  else:
-    lane_change = ActionLaneChange.NOOP.value
-  ego_max_accel = min(env.tc.vehicle.getAccel(env.EGO_VEH_ID), env.MAX_VEH_ACCEL)
-  ego_max_decel = min(env.tc.vehicle.getDecel(env.EGO_VEH_ID), env.MAX_VEH_DECEL)
-  accel = (new_veh_dict[env.EGO_VEH_ID]["speed"] - veh_dict[env.EGO_VEH_ID]["speed"])/env.SUMO_TIME_STEP
-  if accel >= 0:
-    if accel/ego_max_accel <= 1/6:
-      accel_level = ActionAccel.NOOP.value
-    elif accel/ego_max_accel > 1/6 and accel/ego_max_accel <= 1/2:
-      accel_level = ActionAccel.MINACCEL.value
-    elif accel/ego_max_accel > 1/2 and accel/ego_max_accel <= 5/6:
-      accel_level = ActionAccel.MEDACCEL.value
-    else:
-      accel_level = ActionAccel.MAXACCEL.value
-  if accel < 0:
-    accel = -accel
-    if accel/ego_max_decel <= 1/6:
-      accel_level = ActionAccel.NOOP.value
-    elif accel/ego_max_accel > 1/6 and accel/ego_max_accel <= 1/2:
-      accel_level = ActionAccel.MINDECEL.value
-    elif accel/ego_max_accel > 1/2 and accel/ego_max_accel <= 5/6:
-      accel_level = ActionAccel.MEDDECEL.value
-    else:
-      accel_level = ActionAccel.MAXDECEL.value
-  action = lane_change*7 + accel_level
-  return action
-
-
 env = MultiObjSumoEnv(sumo_cfg)
 
 agent_list = [DQNAgent(sumo_cfg, cfg_safety), DQNAgent(sumo_cfg, cfg_regulation), DQNAgent(sumo_cfg, cfg_comfort), DQNAgent(sumo_cfg, cfg_speed)]
@@ -267,26 +229,23 @@ for e in range(EPISODES):
   
   for step in range(6400):
     print(step, env.agt_ctrl)
-    if env.agt_ctrl == True:
-      action_set = set(range(action_size))
-      for agt, state in zip(agent_list, state_list):
-        action_set = agt.get_action_set(state, action_set)
-      if len(action_set) >= 1:
-        action = random.sample(action_set, 1)[0]
-      else:
-        print("no action available")
-        action = random.randint(0, action_size-1)
+    action_set = set(range(action_size))
+    for agt, state in zip(agent_list, state_list):
+      action_set = agt.get_action_set(state, action_set)
+    if len(action_set) >= 1:
+      action = random.sample(action_set, 1)[0]
     else:
-      action = 3 # {"lane_change":ActionLaneChange(action//7), "accel_level":ActionAccel(action%7)}
-    next_obs_dict, reward_list, env_state, _ = env.step({"lane_change":ActionLaneChange(action//7), "accel_level":ActionAccel(action%7)})
+      print("*****************ERROR************************")
+    
+    next_obs_dict, reward_list, env_state, action_dict = env.step({"lane_change":ActionLaneChange(action//7), "accel_level":ActionAccel(action%7)})
+    action = action_dict["lane_change"].value*7 + action_dict["accel_level"].value
     next_state_list = [agt.reshape(sumo_cfg, next_obs_dict) for agt in agent_list]
-    if env.agt_ctrl == False:
-      action = infer_action(env)
+    
     for agt, state, reward, next_state in zip(agent_list, state_list, reward_list, next_state_list):
       agt.remember(state, action, reward, next_state, env_state)
       agt.learn(state, action, reward, next_state, env_state)
     
-    print({"lane_change":ActionLaneChange(action//7), "accel_level":ActionAccel(action%7)}, reward_list, env_state)
+    print(action_dict, reward_list, env_state)
     
     if random.uniform(0, 1) < 0.1:
       if env.agt_ctrl == True:
@@ -299,7 +258,7 @@ for e in range(EPISODES):
             .format(e, EPISODES, step))
       break
     
-    for agt in agent_list:  
+    for agt in agent_list: 
       if len(agt.memory) > batch_size:
         agt.replay(batch_size)
       if e % 10 == 0:
@@ -308,5 +267,3 @@ for e in range(EPISODES):
     
     #print("memory: ", agt.memory)
     #print("lane_change: ", ActionLaneChange(action//7), "accel_level: ", ActionAccel(action%7))
-    
-

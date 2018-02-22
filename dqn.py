@@ -46,12 +46,13 @@ class DQNAgent:
   def get_action_set(self, state, in_action_set):
     act_values = self.model.predict(state)[0]
     if np.all(act_values < self.threshold):
+      print("no available action for" + self.name)
       return in_action_set
     out_action_set = set()
     for action in in_action_set:
       if np.random.rand() <= self.epsilon:
         out_action_set = out_action_set or {action}
-    out_action_set = out_action_set or (set(np.where(act_values < self.threshold)[0]) and in_action_set)
+    out_action_set = out_action_set or (set(np.where(act_values > self.threshold)[0]) and in_action_set)
     return out_action_set
   
   def learn(self, state, action, reward, next_state, env_state):

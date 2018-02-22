@@ -4,7 +4,7 @@ __author__ = "Changjian Li"
 from copy import deepcopy
 import random
 
-from action import get_action_space, disable_collision_check, enable_collision_check, act, EnvState
+from action import get_action_space, disable_collision_check, enable_collision_check, act, infer_action
 from observation import get_observation_space, get_veh_dict, get_obs_dict
 from reward import get_reward_list
 from utils import class_vars
@@ -77,7 +77,7 @@ class SumoGymEnv(gym.Env):
     self._agt_ctrl = False # if the ego car is controlled by RL agent
     self.veh_dict_hist = History(2)
     self.obs_dict_hist = History(2)
-    self.action_hist = History(2)
+    self.action_dict_hist = History(2)
 
     try:  
       sim_label = "sim" + str(random.randint(0, 65536))
@@ -109,7 +109,7 @@ class SumoGymEnv(gym.Env):
     return obs, reward, done, info
 
   def reset(self):
-    self.action_hist.reset()
+    self.action_dict_hist.reset()
     self.veh_dict_hist.reset()
     self.obs_dict_hist.reset()
     try:
@@ -135,21 +135,23 @@ class SumoGymEnv(gym.Env):
       raise
     
 class MultiObjSumoEnv(SumoGymEnv):
-  def step(self, action):
+  def step(self, action_dict):
     assert self.env_state == EnvState.NORMAL, "env.env_state is not EnvState.NORMAL"
     try:
-      self.env_state = act(self, self.EGO_VEH_ID, action)
+      self.env_state = act(self, self.EGO_VEH_ID, action_dict)
       if self.env_state == EnvState.DONE:
         obs_dict = self.obs_dict_hist.get(-1)
         veh_dict = self.veh_dict_hist.get(-1)
       else:
         obs_dict =  get_obs_dict(self)
         veh_dict = get_veh_dict(self)
-      self.action_hist.add(action)
+      if self.agt_ctrl == False:
+        action_dict = infer_action(self)      
+      self.action_dict_hist.add(action_dict)
       self.veh_dict_hist.add(veh_dict)
       self.obs_dict_hist.add(obs_dict)
     except (traci.FatalTraCIError, traci.TraCIException):
       self.env_state = EnvState.ERROR
       raise    
-    info = None
+    info = action_dict
     return obs_dict, get_reward_list(self), self.env_state, info
