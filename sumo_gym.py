@@ -1,7 +1,6 @@
 #!python3
 __author__ = "Changjian Li"
 
-from copy import deepcopy
 import random
 
 from action import get_action_space, disable_collision_check, enable_collision_check, act, infer_action
@@ -12,23 +11,26 @@ from utils import class_vars
 from include import *
 
 class History:
+  from copy import deepcopy
   def __init__(self, length):
     self._history = []
     self.size = 0
     self.length = length
     
   def add(self, current):
+    from copy import deepcopy
     if self.size >= self.length:
-      self._history = self._history[:-1]
+      self._history = self._history[1:]
     else:
       self.size += 1
-    self._history += [current]
+    self._history += [deepcopy(current)]
 
   def reset(self):
     self._history = []
     self.size = 0
 
   def get(self, index):
+    from copy import deepcopy
     return deepcopy(self._history[index])
 
 class SumoCfg():
@@ -74,7 +76,7 @@ class SumoGymEnv(gym.Env):
     self.obsevation_space = get_observation_space(self)
     
     self.env_state = EnvState.NOT_STARTED
-    self._agt_ctrl = False # if the ego car is controlled by RL agent
+    self._agt_ctrl = False # whether the ego car is controlled by RL agent
     self.veh_dict_hist = History(2)
     self.obs_dict_hist = History(2)
     self.action_dict_hist = History(2)
@@ -145,11 +147,11 @@ class MultiObjSumoEnv(SumoGymEnv):
       else:
         obs_dict =  get_obs_dict(self)
         veh_dict = get_veh_dict(self)
+      self.veh_dict_hist.add(veh_dict)
+      self.obs_dict_hist.add(obs_dict)
       if self.agt_ctrl == False:
         action_dict = infer_action(self)      
       self.action_dict_hist.add(action_dict)
-      self.veh_dict_hist.add(veh_dict)
-      self.obs_dict_hist.add(obs_dict)
     except (traci.FatalTraCIError, traci.TraCIException):
       self.env_state = EnvState.ERROR
       raise    

@@ -131,8 +131,8 @@ def reshape_regulation(sumo_cfg, obs_dict):
 
 def build_model_comfort(sumo_cfg, dqn_cfg):
   model = Sequential()
-  model.add(Dense(8, input_dim=dqn_cfg.state_size, activation='sigmoid'))
-  model.add(Dense(8, activation='sigmoid'))
+  model.add(Dense(6, input_dim=dqn_cfg.state_size, activation='sigmoid'))
+  model.add(Dense(6, activation='sigmoid'))
   model.add(Dense(dqn_cfg.action_size, activation='linear'))
   model.compile(loss='mse',
                 optimizer=Adam(lr=0.001))
@@ -143,8 +143,8 @@ def reshape_comfort(sumo_cfg, obs_dict):
 
 def build_model_speed(sumo_cfg, dqn_cfg):
   model = Sequential()
-  model.add(Dense(8, input_dim=dqn_cfg.state_size, activation='sigmoid'))
-  model.add(Dense(8, activation='sigmoid'))
+  model.add(Dense(6, input_dim=dqn_cfg.state_size, activation='sigmoid'))
+  model.add(Dense(6, activation='sigmoid'))
   model.add(Dense(dqn_cfg.action_size, activation='linear'))
   model.compile(loss='mse',
                 optimizer=Adam(lr=0.001))
@@ -161,7 +161,7 @@ cfg_safety = DQNCfg(name = "safety",
                     gamma = 0.99, 
                     epsilon = 0.2, 
                     threshold = -0.1, 
-                    memory_size = 6400, 
+                    memory_size = 64000, 
                     _build_model = build_model_safety, 
                     reshape = reshape_safety)
 
@@ -171,7 +171,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         gamma = 0.99, 
                         epsilon = 0.2, 
                         threshold = -0.2, 
-                        memory_size = 6400, 
+                        memory_size = 64000, 
                         _build_model = build_model_regulation, 
                         reshape = reshape_regulation)
 
@@ -219,7 +219,7 @@ agent_list = [DQNAgent(sumo_cfg, cfg_safety), DQNAgent(sumo_cfg, cfg_regulation)
 # agent.load("./save/cartpole-dqn.h5")
 
 env_state = EnvState.NORMAL
-batch_size = 64
+batch_size = 640
 
 EPISODES = 10000
 
@@ -228,7 +228,7 @@ for e in range(EPISODES):
   state_list = [agt.reshape(sumo_cfg, obs_dict) for agt in agent_list]
   
   for step in range(6400):
-    print(step, env.agt_ctrl)
+    #print("step: ", step, "agent_ctrl?;", env.agt_ctrl)
     action_set = set(range(action_size))
     for agt, state in zip(agent_list, state_list):
       action_set = agt.get_action_set(state, action_set)
@@ -245,7 +245,11 @@ for e in range(EPISODES):
       agt.remember(state, action, reward, next_state, env_state)
       agt.learn(state, action, reward, next_state, env_state)
     
-    print(action_dict, reward_list, env_state)
+    #print("left?: ", obs_dict["ego_exists_left_lane"], "right?: ", obs_dict["ego_exists_right_lane"])
+    #print(env.veh_dict_hist._history[0]["ego"])
+    #print(action_dict, reward_list, env_state)
+    
+    
     
     if random.uniform(0, 1) < 0.1:
       if env.agt_ctrl == True:
@@ -256,6 +260,7 @@ for e in range(EPISODES):
     if env_state != EnvState.NORMAL:
       print("episode: {}/{}, step: {}"
             .format(e, EPISODES, step))
+      print(action_dict, reward_list, env_state, env.agt_ctrl)
       break
     
     for agt in agent_list: 
@@ -263,6 +268,7 @@ for e in range(EPISODES):
         agt.replay(batch_size)
       if e % 10 == 0:
         agt.save()
+    obs_dict = next_obs_dict
     state_list = next_state_list
     
     #print("memory: ", agt.memory)

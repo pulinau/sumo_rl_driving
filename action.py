@@ -37,12 +37,14 @@ def is_invalid_action(env, veh_id, action_dict):
   return False
 
 def inc_speed(speed, inc, max_speed):
+  #print("speed inc: ", inc)
   if (speed + inc) > max_speed:
     return max_speed
   else:
     return speed + inc
 
 def dec_speed(speed, dec, min_speed):
+  #print("speed dec: ", dec)
   if (speed - dec) < min_speed:
     return min_speed
   else:
@@ -66,6 +68,7 @@ def act(env, veh_id, action_dict):
   # if car is controlled by RL agent
   if env.agt_ctrl == True:
     
+    #print("entering setSpeed")
     # Lane Change
     if action_dict["lane_change"] == ActionLaneChange.LEFT:
       env.tc.vehicle.changeLane(veh_id, env.tc.vehicle.getLaneIndex(veh_id) + 1, int(env.SUMO_TIME_STEP * 1000)-1)
@@ -82,13 +85,14 @@ def act(env, veh_id, action_dict):
     # Accelerate/Decelerate
     accel_level = action_dict["accel_level"]
     if accel_level.value > ActionAccel.NOOP.value:
-      ego_next_speed = inc_speed(ego_speed, (accel_level.value - ActionAccel.NOOP.value)/len(ActionAccel) * ego_max_accel * env.SUMO_TIME_STEP, ego_max_speed)
+      ego_next_speed = inc_speed(ego_speed, (accel_level.value - ActionAccel.NOOP.value)/(ActionAccel.MAXACCEL.value - ActionAccel.NOOP.value) * ego_max_accel * env.SUMO_TIME_STEP, ego_max_speed)
     elif accel_level.value < ActionAccel.NOOP.value:
-      ego_next_speed = dec_speed(ego_speed, (-accel_level.value + ActionAccel.NOOP.value)/len(ActionAccel) * ego_max_decel * env.SUMO_TIME_STEP, 0)
+      ego_next_speed = dec_speed(ego_speed, (-accel_level.value + ActionAccel.NOOP.value)/(-ActionAccel.MAXDECEL.value + ActionAccel.NOOP.value) * ego_max_decel * env.SUMO_TIME_STEP, 0)
     else:
       # if car is controlled by RL agent, then ActionAccel.NOOP maintains the current speed
       ego_next_speed = ego_speed
-    env.tc.vehicle.slowDown(veh_id, ego_next_speed, int(env.SUMO_TIME_STEP * 1000)-1)
+    #env.tc.vehicle.slowDown(veh_id, ego_next_speed, int(env.SUMO_TIME_STEP * 1000)-1)
+    env.tc.vehicle.setSpeed(veh_id, ego_next_speed)
 
     # Turn not implemented
 
