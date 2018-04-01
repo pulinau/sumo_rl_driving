@@ -5,26 +5,32 @@ import random
 import gym
 import numpy as np
 from collections import deque
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.optimizers import Adam
+import tensorflow as tf
 import inspect
+
+NUM_VEH_CONSIDERED = 16
 
 class DQNCfg():
   def __init__(self, 
                name, 
+               play, 
                state_size, 
                action_size, 
-               gamma, 
+               gamma,
+               gamma_inc,
+               gamma_max,
                epsilon,
                threshold,
                memory_size, 
                _build_model, 
                reshape):
     self.name = name
+    self.play = play # whether it's training or playing
     self.state_size = state_size
     self.action_size = action_size
     self.gamma = gamma
+    self.gamma_inc = gamma_inc
+    self.gamma_max = gamma_max
     self.epsilon = epsilon
     self.threshold = threshold
     self.memory_size = memory_size
@@ -37,25 +43,27 @@ class DQNAgent:
     for _attr in _attrs:
       setattr(self, _attr, getattr(dqn_cfg, _attr))
     
-    self.memory = deque(maxlen = self.memory_size)
-    self.model = self._build_model(sumo_cfg, dqn_cfg)
+    if self.play == True:
+      self.epsilon = 0
+      self.model = self.load(sumo_cfg)
+    else:
+      self.memory = deque(maxlen = self.memory_size)
+      self.model = self._build_model(sumo_cfg)
 
   def remember(self, state, action, reward, next_state, env_state):
     self.memory.append((state, action, reward, next_state, env_state))
 
-  def get_action_set(self, state, in_action_set):
+  def select_actions(self, state):
     act_values = self.model.predict(state)[0]
-    if np.all(act_values < self.threshold):
-      print("no available action for" + self.name)
-      return in_action_set
-    out_action_set = set()
-    for action in in_action_set:
-      if np.random.rand() <= self.epsilon:
-        out_action_set = out_action_set or {action}
-    out_action_set = out_action_set or (set(np.where(act_values > self.threshold)[0]) and in_action_set)
-    return out_action_set
-  
+
+    action_set = set(np.where(act_values > self.threshold)[0])
+    explore_set = set([action for action in range(action_size) if np.random.rand() <= self.epsilon])
+
+    return action_set, explore_set
+
   def learn(self, state, action, reward, next_state, env_state):
+    if self.play == True:
+      raise NotImplementedError
     target = reward
     if env_state == EnvState.NORMAL:
       target = (reward + self.gamma *
@@ -65,18 +73,38 @@ class DQNAgent:
     self.model.fit(state, target_f, epochs=1, verbose=0)
   
   def replay(self, batch_size):
-    minibatch = random.sample(self.memory, batch_size)
-    for state, action, reward, next_state, env_state in minibatch:
-      target = reward
-      if env_state == EnvState.NORMAL:
-        target = (reward + self.gamma *
-                  np.amax(self.model.predict(next_state)[0]))
-      target_f = self.model.predict(state)
-      target_f[0][action] = target
-      self.model.fit(state, target_f, epochs=1, verbose=0)
+    if self.play == True:
+      raise NotImplementedError
+    if len(self.memory) < batch_size:
+      batch_size = len(self.memory)
+    minibatch = np.array(random.sample(self.memory, batch_size))
+    states = [s[0] for s in minibatch]
+    actions = [s[1] for s in minibatch]
+    rewards = [s[2] for s in minibatch]
+    next_states = [s[3] for s in minibatch]
+    env_states = [np.float(s[4] == EnvState.NORMAL) for s in minibatch]
+    
+    actions = np.array(actions)
+    rewards = np.array(rewards)
+    temp = []
+    for i in range(len(states[0])):
+      temp += [np.array([x[i][0] for x in states])]
+    states = temp
+    temp = []
+    for i in range(len(next_states[0])):
+      temp += [np.array([x[i][0] for x in next_states])]
+    next_states = temp      
+    
+    targets = rewards + self.gamma * np.array(env_states) * np.amax(self.model.predict(next_states), axis = 1)
+    targets_f = self.model.predict(states)
+    targets_f[np.arange(targets_f.shape[0]), actions] = targets
+    self.model.fit(states, targets_f, epochs=3, verbose=0)
 
-  def load(self):
-    self.model.load_weights(self.name + ".sav")
+    if self.gamma < self.gamma_max:
+      self.gamma += self.gamma_inc
+
+  def load(self, sumo_cfg):
+    return tf.keras.models.load_model(self.name + ".sav", custom_objects={"tf": tf, })#"NUM_VEH_CONSIDERED": sumo_cfg.NUM_VEH_CONSIDERED})
 
   def save(self):
-    self.model.save_weights(self.name + ".sav")
+    self.model.save(self.name + ".sav")

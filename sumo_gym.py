@@ -48,8 +48,8 @@ class SumoCfg():
                NUM_VEH_CONSIDERED, 
                OBSERVATION_RADIUS, 
                # reward
-               MAX_COMFORT_ACCEL, 
-               MAX_COMFORT_DECEL):
+               MAX_COMFORT_ACCEL_LEVEL, 
+               MAX_COMFORT_DECEL_LEVEL):
     self.SUMO_CMD = SUMO_CMD
     self.SUMO_TIME_STEP = SUMO_TIME_STEP
     self.NET_XML_FILE = NET_XML_FILE
@@ -62,8 +62,8 @@ class SumoCfg():
     self.NUM_VEH_CONSIDERED = NUM_VEH_CONSIDERED
     self.OBSERVATION_RADIUS = OBSERVATION_RADIUS
     
-    self.MAX_COMFORT_ACCEL = MAX_COMFORT_ACCEL
-    self.MAX_COMFORT_DECEL = MAX_COMFORT_DECEL
+    self.MAX_COMFORT_ACCEL_LEVEL = MAX_COMFORT_ACCEL_LEVEL
+    self.MAX_COMFORT_DECEL_LEVEL = MAX_COMFORT_DECEL_LEVEL
 
 class SumoGymEnv(gym.Env):
   """SUMO environment"""
@@ -119,7 +119,7 @@ class SumoGymEnv(gym.Env):
       # 1st time step starts the simulation, 
       # 2nd makes sure that all initial vehicles (departure time < SUMO_TIME_STEP) are in scene
       self.tc.simulationStep()
-      self.tc.simulationStep()
+      #self.tc.simulationStep()
       self.veh_dict_hist.add(get_veh_dict(self))
       self.obs_dict_hist.add(get_obs_dict(self))      
       self.agt_ctrl = True
@@ -142,8 +142,8 @@ class MultiObjSumoEnv(SumoGymEnv):
     try:
       self.env_state = act(self, self.EGO_VEH_ID, action_dict)
       if self.env_state == EnvState.DONE:
-        obs_dict = self.obs_dict_hist.get(-1)
-        veh_dict = self.veh_dict_hist.get(-1)
+        # When ego car drives out of scene, discard the step
+        return None, None, EnvState.DONE, None
       else:
         obs_dict =  get_obs_dict(self)
         veh_dict = get_veh_dict(self)

@@ -2,6 +2,7 @@
 __author__ = "Changjian Li, Aman Jhunjhunwala"
 
 from include import *
+from observation import get_veh_dict
 
 def get_action_space():
   action_space = spaces.Dict({"lane_change": spaces.Discrete(len(ActionLaneChange)),
@@ -10,12 +11,10 @@ def get_action_space():
   return action_space
   
 def disable_collision_check(env, veh_id):
-  print("disabled")
   env.tc.vehicle.setSpeedMode(veh_id, 0b00000)
   env.tc.vehicle.setLaneChangeMode(veh_id, 0b0000000000)
   
 def enable_collision_check(env, veh_id):
-  print("enabled")
   env.tc.vehicle.setSpeedMode(veh_id, 0b11111)
   env.tc.vehicle.setLaneChangeMode(veh_id, 0b011001010101)
 
@@ -56,17 +55,18 @@ def act(env, veh_id, action_dict):
   """
   if veh_id not in env.tc.vehicle.getIDList():
     return EnvState.DONE
-    
-  # An illegal action is considered as causing a collision
-  if is_illegal_action(env, veh_id, action_dict):
-    return EnvState.CRASH
-    
-  # action set to noop if it's invalid
-  if is_invalid_action(env, veh_id, action_dict):
-    action_dict = {"lane_change": ActionLaneChange.NOOP, "accel_level": ActionAccel.NOOP}
       
   # if car is controlled by RL agent
   if env.agt_ctrl == True:
+
+    # An illegal action is considered as causing a collision
+    if is_illegal_action(env, veh_id, action_dict):
+      print("crash due to illegal action")
+      return EnvState.CRASH
+    
+    # action set to noop if it's invalid
+    if is_invalid_action(env, veh_id, action_dict):
+      action_dict = {"lane_change": ActionLaneChange.NOOP, "accel_level": ActionAccel.NOOP}
     
     #print("entering setSpeed")
     # Lane Change
@@ -100,6 +100,10 @@ def act(env, veh_id, action_dict):
   
   if env.tc.simulation.getCollidingVehiclesNumber() > 0:
     if veh_id in env.tc.simulation.getCollidingVehiclesIDList():
+      #veh_dict = get_veh_dict(env)
+      #print("collision list: ")
+      #for id in env.tc.simulation.getCollidingVehiclesIDList():
+      #  print("  ", id, " position: ", veh_dict[id]["position"])
       return EnvState.CRASH
   # if the subject vehicle goes out of scene, set env.env_state to EnvState.DONE
   if veh_id not in env.tc.vehicle.getIDList():
