@@ -5,10 +5,7 @@ import random
 import gym
 import numpy as np
 from collections import deque
-import tensorflow as tf
 import inspect
-
-NUM_VEH_CONSIDERED = 16
 
 class DQNCfg():
   def __init__(self, 
@@ -48,7 +45,7 @@ class DQNAgent:
       self.model = self.load(sumo_cfg)
     else:
       self.memory = deque(maxlen = self.memory_size)
-      self.model = self._build_model(sumo_cfg)
+      self.model = self._build_model()
 
   def remember(self, state, action, reward, next_state, env_state):
     self.memory.append((state, action, reward, next_state, env_state))
@@ -57,7 +54,7 @@ class DQNAgent:
     act_values = self.model.predict(state)[0]
 
     action_set = set(np.where(act_values > self.threshold)[0])
-    explore_set = set([action for action in range(action_size) if np.random.rand() <= self.epsilon])
+    explore_set = set([action for action in range(self.action_size) if np.random.rand() <= self.epsilon])
 
     return action_set, explore_set
 
@@ -94,7 +91,8 @@ class DQNAgent:
     for i in range(len(next_states[0])):
       temp += [np.array([x[i][0] for x in next_states])]
     next_states = temp      
-    
+
+    print(self.model)
     targets = rewards + self.gamma * np.array(env_states) * np.amax(self.model.predict(next_states), axis = 1)
     targets_f = self.model.predict(states)
     targets_f[np.arange(targets_f.shape[0]), actions] = targets
@@ -104,6 +102,7 @@ class DQNAgent:
       self.gamma += self.gamma_inc
 
   def load(self, sumo_cfg):
+    import tensorflow as tf
     return tf.keras.models.load_model(self.name + ".sav", custom_objects={"tf": tf, })#"NUM_VEH_CONSIDERED": sumo_cfg.NUM_VEH_CONSIDERED})
 
   def save(self):

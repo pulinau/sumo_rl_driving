@@ -4,10 +4,10 @@ __author__ = "Changjian Li"
 from include import *
 
 def get_reward_list(env):
-  r_safety = get_reward_safety(env)
-  r_regulation = get_reward_regulation(env)
-  r_comfort = get_reward_comfort(env)
-  r_speed = get_reward_speed(env)
+  r_safety = 10 * get_reward_safety(env)
+  r_regulation = 10 * get_reward_regulation(env)
+  r_comfort = 10 * get_reward_comfort(env)
+  r_speed = 10 * get_reward_speed(env)
   return [r_safety, r_regulation, r_comfort, r_speed]
   
 def get_reward_safety(env):
@@ -46,11 +46,12 @@ def get_reward_comfort(env):
   ego_max_accel = min(env.tc.vehicle.getAccel(env.EGO_VEH_ID), env.MAX_VEH_ACCEL)
   ego_max_decel = min(env.tc.vehicle.getDecel(env.EGO_VEH_ID), env.MAX_VEH_DECEL)  
   
-  accel = (env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["speed"] - env.veh_dict_hist.get(-2)[env.EGO_VEH_ID]["speed"])/env.SUMO_TIME_STEP
-  if accel > 0 and abs(accel) > env.MAX_COMFORT_ACCEL:
-    r += -0.5 * (abs(accel) - env.MAX_COMFORT_ACCEL)/(ego_max_accel - env.MAX_COMFORT_ACCEL)
-  elif accel < 0 and abs(accel) > env.MAX_COMFORT_DECEL:
-    r += -0.5 * (abs(accel) - env.MAX_COMFORT_DECEL)/(ego_max_decel - env.MAX_COMFORT_DECEL)
+  accel_level = env.action_dict_hist.get(-1)["accel_level"]
+  #print("accel")
+  if accel_level.value > env.MAX_COMFORT_ACCEL_LEVEL.value:
+    r += -0.5 * (accel_level.value - env.MAX_COMFORT_ACCEL_LEVEL.value)/(ActionAccel.MAXACCEL.value - env.MAX_COMFORT_ACCEL_LEVEL.value)
+  elif accel_level.value < env.MAX_COMFORT_DECEL_LEVEL.value:
+    r += -0.5 * (env.MAX_COMFORT_DECEL_LEVEL.value - accel_level.value)/(env.MAX_COMFORT_DECEL_LEVEL.value - ActionAccel.MAXDECEL.value)
 
   return r
   
