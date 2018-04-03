@@ -18,7 +18,8 @@ class DQNCfg():
                gamma_max,
                epsilon,
                threshold,
-               memory_size, 
+               memory_size,
+               replay_batch_size,
                _build_model, 
                reshape):
     self.name = name
@@ -31,6 +32,7 @@ class DQNCfg():
     self.epsilon = epsilon
     self.threshold = threshold
     self.memory_size = memory_size
+    self.replay_batch_size = replay_batch_size
     self._build_model = _build_model
     self.reshape = reshape
 
@@ -39,7 +41,9 @@ class DQNAgent:
     _attrs = class_vars(dqn_cfg)
     for _attr in _attrs:
       setattr(self, _attr, getattr(dqn_cfg, _attr))
-    
+
+    assert self.memory_size >= self.replay_batch_size
+
     if self.play == True:
       self.epsilon = 0
       self.model = self.load(sumo_cfg)
@@ -60,7 +64,7 @@ class DQNAgent:
 
   def learn(self, state, action, reward, next_state, env_state):
     if self.play == True:
-      raise NotImplementedError
+      return
     target = reward
     if env_state == EnvState.NORMAL:
       target = (reward + self.gamma *
@@ -69,12 +73,12 @@ class DQNAgent:
     target_f[0][action] = target
     self.model.fit(state, target_f, epochs=1, verbose=0)
   
-  def replay(self, batch_size):
+  def replay(self):
     if self.play == True:
-      raise NotImplementedError
-    if len(self.memory) < batch_size:
+      return
+    if len(self.memory) < self.replay_batch_size:
       batch_size = len(self.memory)
-    minibatch = np.array(random.sample(self.memory, batch_size))
+    minibatch = np.array(random.sample(self.memory, self.replay_batch_size))
     states = [s[0] for s in minibatch]
     actions = [s[1] for s in minibatch]
     rewards = [s[2] for s in minibatch]

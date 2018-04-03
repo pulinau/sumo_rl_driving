@@ -10,6 +10,7 @@ from sumo_gym import *
 from dqn import *
 import random
 from multiprocessing import Process
+import multiprocessing
 
 # --------------------------
 #          SUMO
@@ -175,6 +176,7 @@ cfg_safety = DQNCfg(name = "safety",
                     epsilon = 0.2, 
                     threshold = -5,
                     memory_size = 640000,
+                    replay_batch_size = 1600,
                     _build_model = build_model_safety, 
                     reshape = reshape_safety)
 
@@ -188,6 +190,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         epsilon = 0.2, 
                         threshold = -5,
                         memory_size = 640000,
+                        replay_batch_size = 1600,
                         _build_model = build_model_regulation, 
                         reshape = reshape_regulation)
 
@@ -200,7 +203,8 @@ cfg_comfort = DQNCfg(name = "comfort",
                      gamma_max = 0,
                      epsilon = 0.5, 
                      threshold = -8,
-                     memory_size = 640, 
+                     memory_size = 640,
+                     replay_batch_size = 64,
                      _build_model = build_model_comfort, 
                      reshape = reshape_comfort)
 
@@ -213,7 +217,8 @@ cfg_speed = DQNCfg(name = "speed",
                    gamma_max = 0,
                    epsilon = 0.5, 
                    threshold = -8,
-                   memory_size = 640, 
+                   memory_size = 640,
+                   replay_batch_size = 64,
                    _build_model = build_model_speed, 
                    reshape = reshape_speed)
 
@@ -234,20 +239,19 @@ sumo_cfg = SumoCfg(
                MAX_COMFORT_ACCEL_LEVEL, 
                MAX_COMFORT_DECEL_LEVEL)
 
-def select_action(state_list, agent_list):
+def select_action(action_set_list, explr_set_list, dqn_cfg_list):
   valid = set()
   invalid = [] # invalid holds the exploration actions
 
-  for state, agt in zip(state_list, agent_list):
-    action_set, explr_set = agt.select_actions(state)
+  for action_set, explr_set, name in zip(action_set_list, explr_set_list, [dqn_cfg.name for dqn_cfg in dqn_cfg_list]):
     if len(valid) == 0:
       valid = valid or action_set
-      invalid += [(x, "exploration " + agt.name) for x in explr_set]
+      invalid += [(x, "exploration: " + name) for x in explr_set]
     else:
-      invalid += [(x, "exploration " + agt.name) for x in (explr_set and valid)]
+      invalid += [(x, "exploration: " + name) for x in (explr_set and valid)]
     valid = valid and action_set
     if len(valid) == 0:
-      print("no available action for " + agt.name)
+      print("no available action for " + name)
       break
 
   valid = [(x, "valid") for x in valid]
@@ -257,116 +261,96 @@ def select_action(state_list, agent_list):
   else:
     return random.sample(valid + invalid, 1)[0]
 
+def Qlearning(conn, sumo_cfg, dqn_cfg):
+  agt = DQNAgent(sumo_cfg, dqn_cfg)
+
+  while conn.recv() == True:
+    obs_dict = conn.recv()
+    state = agt.reshape(obs_dict)
+
+    action_set, explr_set = agt.select_actions(state)
+    conn.send((action_set, explr_set))
+
+    next_obs_dict, reward, env_state, action = conn.recv()
+    next_state = agt.reshape(next_obs_dict)
+    agt.remember()
+
+    agt.replay()
+
+    if conn.recv() == True:
+      agt.save()
+
+  conn.close()
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--play")
   args = parser.parse_args()
 
+  env = MultiObjSumoEnv(sumo_cfg)
+  env_state = EnvState.NORMAL
+  EPISODES = 10000
   if args.play:
     print("True")
     for dqn_cfg in [cfg_safety, cfg_regulation, cfg_comfort, cfg_speed]:
       dqn_cfg.play = True
-    env = MultiObjSumoEnv(sumo_cfg)
-    agent_list = [DQNAgent(sumo_cfg, cfg_safety), DQNAgent(sumo_cfg, cfg_regulation), DQNAgent(sumo_cfg, cfg_comfort), DQNAgent(sumo_cfg, cfg_speed)]
-
-    env_state = EnvState.NORMAL
     EPISODES = 10
 
-    for e in range(EPISODES):
-      obs_dict = env.reset()
-      state_list = [agt.reshape(obs_dict) for agt in agent_list]
+  dqn_cfg_list = [cfg_safety, cfg_regulation, cfg_comfort, cfg_speed]
+  parent_conn_list, child_conn_list = zip(*[mp.Pipe() for _ in range(4)])
 
-      for step in range(6400):
-        action, action_info = select_action(state, agent_list)
+  p_list = [mp.Process(target=Qlearning, args=(conn, sumo_cfg, dqn_cfg)) for conn, dqn_cfg in
+            zip(child_conn_list, dqn_cfg_list)]
+  [p.start() for p in p_list]
 
-        next_obs_dict, reward_list, env_state, action_dict = env.step({"lane_change":ActionLaneChange(action//7), "accel_level":ActionAccel(action%7)})
-        if env_state == EnvState.DONE:
-          print("Ego successfully drived out of scene, step: ", step)
-          break        
-        next_state_list = [agt.reshape(next_obs_dict) for agt in agent_list]
-    
-        #print("left?: ", obs_dict["ego_exists_left_lane"], "right?: ", obs_dict["ego_exists_right_lane"])
-        #print(env.veh_dict_hist._history[0]["ego"])
-        #print(action_dict, reward_list, env_state)
+  for e in range(EPISODES):
+    print("episode: {}/{}".format(e, EPISODES))
+    obs_dict = env.reset()
 
-        obs_dict = next_obs_dict
-        state_list = next_state_list    
-
-        if env_state != EnvState.NORMAL or step == 6400-1:
-          print("Simulation Terminated, step: ", step, action_dict, action_info, reward_list, env_state, env.agt_ctrl)
-          break
-    
-  else:
-    env = MultiObjSumoEnv(sumo_cfg)
-    agent_list = [DQNAgent(sumo_cfg, cfg_safety),
-                  DQNAgent(sumo_cfg, cfg_regulation),
-                  DQNAgent(sumo_cfg, cfg_comfort),
-                  DQNAgent(sumo_cfg, cfg_speed)]
-
-    env_state = EnvState.NORMAL
-    batch_size = 640
-    EPISODES = 10000
-
-    for e in range(EPISODES):
-      print("episode: {}/{}".format(e, EPISODES))
-      obs_dict = env.reset()
-      state_list = [agt.reshape(obs_dict) for agt in agent_list]
-  
-      for step in range(6400):
-          #env.agt_ctrl = False
-        if step == 0:
-          if random.uniform(0, 1) < 0.5:
-            env.agt_ctrl = True
-          else:
-            env.agt_ctrl = False
+    for step in range(6400):
+      # env.agt_ctrl = False
+      if step == 0:
+        if random.uniform(0, 1) < 0.5:
+          env.agt_ctrl = True
         else:
-          if random.uniform(0, 1) < 0.05:
-            if env.agt_ctrl == True:
-              env.agt_ctrl = False
-            else:
-              env.agt_ctrl = True
+          env.agt_ctrl = False
+      else:
+        if random.uniform(0, 1) < 0.05:
+          if env.agt_ctrl == True:
+            env.agt_ctrl = False
+          else:
+            env.agt_ctrl = True
 
-        action, action_info = select_action(state_list, agent_list)
-        if env.agt_ctrl == False:
-          action_info == "sumo"
+      [conn.send(True) for conn in parent_conn_list]
 
-        next_obs_dict, reward_list, env_state, action_dict = env.step({"lane_change":ActionLaneChange(action//7), "accel_level":ActionAccel(action%7)})
-        if env_state == EnvState.DONE:
-          print("Ego successfully drived out of scene, step: ", step)
-          break
-        action = action_dict["lane_change"].value*7 + action_dict["accel_level"].value
-        next_state_list = [agt.reshape(next_obs_dict) for agt in agent_list]
-    
-        for agt, state, reward, next_state in zip(agent_list, state_list, reward_list, next_state_list):
-          agt.remember(state, action, reward, next_state, env_state)
-        #  agt.learn(state, action, reward, next_state, env_state)
-    
-        #print("left?: ", obs_dict["ego_exists_left_lane"], "right?: ", obs_dict["ego_exists_right_lane"])
-        #print(env.veh_dict_hist._history[0]["ego"])
-        #print(action_dict, reward_list, env_state)
+      # send obs_dict
+      [conn.send(obs_dict) for conn in parent_conn_list]
 
-        p_list = [Process(target = agt.replay, args=(batch_size,)) for agt in agent_list]
-        for p in p_list:
-          print("hi")
-          p.start()
-        for p in p_list:
-          print("bye")
-          p.join()
+      # select action
+      action_set_list, explr_set_list = zip(*[conn.recv() for conn in parent_conn_list])
+      action, action_info = select_action(action_set_list, explr_set_list)
+      if env.agt_ctrl == False:
+        action_info == "sumo"
 
-        if e % 100 == 1:
-          for agt in agent_list:
-            agt.save()
+      # act
+      next_obs_dict, reward_list, env_state, action_dict = env.step(
+        {"lane_change": ActionLaneChange(action // 7), "accel_level": ActionAccel(action % 7)})
+      if env_state == EnvState.DONE:
+        print("Ego successfully drived out of scene, step: ", step)
+        break
+      action = action_dict["lane_change"].value * 7 + action_dict["accel_level"].value
+      [conn.send((obs_dict, reward, env_state, action)) for conn, reward in zip(parent_conn_list, reward_list)]
 
-        obs_dict = next_obs_dict
-        state_list = next_state_list
-      
-        if env_state != EnvState.NORMAL or step == 6400-1:
-          print("Simulation Terminated, step: ", step, action_dict, action_info, reward_list, env_state, env.agt_ctrl)
-          break
-    
-          #print("memory: ", agt.memory)
-          #print("lane_change: ", ActionLaneChange(action//7), "accel_level: ", ActionAccel(action%7))
+      # save model
+      if e % 100 == 1:
+        [conn.send(True) for conn in parent_conn_list]
+      else:
+        [conn.send(False) for conn in parent_conn_list]
 
+      obs_dict = next_obs_dict
+      if env_state != EnvState.NORMAL or step == 6400 - 1:
+        print("Simulation Terminated, step: ", step, action_dict, action_info, reward_list, env_state, env.agt_ctrl)
+        break
 
-
+  [conn.send(False) for conn in parent_conn_list]
+  [p.join() for p in p_list]
