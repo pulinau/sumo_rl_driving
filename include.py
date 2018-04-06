@@ -35,3 +35,5 @@ class ActionAccel(Enum):
   MINACCEL = 4
   MEDACCEL = 5
   MAXACCEL = 6
+
+action_size = len(ActionLaneChange) * len(ActionAccel)

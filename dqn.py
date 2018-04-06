@@ -6,6 +6,7 @@ import gym
 import numpy as np
 from collections import deque
 import inspect
+import multiprocessing as mp
 
 class DQNCfg():
   def __init__(self, 
@@ -78,7 +79,9 @@ class DQNAgent:
       return
     if len(self.memory) < self.replay_batch_size:
       batch_size = len(self.memory)
-    minibatch = np.array(random.sample(self.memory, self.replay_batch_size))
+    else:
+      batch_size = self.replay_batch_size
+    minibatch = np.array(random.sample(self.memory, batch_size))
     states = [s[0] for s in minibatch]
     actions = [s[1] for s in minibatch]
     rewards = [s[2] for s in minibatch]
@@ -96,7 +99,6 @@ class DQNAgent:
       temp += [np.array([x[i][0] for x in next_states])]
     next_states = temp      
 
-    print(self.model)
     targets = rewards + self.gamma * np.array(env_states) * np.amax(self.model.predict(next_states), axis = 1)
     targets_f = self.model.predict(states)
     targets_f[np.arange(targets_f.shape[0]), actions] = targets
@@ -107,7 +109,7 @@ class DQNAgent:
 
   def load(self, sumo_cfg):
     import tensorflow as tf
-    return tf.keras.models.load_model(self.name + ".sav", custom_objects={"tf": tf, })#"NUM_VEH_CONSIDERED": sumo_cfg.NUM_VEH_CONSIDERED})
+    return tf.keras.models.load_model(self.name + ".sav", custom_objects={"tf": tf})#, "NUM_VEH_CONSIDERED": sumo_cfg.NUM_VEH_CONSIDERED})
 
   def save(self):
     self.model.save(self.name + ".sav")

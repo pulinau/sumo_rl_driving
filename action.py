@@ -61,7 +61,6 @@ def act(env, veh_id, action_dict):
 
     # An illegal action is considered as causing a collision
     if is_illegal_action(env, veh_id, action_dict):
-      print("crash due to illegal action")
       return EnvState.CRASH
     
     # action set to noop if it's invalid
