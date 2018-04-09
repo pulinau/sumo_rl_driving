@@ -5,21 +5,23 @@ from sumo_gym import SumoCfg
 #          SUMO
 # --------------------------
 SUMO_TOOLS_DIR = "/home/ken/project/sumo-bin/tools"
-SUMO_BIN = "/home/ken/project/sumo-bin/bin/sumo"
+SUMO_BIN = "/home/ken/project/sumo-bin/bin/sumo-gui"
 SUMO_CONFIG = "/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test.sumocfg"
 SUMO_TIME_STEP = 0.1
 
 # "--net-file" and "route_file"
+NET_XML_FILE = "/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test.net.xml"
+ROU_XML_FILE_LIST = ["/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test" + str(i) + ".rou.xml" for i in range(1024)]
 SUMO_CMD = [SUMO_BIN,
-            "-c", "/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test.sumocfg",
-            #"--no-warnings", "true",
+            #"-c", "/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test.sumocfg",
+            "--no-warnings", "true",
             "--time-to-teleport", "-1",
             "--collision.action", "warn",
             "--collision.check-junctions", "true",
-            "--step-length", str(SUMO_TIME_STEP)]
+            "--step-length", str(SUMO_TIME_STEP),
+            "-n", NET_XML_FILE,
+            "-r"]
 #            "--lanechange.duration", "2"]
-NET_XML_FILE = "/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test.net.xml"
-ROU_XML_FILE_LIST = ["test0.rou.xml"]
 
 EGO_VEH_ID = "ego"
 MAX_VEH_ACCEL = 2.6
@@ -44,6 +46,7 @@ sumo_cfg = SumoCfg(
                SUMO_CMD,
                SUMO_TIME_STEP,
                NET_XML_FILE,
+               ROU_XML_FILE_LIST,
                EGO_VEH_ID,
                MAX_VEH_ACCEL,
                MAX_VEH_DECEL,

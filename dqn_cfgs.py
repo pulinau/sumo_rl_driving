@@ -26,6 +26,9 @@ def reshape_safety(obs_dict):
   out1  = np.append(out1, np.array([obs_dict["veh_relation_behind"]]), axis=0)
   return [np.reshape(out0, (1,) + out0.shape), np.reshape(out1.T, (1, -1, 1, 1))]
 
+tf_cfg_safety = tf.ConfigProto()
+tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
+
 def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(4, ))
   env_input = tf.keras.layers.Input(shape=(10* NUM_VEH_CONSIDERED, 1, 1))
@@ -75,6 +78,9 @@ def reshape_regulation(obs_dict):
   out1  = np.append(out1, np.array([obs_dict["veh_relation_behind"]]), axis=0)
   return [np.reshape(out0, (1, -1)), np.reshape(out1.T, (1, -1, 1, 1))]
 
+tf_cfg_regulation = tf.ConfigProto()
+tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.4
+
 def build_model_regulation():
   ego_input = tf.keras.layers.Input(shape=(6 + 2*NUM_LANE_CONSIDERED, ))
   env_input = tf.keras.layers.Input(shape=(16*NUM_VEH_CONSIDERED, 1, 1))
@@ -98,6 +104,8 @@ def build_model_regulation():
 def reshape_comfort(obs_dict):
   return np.reshape(np.array([0], dtype = np.float32), (1, -1))
 
+tf_cfg_comfort = tf.ConfigProto(device_count = {"GPU": 0})
+
 def build_model_comfort():
   model = tf.keras.models.Sequential()
   model.add(tf.keras.layers.Dense(8, input_dim=1, activation='sigmoid'))
@@ -108,6 +116,8 @@ def build_model_comfort():
 
 def reshape_speed(obs_dict):
   return np.reshape(np.array(obs_dict["ego_speed"]/MAX_VEH_SPEED, dtype = np.float32), (1, -1))
+
+tf_cfg_speed = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_speed():
   model = tf.keras.models.Sequential()
@@ -131,6 +141,7 @@ cfg_safety = DQNCfg(name = "safety",
                     memory_size = 640000,
                     replay_batch_size = 1600,
                     _build_model = build_model_safety,
+                    tf_cfg = tf_cfg_safety,
                     reshape = reshape_safety)
 
 cfg_regulation = DQNCfg(name = "regulation",
@@ -145,6 +156,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         memory_size = 640000,
                         replay_batch_size = 1600,
                         _build_model = build_model_regulation,
+                        tf_cfg = tf_cfg_regulation,
                         reshape = reshape_regulation)
 
 cfg_comfort = DQNCfg(name = "comfort",
@@ -159,6 +171,7 @@ cfg_comfort = DQNCfg(name = "comfort",
                      memory_size = 640,
                      replay_batch_size = 64,
                      _build_model = build_model_comfort,
+                     tf_cfg = tf_cfg_comfort,
                      reshape = reshape_comfort)
 
 cfg_speed = DQNCfg(name = "speed",
@@ -173,4 +186,5 @@ cfg_speed = DQNCfg(name = "speed",
                    memory_size = 640,
                    replay_batch_size = 64,
                    _build_model = build_model_speed,
+                   tf_cfg = tf_cfg_speed,
                    reshape = reshape_speed)

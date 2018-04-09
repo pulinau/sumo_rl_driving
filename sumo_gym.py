@@ -38,7 +38,8 @@ class SumoCfg():
                # sumo
                SUMO_CMD, 
                SUMO_TIME_STEP, 
-               NET_XML_FILE, 
+               NET_XML_FILE,
+               ROU_XML_FILE_LIST,
                EGO_VEH_ID, 
                MAX_VEH_ACCEL, 
                MAX_VEH_DECEL, 
@@ -53,6 +54,7 @@ class SumoCfg():
     self.SUMO_CMD = SUMO_CMD
     self.SUMO_TIME_STEP = SUMO_TIME_STEP
     self.NET_XML_FILE = NET_XML_FILE
+    self.ROU_XML_FILE_LIST = ROU_XML_FILE_LIST
     self.EGO_VEH_ID = EGO_VEH_ID
     self.MAX_VEH_ACCEL = MAX_VEH_ACCEL
     self.MAX_VEH_DECEL = MAX_VEH_DECEL
@@ -83,7 +85,8 @@ class SumoGymEnv(gym.Env):
 
     try:  
       sim_label = "sim" + str(random.randint(0, 65536))
-      traci.start(self.SUMO_CMD, label = sim_label)
+      ROU_XML_FILE = random.sample(self.ROU_XML_FILE_LIST, 1)
+      traci.start(self.SUMO_CMD + ROU_XML_FILE, label = sim_label)
       self.tc = traci.getConnection(sim_label)
     except (traci.FatalTraCIError, traci.TraCIException):
       self.env_state = EnvState.ERROR
@@ -115,7 +118,8 @@ class SumoGymEnv(gym.Env):
     self.veh_dict_hist.reset()
     self.obs_dict_hist.reset()
     try:
-      self.tc.load(self.SUMO_CMD[1:])
+      ROU_XML_FILE = random.sample(self.ROU_XML_FILE_LIST, 1)
+      self.tc.load(self.SUMO_CMD[1:] + ROU_XML_FILE)
       # 1st time step starts the simulation, 
       # 2nd makes sure that all initial vehicles (departure time < SUMO_TIME_STEP) are in scene
       self.tc.simulationStep()

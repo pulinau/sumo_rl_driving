@@ -1,5 +1,6 @@
 #!python3
 from include import *
+from sumo_cfgs import *
 from utils import class_vars
 import random
 import gym
@@ -7,6 +8,7 @@ import numpy as np
 from collections import deque
 import inspect
 import multiprocessing as mp
+import tensorflow as tf
 
 class DQNCfg():
   def __init__(self, 
@@ -21,7 +23,8 @@ class DQNCfg():
                threshold,
                memory_size,
                replay_batch_size,
-               _build_model, 
+               _build_model,
+               tf_cfg,
                reshape):
     self.name = name
     self.play = play # whether it's training or playing
@@ -35,6 +38,7 @@ class DQNCfg():
     self.memory_size = memory_size
     self.replay_batch_size = replay_batch_size
     self._build_model = _build_model
+    self.tf_cfg = tf_cfg
     self.reshape = reshape
 
 class DQNAgent:
@@ -45,6 +49,7 @@ class DQNAgent:
 
     assert self.memory_size >= self.replay_batch_size
 
+    tf.keras.backend.set_session(tf.Session(config=self.tf_cfg))
     if self.play == True:
       self.epsilon = 0
       self.model = self.load(sumo_cfg)
@@ -53,6 +58,8 @@ class DQNAgent:
       self.model = self._build_model()
 
   def remember(self, state, action, reward, next_state, env_state):
+    if self.play == True:
+      return
     self.memory.append((state, action, reward, next_state, env_state))
 
   def select_actions(self, state):
@@ -91,15 +98,18 @@ class DQNAgent:
     actions = np.array(actions)
     rewards = np.array(rewards)
     temp = []
+
     for i in range(len(states[0])):
       temp += [np.array([x[i][0] for x in states])]
     states = temp
     temp = []
     for i in range(len(next_states[0])):
       temp += [np.array([x[i][0] for x in next_states])]
-    next_states = temp      
+    next_states = temp
 
     targets = rewards + self.gamma * np.array(env_states) * np.amax(self.model.predict(next_states), axis = 1)
+    # clamp targets larger than zero to zero
+    targets[np.where(targets > 0)] = 0
     targets_f = self.model.predict(states)
     targets_f[np.arange(targets_f.shape[0]), actions] = targets
     self.model.fit(states, targets_f, epochs=3, verbose=0)
@@ -109,7 +119,7 @@ class DQNAgent:
 
   def load(self, sumo_cfg):
     import tensorflow as tf
-    return tf.keras.models.load_model(self.name + ".sav", custom_objects={"tf": tf})#, "NUM_VEH_CONSIDERED": sumo_cfg.NUM_VEH_CONSIDERED})
+    return tf.keras.models.load_model(self.name + ".sav", custom_objects={"tf": tf, "NUM_VEH_CONSIDERED": sumo_cfg.NUM_VEH_CONSIDERED})
 
   def save(self):
     self.model.save(self.name + ".sav")
