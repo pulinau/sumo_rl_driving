@@ -49,7 +49,10 @@ def Qlearning(conn, sumo_cfg, dqn_cfg):
     action_set, explr_set = agt.select_actions(state)
     conn.send((action_set, explr_set))
 
-    next_obs_dict, reward, env_state, action = conn.recv()
+    next_obs_dict, reward, env_state, action_dict = conn.recv()
+    if env_state == EnvState.DONE:
+      continue
+    action = action_dict["lane_change"].value * 7 + action_dict["accel_level"].value
     next_state = agt.reshape(next_obs_dict)
     agt.remember(state, action, reward, next_state, env_state)
 
@@ -67,7 +70,7 @@ if __name__ == "__main__":
 
   env = MultiObjSumoEnv(sumo_cfg)
   env_state = EnvState.NORMAL
-  EPISODES = 10000
+  EPISODES = 60000
   if args.play:
     print("True")
     for dqn_cfg in [cfg_safety, cfg_regulation, cfg_comfort, cfg_speed]:
@@ -87,17 +90,21 @@ if __name__ == "__main__":
 
     for step in range(6400):
       # env.agt_ctrl = False
-      if step == 0:
+
+      if args.play:
+        env.agt_ctrl = True
+      elif step == 0:
         if random.uniform(0, 1) < 0.5:
           env.agt_ctrl = True
         else:
           env.agt_ctrl = False
       else:
-        if random.uniform(0, 1) < 0.05:
+        if random.uniform(0, 1) < 0.01:
           if env.agt_ctrl == True:
             env.agt_ctrl = False
           else:
             env.agt_ctrl = True
+
 
       [conn.send(True) for conn in parent_conn_list]
 
@@ -115,9 +122,11 @@ if __name__ == "__main__":
         {"lane_change": ActionLaneChange(action // 7), "accel_level": ActionAccel(action % 7)})
       if env_state == EnvState.DONE:
         print("Ego successfully drived out of scene, step: ", step)
+        [conn.send((next_obs_dict, None, env_state, action_dict)) for conn in parent_conn_list]
         break
-      action = action_dict["lane_change"].value * 7 + action_dict["accel_level"].value
-      [conn.send((next_obs_dict, reward, env_state, action)) for conn, reward in zip(parent_conn_list, reward_list)]
+      else:
+        [conn.send((next_obs_dict, reward, env_state, action_dict)) for conn, reward in
+         zip(parent_conn_list, reward_list)]
 
       # save model
       if e % 100 == 1:
@@ -126,6 +135,7 @@ if __name__ == "__main__":
         [conn.send(False) for conn in parent_conn_list]
 
       obs_dict = next_obs_dict
+
       if env_state != EnvState.NORMAL or step == 6400 - 1:
         print("Simulation Terminated, step: ", step, action_dict, action_info, reward_list, env_state, env.agt_ctrl)
         break

@@ -28,6 +28,7 @@ def reshape_safety(obs_dict):
 
 tf_cfg_safety = tf.ConfigProto()
 tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
+#tf_cfg_comfort = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(4, ))
@@ -80,6 +81,7 @@ def reshape_regulation(obs_dict):
 
 tf_cfg_regulation = tf.ConfigProto()
 tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.4
+#tf_cfg_regulation = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_regulation():
   ego_input = tf.keras.layers.Input(shape=(6 + 2*NUM_LANE_CONSIDERED, ))
@@ -136,10 +138,10 @@ cfg_safety = DQNCfg(name = "safety",
                     gamma = 0,
                     gamma_inc = 0.00005,
                     gamma_max = 0.90,
-                    epsilon = 0.2,
+                    epsilon = 0.1,
                     threshold = -5,
                     memory_size = 640000,
-                    replay_batch_size = 1600,
+                    replay_batch_size = 800,
                     _build_model = build_model_safety,
                     tf_cfg = tf_cfg_safety,
                     reshape = reshape_safety)
@@ -154,7 +156,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         epsilon = 0.2,
                         threshold = -5,
                         memory_size = 640000,
-                        replay_batch_size = 1600,
+                        replay_batch_size = 800,
                         _build_model = build_model_regulation,
                         tf_cfg = tf_cfg_regulation,
                         reshape = reshape_regulation)

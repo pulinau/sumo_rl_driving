@@ -5,7 +5,7 @@ from sumo_gym import SumoCfg
 #          SUMO
 # --------------------------
 SUMO_TOOLS_DIR = "/home/ken/project/sumo-bin/tools"
-SUMO_BIN = "/home/ken/project/sumo-bin/bin/sumo-gui"
+SUMO_BIN = "/home/ken/project/sumo-bin/bin/sumo"
 SUMO_CONFIG = "/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test.sumocfg"
 SUMO_TIME_STEP = 0.1
 
