@@ -1,3 +1,6 @@
+#!python3
+__author__ = "Changjian Li"
+
 from include import *
 from sumo_gym import SumoCfg
 

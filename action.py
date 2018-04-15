@@ -114,8 +114,8 @@ def act(env, veh_id, action_dict):
 def infer_action(env):
   """When ego vehicle is controlled by sumo, the action taken in that time step need to be inferred
   """
-  veh_dict = env.veh_dict_hist.get(-2)
-  new_veh_dict = env.veh_dict_hist.get(-1)
+  veh_dict = env.veh_dict_hist[-2]
+  new_veh_dict = env.veh_dict_hist[-1]
   if new_veh_dict[env.EGO_VEH_ID]["edge_id"] == veh_dict[env.EGO_VEH_ID]["edge_id"]:
     if new_veh_dict[env.EGO_VEH_ID]["lane_index"] - veh_dict[env.EGO_VEH_ID]["lane_index"] == 1:
       lane_change = ActionLaneChange.LEFT.value 

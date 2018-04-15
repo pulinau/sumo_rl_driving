@@ -1,13 +1,12 @@
 #!python3
+__author__ = "Changjian Li"
+
 from include import *
 from sumo_cfgs import *
 from utils import class_vars
 import random
-import gym
 import numpy as np
-from collections import deque
-import inspect
-import multiprocessing as mp
+from replay_mem import ReplayMemory
 import tensorflow as tf
 
 class DQNCfg():
@@ -54,49 +53,38 @@ class DQNAgent:
       self.epsilon = 0
       self.model = self.load(sumo_cfg)
     else:
-      self.memory = deque(maxlen = self.memory_size)
+      self.memory = ReplayMemory(self.memory_size, lambda x: x < -0.1)
       self.model = self._build_model()
+      self.target_model = self._build_model()
 
   def remember(self, state, action, reward, next_state, env_state):
     if self.play == True:
       return
-    self.memory.append((state, action, reward, next_state, env_state))
+    self.memory.append(state, action, reward, next_state, env_state)
 
   def select_actions(self, state):
     act_values = self.model.predict(state)[0]
 
     action_set = set(np.where(act_values > self.threshold)[0])
     explore_set = set([action for action in range(self.action_size) if np.random.rand() <= self.epsilon])
+    explore_set = explore_set - action_set
 
     return action_set, explore_set
-
-  def learn(self, state, action, reward, next_state, env_state):
-    if self.play == True:
-      return
-    target = reward
-    if env_state == EnvState.NORMAL:
-      target = (reward + self.gamma *
-                np.amax(self.model.predict(next_state)[0]))
-    target_f = self.model.predict(state)
-    target_f[0][action] = target
-    self.model.fit(state, target_f, epochs=1, verbose=0)
   
   def replay(self):
-    if self.play == True:
+    if self.play == True or len(self.memory) == 0:
       return
-    if len(self.memory) < self.replay_batch_size:
-      batch_size = len(self.memory)
-    else:
-      batch_size = self.replay_batch_size
-    minibatch = np.array(random.sample(self.memory, batch_size))
+    minibatch = self.memory.sample_end(self.replay_batch_size) + self.memory.sample_traj(self.replay_batch_size//8)
     states = [s[0] for s in minibatch]
     actions = [s[1] for s in minibatch]
     rewards = [s[2] for s in minibatch]
     next_states = [s[3] for s in minibatch]
-    env_states = [np.float(s[4] == EnvState.NORMAL) for s in minibatch]
+    dones = [np.float(s[4]) for s in minibatch]
+    steps = [s[5] for s in minibatch]
     
     actions = np.array(actions)
     rewards = np.array(rewards)
+    steps = np.array(steps)
     temp = []
 
     for i in range(len(states[0])):
@@ -107,18 +95,23 @@ class DQNAgent:
       temp += [np.array([x[i][0] for x in next_states])]
     next_states = temp
 
-    targets = rewards + self.gamma * np.array(env_states) * np.amax(self.model.predict(next_states), axis = 1)
+    backup = (self.gamma**(steps+1)) * np.array(dones) * np.amax(self.target_model.predict_on_batch(next_states), axis = 1)
     # clamp targets larger than zero to zero
-    targets[np.where(targets > 0)] = 0
-    targets_f = self.model.predict(states)
+    backup[np.where(backup > 0)] = 0
+    targets = (self.gamma**steps)*rewards + backup
+    targets_f = self.target_model.predict_on_batch(states)
     targets_f[np.arange(targets_f.shape[0]), actions] = targets
-    self.model.fit(states, targets_f, epochs=3, verbose=0)
+    self.model.train_on_batch(states, targets_f)
 
     if self.gamma < self.gamma_max:
       self.gamma += self.gamma_inc
 
+  def update_target(self):
+    if self.play == True:
+      return
+    self.target_model.set_weights(self.model.get_weights())
+
   def load(self, sumo_cfg):
-    import tensorflow as tf
     return tf.keras.models.load_model(self.name + ".sav", custom_objects={"tf": tf, "NUM_VEH_CONSIDERED": sumo_cfg.NUM_VEH_CONSIDERED})
 
   def save(self):

@@ -16,8 +16,8 @@ def get_reward_safety(env):
   return 0
 
 def get_reward_regulation(env):
-  obs_dict = env.obs_dict_hist.get(-1)
-  veh_dict = env.veh_dict_hist.get(-1)
+  obs_dict = env.obs_dict_hist[-1]
+  veh_dict = env.veh_dict_hist[-1]
   
   if obs_dict["ego_dist_to_end_of_lane"] < 0.5:
     if obs_dict["ego_correct_lane_gap"] != 0:
@@ -35,18 +35,18 @@ def get_reward_regulation(env):
 
 def get_reward_comfort(env):
   r = 0
-  if env.veh_dict_hist.size < 2:
+  if len(env.veh_dict_hist) < 2:
     return r
   
-  if (env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["edge_id"] == env.veh_dict_hist.get(-2)[env.EGO_VEH_ID]["edge_id"] and 
-      env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["lane_id"] != env.veh_dict_hist.get(-2)[env.EGO_VEH_ID]["lane_id"]
+  if (env.veh_dict_hist[-1][env.EGO_VEH_ID]["edge_id"] == env.veh_dict_hist[-2][env.EGO_VEH_ID]["edge_id"] and 
+      env.veh_dict_hist[-1][env.EGO_VEH_ID]["lane_id"] != env.veh_dict_hist[-2][env.EGO_VEH_ID]["lane_id"]
       ) or env.env_state == EnvState.CRASH:
     r += -0.5
 
   ego_max_accel = min(env.tc.vehicle.getAccel(env.EGO_VEH_ID), env.MAX_VEH_ACCEL)
   ego_max_decel = min(env.tc.vehicle.getDecel(env.EGO_VEH_ID), env.MAX_VEH_DECEL)  
   
-  accel_level = env.action_dict_hist.get(-1)["accel_level"]
+  accel_level = env.action_dict_hist[-1]["accel_level"]
   #print("accel")
   if accel_level.value > env.MAX_COMFORT_ACCEL_LEVEL.value:
     r += -0.5 * (accel_level.value - env.MAX_COMFORT_ACCEL_LEVEL.value)/(ActionAccel.MAXACCEL.value - env.MAX_COMFORT_ACCEL_LEVEL.value)
@@ -57,7 +57,7 @@ def get_reward_comfort(env):
   
 def get_reward_speed(env):
   ego_max_speed = min(env.tc.vehicle.getAllowedSpeed(env.EGO_VEH_ID), env.MAX_VEH_SPEED)
-  if env.veh_dict_hist.get(-1)[env.EGO_VEH_ID]["speed"] < ego_max_speed and \
-     env.action_dict_hist.get(-1)["accel_level"].value <= ActionAccel.NOOP.value:
+  if env.veh_dict_hist[-1][env.EGO_VEH_ID]["speed"] < ego_max_speed and \
+     env.action_dict_hist[-1]["accel_level"].value <= ActionAccel.NOOP.value:
        return -1
   return 0

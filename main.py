@@ -54,11 +54,12 @@ def Qlearning(conn, sumo_cfg, dqn_cfg):
       continue
     action = action_dict["lane_change"].value * 7 + action_dict["accel_level"].value
     next_state = agt.reshape(next_obs_dict)
-    agt.remember(state, action, reward, next_state, env_state)
+    agt.remember(state, action, reward, next_state, env_state != EnvState.NORMAL)
 
     agt.replay()
 
     if conn.recv() == True:
+      agt.update_target()
       agt.save()
 
   conn.close()
@@ -69,7 +70,6 @@ if __name__ == "__main__":
   args = parser.parse_args()
 
   env = MultiObjSumoEnv(sumo_cfg)
-  env_state = EnvState.NORMAL
   EPISODES = 60000
   if args.play:
     print("True")

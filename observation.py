@@ -14,7 +14,7 @@ def get_observation_space(env):
              "ego_exists_right_lane": spaces.Discrete(2),
              "ego_correct_lane_gap": spaces.Box(-env.NUM_LANE_CONSIDERED, env.NUM_LANE_CONSIDERED, shape=(1,), dtype=np.int16),
              "exists_vehicle": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
-             "speed": spaces.Box(0, env.MAX_VEH_SPEED, (env.NUM_VEH_CONSIDERED,)),  # absolute speed
+             "speed": spaces.Box(0, env.MAX_VEH_SPEED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),  # absolute speed
              "dist_to_end_of_lane": spaces.Box(0, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),
              "in_intersection": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "relative_position": spaces.Box(-env.OBSERVATION_RADIUS, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED, 2), dtype=np.float32),
@@ -81,7 +81,7 @@ def get_lanelet_dict(sumo_net_xml_file):
       lanelet_dict[lane_id]["lane_index"] = lane_index
       
       if lane_id[0] == ':':
-        lanelet_dict[lane_id]["edge_priority"] = float("inf")
+        lanelet_dict[lane_id]["edge_priority"] = np.float("inf")
       else:
         lanelet_dict[lane_id]["edge_priority"] = edge.getPriority()        
       
@@ -129,7 +129,7 @@ def get_edge_dict(sumo_net_xml_file):
     edge_dict[edge_id]["to_node_id"] = edge.getToNode().getID()
     # intersection has the highest priority
     if edge_id[0] == ':':
-      edge_dict[edge_id]["priority"] = float("inf")
+      edge_dict[edge_id]["priority"] = np.float("inf")
     else:
       edge_dict[edge_id]["priority"] = edge.getPriority()
     

@@ -1,3 +1,6 @@
+#!python3
+__author__ = "Changjian Li"
+
 import numpy as np
 import tensorflow as tf
 
@@ -33,11 +36,11 @@ tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
 def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(4, ))
   env_input = tf.keras.layers.Input(shape=(10* NUM_VEH_CONSIDERED, 1, 1))
-  l1_0 = tf.keras.layers.Dense(64, activation = None)(ego_input)
-  l1_1 = tf.keras.layers.Conv2D(64, kernel_size = (10, 1),
+  l1_0 = tf.keras.layers.Dense(128, activation = None)(ego_input)
+  l1_1 = tf.keras.layers.Conv2D(128, kernel_size = (10, 1),
                                 strides = (10, 1), padding = 'valid',
                                 activation = None)(env_input)
-  l1_1 = tf.keras.layers.Lambda(lambda x: tf.reduce_sum(tf.reshape(x, [-1, NUM_VEH_CONSIDERED, 64]), axis=1))(l1_1)
+  l1_1 = tf.keras.layers.Lambda(lambda x: tf.reduce_sum(tf.reshape(x, [-1, NUM_VEH_CONSIDERED, 128]), axis=1))(l1_1)
   l1 = tf.keras.layers.add([l1_0, l1_1])
   l1 = tf.keras.layers.Activation(activation="relu")(l1)
   l2 = tf.keras.layers.Dense(64, activation=None)(l1)
@@ -48,7 +51,7 @@ def build_model_safety():
   l3 = tf.keras.layers.Activation('sigmoid')(l3)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
   model = tf.keras.models.Model(inputs = [ego_input, env_input], outputs=y)
-  model.compile(loss='mse', optimizer="SGD")
+  model.compile(loss='logcosh', optimizer="SGD")
   return model
 
 def reshape_regulation(obs_dict):
@@ -86,10 +89,10 @@ tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.4
 def build_model_regulation():
   ego_input = tf.keras.layers.Input(shape=(6 + 2*NUM_LANE_CONSIDERED, ))
   env_input = tf.keras.layers.Input(shape=(16*NUM_VEH_CONSIDERED, 1, 1))
-  l1_0 = tf.keras.layers.Dense(64, activation = None)(ego_input)
-  l1_1 = tf.keras.layers.Conv2D(64, kernel_size = (16, 1), strides = (16, 1), padding = 'valid',
+  l1_0 = tf.keras.layers.Dense(128, activation = None)(ego_input)
+  l1_1 = tf.keras.layers.Conv2D(128, kernel_size = (16, 1), strides = (16, 1), padding = 'valid',
                 activation = None)(env_input)
-  l1_1 = tf.keras.layers.Lambda(lambda x: tf.reduce_sum(tf.reshape(x, [-1, NUM_VEH_CONSIDERED, 64]), axis=1))(l1_1)
+  l1_1 = tf.keras.layers.Lambda(lambda x: tf.reduce_sum(tf.reshape(x, [-1, NUM_VEH_CONSIDERED, 128]), axis=1))(l1_1)
   l1 = tf.keras.layers.add([l1_0, l1_1])
   l1 = tf.keras.layers.Activation(activation="relu")(l1)
   l2 = tf.keras.layers.Dense(64, activation=None)(l1)
@@ -100,7 +103,7 @@ def build_model_regulation():
   l3 = tf.keras.layers.Activation('sigmoid')(l3)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
   model = tf.keras.models.Model(inputs = [ego_input, env_input], outputs=y)
-  model.compile(loss='mse', optimizer="SGD")
+  model.compile(loss='logcosh', optimizer="SGD")
   return model
 
 def reshape_comfort(obs_dict):
@@ -113,7 +116,7 @@ def build_model_comfort():
   model.add(tf.keras.layers.Dense(8, input_dim=1, activation='sigmoid'))
   model.add(tf.keras.layers.Dense(8, activation='sigmoid'))
   model.add(tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear'))
-  model.compile(loss='mse', optimizer="SGD")
+  model.compile(loss='logcosh', optimizer="SGD")
   return model
 
 def reshape_speed(obs_dict):
@@ -126,7 +129,7 @@ def build_model_speed():
   model.add(tf.keras.layers.Dense(8, input_dim=1, activation='sigmoid'))
   model.add(tf.keras.layers.Dense(8, activation='sigmoid'))
   model.add(tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear'))
-  model.compile(loss='mse', optimizer="SGD")
+  model.compile(loss='logcosh', optimizer="SGD")
   return model
 
 action_size = len(ActionLaneChange) * len(ActionAccel)
@@ -135,13 +138,13 @@ cfg_safety = DQNCfg(name = "safety",
                     play = False,
                     state_size = 4 + 10*NUM_VEH_CONSIDERED,
                     action_size = action_size,
-                    gamma = 0,
-                    gamma_inc = 0.00005,
+                    gamma = 0.8,
+                    gamma_inc = 0.0005,
                     gamma_max = 0.90,
                     epsilon = 0.1,
                     threshold = -5,
                     memory_size = 640000,
-                    replay_batch_size = 800,
+                    replay_batch_size = 6400,
                     _build_model = build_model_safety,
                     tf_cfg = tf_cfg_safety,
                     reshape = reshape_safety)
@@ -150,13 +153,13 @@ cfg_regulation = DQNCfg(name = "regulation",
                         play = False,
                         state_size = 6 + 2*NUM_LANE_CONSIDERED + 16*NUM_VEH_CONSIDERED,
                         action_size = action_size,
-                        gamma = 0,
-                        gamma_inc = 0.00005,
+                        gamma = 0.8,
+                        gamma_inc = 0.0005,
                         gamma_max = 0.90,
                         epsilon = 0.2,
                         threshold = -5,
                         memory_size = 640000,
-                        replay_batch_size = 800,
+                        replay_batch_size = 6400,
                         _build_model = build_model_regulation,
                         tf_cfg = tf_cfg_regulation,
                         reshape = reshape_regulation)

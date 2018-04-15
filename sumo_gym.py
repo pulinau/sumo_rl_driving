@@ -7,6 +7,7 @@ from action import get_action_space, disable_collision_check, enable_collision_c
 from observation import get_observation_space, get_veh_dict, get_obs_dict
 from reward import get_reward_list
 from utils import class_vars
+from collections import deque
 
 from include import *
 
@@ -79,9 +80,9 @@ class SumoGymEnv(gym.Env):
     
     self.env_state = EnvState.NOT_STARTED
     self._agt_ctrl = False # whether the ego car is controlled by RL agent
-    self.veh_dict_hist = History(2)
-    self.obs_dict_hist = History(2)
-    self.action_dict_hist = History(2)
+    self.veh_dict_hist = deque(maxlen=2)
+    self.obs_dict_hist = deque(maxlen=2)
+    self.action_dict_hist = deque(maxlen=2)
 
     try:  
       sim_label = "sim" + str(random.randint(0, 65536))
@@ -114,9 +115,9 @@ class SumoGymEnv(gym.Env):
     return obs, reward, done, info
 
   def reset(self):
-    self.action_dict_hist.reset()
-    self.veh_dict_hist.reset()
-    self.obs_dict_hist.reset()
+    self.action_dict_hist.clear()
+    self.veh_dict_hist.clear()
+    self.obs_dict_hist.clear()
     try:
       ROU_XML_FILE = random.sample(self.ROU_XML_FILE_LIST, 1)
       self.tc.load(self.SUMO_CMD[1:] + ROU_XML_FILE)
@@ -124,8 +125,8 @@ class SumoGymEnv(gym.Env):
       # 2nd makes sure that all initial vehicles (departure time < SUMO_TIME_STEP) are in scene
       self.tc.simulationStep()
       #self.tc.simulationStep()
-      self.veh_dict_hist.add(get_veh_dict(self))
-      self.obs_dict_hist.add(get_obs_dict(self))      
+      self.veh_dict_hist.append(get_veh_dict(self))
+      self.obs_dict_hist.append(get_obs_dict(self))
       self.agt_ctrl = True
       self.env_state = EnvState.NORMAL
       return get_obs_dict(self)
@@ -145,17 +146,17 @@ class MultiObjSumoEnv(SumoGymEnv):
     assert self.env_state == EnvState.NORMAL, "env.env_state is not EnvState.NORMAL"
     try:
       self.env_state = act(self, self.EGO_VEH_ID, action_dict)
-      if self.env_state == EnvState.DONE:
-        # When ego car drives out of scene, discard the step
-        return None, None, EnvState.DONE, None
+      if self.env_state != EnvState.NORMAL:
+        obs_dict = self.obs_dict_hist[-1]
+        veh_dict = self.veh_dict_hist[-1]
       else:
         obs_dict =  get_obs_dict(self)
         veh_dict = get_veh_dict(self)
-      self.veh_dict_hist.add(veh_dict)
-      self.obs_dict_hist.add(obs_dict)
+      self.veh_dict_hist.append(veh_dict)
+      self.obs_dict_hist.append(obs_dict)
       if self.agt_ctrl == False:
         action_dict = infer_action(self)      
-      self.action_dict_hist.add(action_dict)
+      self.action_dict_hist.append(action_dict)
     except (traci.FatalTraCIError, traci.TraCIException):
       self.env_state = EnvState.ERROR
       raise    
