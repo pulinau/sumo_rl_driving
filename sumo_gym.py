@@ -146,6 +146,8 @@ class MultiObjSumoEnv(SumoGymEnv):
     assert self.env_state == EnvState.NORMAL, "env.env_state is not EnvState.NORMAL"
     try:
       self.env_state = act(self, self.EGO_VEH_ID, action_dict)
+      if self.env_state == EnvState.DONE:
+        return None, None, self.env_state, action_dict
       if self.env_state != EnvState.NORMAL:
         obs_dict = self.obs_dict_hist[-1]
         veh_dict = self.veh_dict_hist[-1]
@@ -155,10 +157,10 @@ class MultiObjSumoEnv(SumoGymEnv):
       self.veh_dict_hist.append(veh_dict)
       self.obs_dict_hist.append(obs_dict)
       if self.agt_ctrl == False:
-        action_dict = infer_action(self)      
+        action_dict = infer_action(self)
       self.action_dict_hist.append(action_dict)
+      info = action_dict
+      return obs_dict, get_reward_list(self), self.env_state, info
     except (traci.FatalTraCIError, traci.TraCIException):
       self.env_state = EnvState.ERROR
-      raise    
-    info = action_dict
-    return obs_dict, get_reward_list(self), self.env_state, info
+      raise
