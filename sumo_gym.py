@@ -146,8 +146,6 @@ class MultiObjSumoEnv(SumoGymEnv):
     assert self.env_state == EnvState.NORMAL, "env.env_state is not EnvState.NORMAL"
     try:
       self.env_state = act(self, self.EGO_VEH_ID, action_dict)
-      if self.env_state == EnvState.DONE:
-        return None, None, self.env_state, action_dict
       if self.env_state != EnvState.NORMAL:
         obs_dict = self.obs_dict_hist[-1]
         veh_dict = self.veh_dict_hist[-1]
@@ -156,7 +154,7 @@ class MultiObjSumoEnv(SumoGymEnv):
         veh_dict = get_veh_dict(self)
       self.veh_dict_hist.append(veh_dict)
       self.obs_dict_hist.append(obs_dict)
-      if self.agt_ctrl == False:
+      if self.agt_ctrl == False and self.env_state == EnvState.NORMAL:
         action_dict = infer_action(self)
       self.action_dict_hist.append(action_dict)
       info = action_dict

@@ -3,6 +3,7 @@ __author__ = "Changjian Li"
 
 from collections import deque
 import random
+import time
 
 class ReplayMemory():
   def __init__(self, memory_size, end_pred):
@@ -18,13 +19,13 @@ class ReplayMemory():
       self.traj = []
 
   def sample_end(self, n):
-    traj_mem = list(self.traj_mem)
-    indices = random.sample(range(len(traj_mem)), min(n, len(traj_mem)))
-    return [traj_mem[i][-1] for i in indices]
+    #print("sampling_end" ,time.time())
+    indices = random.sample(range(len(self.traj_mem)), min(n, len(self.traj_mem)))
+    return [self.traj_mem[i][-1] for i in indices]
 
   def sample_traj(self, n):
-    traj_mem = list(self.traj_mem)
-    traj_samp = random.sample(traj_mem, min(n, len(traj_mem)))
+    #print("sampling_traj", time.time())
+    traj_samp = random.sample(self.traj_mem, min(n, len(self.traj_mem)))
     return [x for traj in traj_samp for x in traj]
 
   def __len__(self):

@@ -13,15 +13,17 @@ from math import pi
 def reshape_safety(obs_dict):
   """reshape gym observation to keras neural network input"""
   out0 = np.array([], dtype = np.float32)
-  out0  = np.append(out0, np.array(obs_dict["ego_speed"])/MAX_VEH_SPEED)
-  out0  = np.append(out0, np.array(obs_dict["ego_dist_to_end_of_lane"])/OBSERVATION_RADIUS)
+  out0  = np.append(out0, np.array(obs_dict["ego_speed"]/MAX_VEH_SPEED))
+  out0 = np.append(out0,
+                   np.maximum.reduce([np.array(obs_dict["ego_dist_to_end_of_lane"]) / OBSERVATION_RADIUS, np.array(1)]))
   out0  = np.append(out0, np.array(obs_dict["ego_exists_left_lane"]))
   out0  = np.append(out0, np.array(obs_dict["ego_exists_right_lane"]))
   out1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
   out1  = np.append(out1, np.array([obs_dict["exists_vehicle"]]), axis=0)
   out1  = np.append(out1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
-  out1  = np.append(out1, np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS, axis=0)
-  out1  = np.append(out1, np.array(obs_dict["relative_position"]).T/OBSERVATION_RADIUS, axis=0)
+  out1  = np.append(out1, np.maximum.reduce([np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
+                                            np.array([[1.0] * NUM_VEH_CONSIDERED])]), axis = 0)
+  out1 = np.append(out1, np.array(obs_dict["relative_position"]).T / OBSERVATION_RADIUS, axis=0)
   out1  = np.append(out1, np.array([obs_dict["relative_heading"]])/pi, axis=0)
   out1  = np.append(out1, np.array([obs_dict["veh_relation_left"]]), axis=0)
   out1  = np.append(out1, np.array([obs_dict["veh_relation_right"]]), axis=0)
@@ -30,8 +32,8 @@ def reshape_safety(obs_dict):
   return [np.reshape(out0, (1,) + out0.shape), np.reshape(out1.T, (1, -1, 1, 1))]
 
 tf_cfg_safety = tf.ConfigProto()
-tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
-#tf_cfg_comfort = tf.ConfigProto(device_count = {"GPU": 0})
+tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.35
+#tf_cfg_safety = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(4, ))
@@ -42,7 +44,8 @@ def build_model_safety():
                                 activation = None)(env_input)
   l1_1 = tf.keras.layers.Lambda(lambda x: tf.reduce_sum(tf.reshape(x, [-1, NUM_VEH_CONSIDERED, 128]), axis=1))(l1_1)
   l1 = tf.keras.layers.add([l1_0, l1_1])
-  l1 = tf.keras.layers.Activation(activation="relu")(l1)
+  l1 = tf.keras.layers.BatchNormalization()(l1)
+  l1 = tf.keras.layers.Activation(activation="sigmoid")(l1)
   l2 = tf.keras.layers.Dense(64, activation=None)(l1)
   l2 = tf.keras.layers.BatchNormalization()(l2)
   l2 = tf.keras.layers.Activation('sigmoid')(l2)
@@ -51,13 +54,15 @@ def build_model_safety():
   l3 = tf.keras.layers.Activation('sigmoid')(l3)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
   model = tf.keras.models.Model(inputs = [ego_input, env_input], outputs=y)
-  model.compile(loss='logcosh', optimizer="SGD")
+  opt = tf.keras.optimizers.SGD(lr = 0.001, clipnorm = 1)
+  model.compile(loss='logcosh', optimizer=opt)
   return model
 
 def reshape_regulation(obs_dict):
   out0 = np.array([], dtype = np.float32)
   out0 = np.append(out0, np.array(obs_dict["ego_speed"])/MAX_VEH_SPEED)
-  out0 = np.append(out0, np.array(obs_dict["ego_dist_to_end_of_lane"])/OBSERVATION_RADIUS)
+  out0 = np.append(out0,
+                   np.maximum.reduce([np.array(obs_dict["ego_dist_to_end_of_lane"]) / OBSERVATION_RADIUS, np.array(1)]))
   out0 = np.append(out0, np.array(obs_dict["ego_in_intersection"]))
   out0 = np.append(out0, np.array(obs_dict["ego_exists_left_lane"]))
   out0 = np.append(out0, np.array(obs_dict["ego_exists_right_lane"]))
@@ -67,7 +72,8 @@ def reshape_regulation(obs_dict):
   out1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
   out1 = np.append(out1, np.array([obs_dict["exists_vehicle"]]), axis=0)
   out1 = np.append(out1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
-  out1 = np.append(out1, np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS, axis=0)
+  out1  = np.append(out1, np.maximum.reduce([np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
+                                            np.array([[1.0] * NUM_VEH_CONSIDERED])]), axis = 0)
   out1 = np.append(out1, np.array([obs_dict["in_intersection"]]), axis=0)
   out1  = np.append(out1, np.array(obs_dict["relative_position"]).T/OBSERVATION_RADIUS, axis=0)
   out1  = np.append(out1, np.array([obs_dict["relative_heading"]])/pi, axis=0)
@@ -83,7 +89,7 @@ def reshape_regulation(obs_dict):
   return [np.reshape(out0, (1, -1)), np.reshape(out1.T, (1, -1, 1, 1))]
 
 tf_cfg_regulation = tf.ConfigProto()
-tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.4
+tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.35
 #tf_cfg_regulation = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_regulation():
@@ -94,7 +100,8 @@ def build_model_regulation():
                 activation = None)(env_input)
   l1_1 = tf.keras.layers.Lambda(lambda x: tf.reduce_sum(tf.reshape(x, [-1, NUM_VEH_CONSIDERED, 128]), axis=1))(l1_1)
   l1 = tf.keras.layers.add([l1_0, l1_1])
-  l1 = tf.keras.layers.Activation(activation="relu")(l1)
+  l1 = tf.keras.layers.BatchNormalization()(l1)
+  l1 = tf.keras.layers.Activation(activation="sigmoid")(l1)
   l2 = tf.keras.layers.Dense(64, activation=None)(l1)
   l2 = tf.keras.layers.BatchNormalization()(l2)
   l2 = tf.keras.layers.Activation('sigmoid')(l2)
@@ -103,12 +110,15 @@ def build_model_regulation():
   l3 = tf.keras.layers.Activation('sigmoid')(l3)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
   model = tf.keras.models.Model(inputs = [ego_input, env_input], outputs=y)
-  model.compile(loss='logcosh', optimizer="SGD")
+  opt = tf.keras.optimizers.SGD(lr = 0.001, clipnorm = 1)
+  model.compile(loss='logcosh', optimizer=opt)
   return model
 
 def reshape_comfort(obs_dict):
   return np.reshape(np.array([0], dtype = np.float32), (1, -1))
 
+#tf_cfg_comfort = tf.ConfigProto()
+#tf_cfg_comfort.gpu_options.per_process_gpu_memory_fraction = 0.05
 tf_cfg_comfort = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_comfort():
@@ -116,12 +126,15 @@ def build_model_comfort():
   model.add(tf.keras.layers.Dense(8, input_dim=1, activation='sigmoid'))
   model.add(tf.keras.layers.Dense(8, activation='sigmoid'))
   model.add(tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear'))
-  model.compile(loss='logcosh', optimizer="SGD")
+  opt = tf.keras.optimizers.SGD(clipnorm = 1)
+  model.compile(loss='logcosh', optimizer=opt)
   return model
 
 def reshape_speed(obs_dict):
   return np.reshape(np.array(obs_dict["ego_speed"]/MAX_VEH_SPEED, dtype = np.float32), (1, -1))
 
+#tf_cfg_speed = tf.ConfigProto()
+#tf_cfg_speed.gpu_options.per_process_gpu_memory_fraction = 0.05
 tf_cfg_speed = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_speed():
@@ -129,7 +142,8 @@ def build_model_speed():
   model.add(tf.keras.layers.Dense(8, input_dim=1, activation='sigmoid'))
   model.add(tf.keras.layers.Dense(8, activation='sigmoid'))
   model.add(tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear'))
-  model.compile(loss='logcosh', optimizer="SGD")
+  opt = tf.keras.optimizers.SGD(clipnorm = 1)
+  model.compile(loss='logcosh', optimizer=opt)
   return model
 
 action_size = len(ActionLaneChange) * len(ActionAccel)
@@ -142,9 +156,9 @@ cfg_safety = DQNCfg(name = "safety",
                     gamma_inc = 0.0005,
                     gamma_max = 0.90,
                     epsilon = 0.1,
-                    threshold = -5,
-                    memory_size = 640000,
-                    replay_batch_size = 6400,
+                    threshold = -8,
+                    memory_size = 64000,
+                    replay_batch_size = 32,
                     _build_model = build_model_safety,
                     tf_cfg = tf_cfg_safety,
                     reshape = reshape_safety)
@@ -157,9 +171,9 @@ cfg_regulation = DQNCfg(name = "regulation",
                         gamma_inc = 0.0005,
                         gamma_max = 0.90,
                         epsilon = 0.2,
-                        threshold = -5,
-                        memory_size = 640000,
-                        replay_batch_size = 6400,
+                        threshold = -8,
+                        memory_size = 64000,
+                        replay_batch_size = 32,
                         _build_model = build_model_regulation,
                         tf_cfg = tf_cfg_regulation,
                         reshape = reshape_regulation)
@@ -173,8 +187,8 @@ cfg_comfort = DQNCfg(name = "comfort",
                      gamma_max = 0,
                      epsilon = 0.5,
                      threshold = -8,
-                     memory_size = 640,
-                     replay_batch_size = 64,
+                     memory_size = 64,
+                     replay_batch_size = 32,
                      _build_model = build_model_comfort,
                      tf_cfg = tf_cfg_comfort,
                      reshape = reshape_comfort)
@@ -188,8 +202,8 @@ cfg_speed = DQNCfg(name = "speed",
                    gamma_max = 0,
                    epsilon = 0.5,
                    threshold = -8,
-                   memory_size = 640,
-                   replay_batch_size = 64,
+                   memory_size = 64,
+                   replay_batch_size = 32,
                    _build_model = build_model_speed,
                    tf_cfg = tf_cfg_speed,
                    reshape = reshape_speed)

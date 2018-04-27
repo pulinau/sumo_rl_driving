@@ -36,3 +36,4 @@ for i in range(1024):
         contents.insert(33, '    <vType id="EgoCar" color="0,1,0"/>\n')
         contents[34] = '    <vehicle id="ego" depart="0.00" departLane="random" departPos="random_free" departSpeed="random" type="EgoCar">\n'
         fd_out.writelines(contents)
+

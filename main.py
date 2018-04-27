@@ -29,7 +29,7 @@ def select_action(action_set_list, explr_set_list, dqn_cfg_list):
       invalid += [(x, "explr: " + name) for x in (explr_set & valid)]
     valid = valid & action_set
     if len(valid) == 0:
-      print("no available action for " + name)
+      #print("no available action for " + name)
       break
 
   valid = [(x, "valid") for x in valid]
@@ -50,8 +50,6 @@ def Qlearning(conn, sumo_cfg, dqn_cfg):
     conn.send((action_set, explr_set))
 
     next_obs_dict, reward, env_state, action_dict = conn.recv()
-    if env_state == EnvState.DONE:
-      continue
     action = action_dict["lane_change"].value * 7 + action_dict["accel_level"].value
     next_state = agt.reshape(next_obs_dict)
     agt.remember(state, action, reward, next_state, env_state != EnvState.NORMAL)
@@ -111,25 +109,26 @@ if __name__ == "__main__":
       # send obs_dict
       [conn.send(obs_dict) for conn in parent_conn_list]
 
+      import time
+      print("entering: ", time.time())
       # select action
       action_set_list, explr_set_list = zip(*[conn.recv() for conn in parent_conn_list])
       action, action_info = select_action(action_set_list, explr_set_list, dqn_cfg_list)
       if env.agt_ctrl == False:
         action_info == "sumo"
+      print("exiting: ", time.time())
 
       # act
       next_obs_dict, reward_list, env_state, action_dict = env.step(
         {"lane_change": ActionLaneChange(action // 7), "accel_level": ActionAccel(action % 7)})
       if env_state == EnvState.DONE:
         print("Ego successfully drived out of scene, step: ", step)
-        [conn.send((next_obs_dict, None, env_state, action_dict)) for conn in parent_conn_list]
-        break
-      else:
-        [conn.send((next_obs_dict, reward, env_state, action_dict)) for conn, reward in
-         zip(parent_conn_list, reward_list)]
+
+      [conn.send((next_obs_dict, reward, env_state, action_dict)) for conn, reward in
+       zip(parent_conn_list, reward_list)]
 
       # save model
-      if e % 100 == 1:
+      if step % 100 == 1:
         [conn.send(True) for conn in parent_conn_list]
       else:
         [conn.send(False) for conn in parent_conn_list]
