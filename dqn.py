@@ -58,13 +58,15 @@ class DQNAgent:
       self.model = self._build_model()
       self.target_model = self._build_model()
 
-  def remember(self, state, action, reward, next_state, env_state):
+  def remember(self, traj):
     if self.play == True:
       return
-    self.memory.append(state, action, reward, next_state, env_state)
+    traj = [(self.reshape(obs_dict), action, reward, agt.reshape(next_obs_dict), done)
+            for obs_dict, action, reward, next_obs_dict, done in traj]
+    self.memory.add_traj(traj)
 
-  def select_actions(self, state):
-    act_values = self.model.predict(state)[0]
+  def select_actions(self, obs_dict):
+    act_values = self.model.predict(self.reshape(obs_dict))[0]
 
     idx = np.argsort(act_values)
     if len(set(np.where(act_values > self.threshold)[0])) == 0:
@@ -80,7 +82,11 @@ class DQNAgent:
   def replay(self):
     if self.play == True or len(self.memory) == 0:
       return
+
+    #print(self.name, " sampling starts", time.time())
     minibatch = self.memory.sample_end(self.replay_batch_size) + self.memory.sample_traj(self.replay_batch_size//8)
+    #print(self.name, " sampling ends", time.time())
+
     states = [s[0] for s in minibatch]
     actions = [s[1] for s in minibatch]
     rewards = [s[2] for s in minibatch]
@@ -115,9 +121,9 @@ class DQNAgent:
     targets_f = self.target_model.predict_on_batch(states)
     targets_f[np.arange(targets_f.shape[0]), actions] = targets
 
-    print(self.name , " training starts", time.time())
+    print(self.name , " training starts", time.time(), flush = True)
     self.model.train_on_batch(states, targets_f)
-    print(self.name, " training ends", time.time())
+    print(self.name, " training ends", time.time(), flush = True)
     """
     if np.any(np.isnan(self.model.predict_on_batch(states))):
       print("\nNAN...")
