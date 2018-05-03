@@ -9,16 +9,17 @@ from dqn import *
 
 import random
 import multiprocessing as mp
+import queue
 
 from sumo_cfgs import sumo_cfg
 from dqn_cfgs import cfg_safety, cfg_regulation, cfg_comfort, cfg_speed
 
-def run_env(sumo_cfg, agt_list, play = False, max_ep = 100, id = 0):
+def run_env(sumo_cfg, end_q, obs_q_list, action_q_list, traj_q_list, play, max_ep, id):
   max_step = 720
   env = MultiObjSumoEnv(sumo_cfg)
 
   for ep in range(max_ep):
-    print("env id: {}, episode: {}/{}".format(id, ep, max_ep))
+    print("env id: {}".format(id), "episode: {}/{}".format(ep, max_ep))
     obs_dict = env.reset()
     traj = []
 
@@ -38,7 +39,21 @@ def run_env(sumo_cfg, agt_list, play = False, max_ep = 100, id = 0):
           else:
             env.agt_ctrl = True
 
-      action, action_info = select_action(agt_list, obs_dict)
+      # select action
+      for obs_q in obs_q_list:
+        obs_q.put(obs_dict)
+
+      action_set_list, explr_set_list = [], []
+      for action_q in action_q_list:
+        while action_q.empty():
+          if not end_q.empty():
+            return
+        action_set, explr_set = action_q.get()
+
+        action_set_list += [action_set]
+        explr_set_list += [explr_set]
+
+      action, action_info = select_action(action_set_list, explr_set_list)
       if env.agt_ctrl == False:
         action_info == "sumo"
 
@@ -46,6 +61,7 @@ def run_env(sumo_cfg, agt_list, play = False, max_ep = 100, id = 0):
         {"lane_change": ActionLaneChange(action // 7), "accel_level": ActionAccel(action % 7)})
       if env_state == EnvState.DONE:
         print("Ego ", id, " drove out of scene, step: ", step)
+        break
       action = action_dict["lane_change"].value * 7 + action_dict["accel_level"].value
 
       traj.append((obs_dict, action, reward_list, next_obs_dict, env_state != EnvState.NORMAL))
@@ -53,17 +69,22 @@ def run_env(sumo_cfg, agt_list, play = False, max_ep = 100, id = 0):
       obs_dict = next_obs_dict
 
       if env_state != EnvState.NORMAL or step == max_step - 1:
-        print("Simulation ", id, " terminated, step: ", step, action_dict, action_info, reward_list, env_state, env.agt_ctrl)
+        print("Simulation ", id, " terminated, step: ", step, action_dict, action_info, reward_list, env_state,
+              env.agt_ctrl)
         break
 
-    add_traj(traj)
 
-def select_action(agt_list, obs_dict):
-  action_set_list, explr_set_list = zip(*[agt.select_actions(obs_dict) for agt in agt_list])
+    for i, traj_q in enumerate(traj_q_list):
+      traj_q.put([(obs_dict, action, reward_list[i], next_obs_dict, done)
+                  for obs_dict, action, reward_list, next_obs_dict, done in traj])
+
+  end_q.put(True)
+
+def select_action(action_set_list, explr_set_list):
   valid = set()
   invalid = [] # invalid stores the exploration actions
 
-  for action_set, explr_set, name in zip(action_set_list, explr_set_list, [agt.name for agt in agt_list]):
+  for action_set, explr_set, name in zip(action_set_list, explr_set_list, ["safety", "regulation", "comfort", "speed"]):
     if len(valid) == 0:
       valid = valid | action_set
       invalid += [(x, "explr: " + name) for x in explr_set]
@@ -81,16 +102,28 @@ def select_action(agt_list, obs_dict):
   else:
     return random.sample(valid + invalid, 1)[0]
 
-def add_traj(agt_list, traj):
-  [agt.remember([(obs_dict, action, reward_list[i], next_obs_dict, done)
-                 for obs_dict, action, reward_list, next_obs_dict, done in traj])
-   for i, agt in enumerate(agt_list)]
+def run_QAgent(sumo_cfg, dqn_cfg, end_q, obs_q_list, action_q_list, traj_q_list, max_ep):
+  agt = DQNAgent(sumo_cfg, dqn_cfg)
 
-def train(agt, max_ep = 1, sleep_secs = 1):
   for ep in range(max_ep):
+    for obs_q, action_q in zip(obs_q_list, action_q_list):
+      while obs_q.empty():
+        if not end_q.empty():
+          return
+      obs_dict = obs_q.get()
+      action_q.put(agt.select_actions(obs_dict))
+
+    for traj_q in traj_q_list:
+      try:
+        agt.remember(traj_q.get(block=False))
+      except queue.Empty:
+        pass
+
     print("training ", agt.name, " episode: {}/{}".format(ep, max_ep))
     agt.replay()
-    time.sleep(sleep_secs)
+
     if ep % 100 == 100-1:
       agt.update_target()
       agt.save()
+
+  end_q.put(True)

@@ -11,29 +11,6 @@ from collections import deque
 
 from include import *
 
-class History:
-  from copy import deepcopy
-  def __init__(self, length):
-    self._history = []
-    self.size = 0
-    self.length = length
-    
-  def add(self, current):
-    from copy import deepcopy
-    if self.size >= self.length:
-      self._history = self._history[1:]
-    else:
-      self.size += 1
-    self._history += [deepcopy(current)]
-
-  def reset(self):
-    self._history = []
-    self.size = 0
-
-  def get(self, index):
-    from copy import deepcopy
-    return deepcopy(self._history[index])
-
 class SumoCfg():
   def __init__(self, 
                # sumo
@@ -84,14 +61,10 @@ class SumoGymEnv(gym.Env):
     self.obs_dict_hist = deque(maxlen=2)
     self.action_dict_hist = deque(maxlen=2)
 
-    try:  
-      sim_label = "sim" + str(random.randint(0, 65536))
-      ROU_XML_FILE = random.sample(self.ROU_XML_FILE_LIST, 1)
-      traci.start(self.SUMO_CMD + ROU_XML_FILE, label = sim_label)
-      self.tc = traci.getConnection(sim_label)
-    except (traci.FatalTraCIError, traci.TraCIException):
-      self.env_state = EnvState.ERROR
-      raise
+    self.sim_label = "sim" + str(random.randint(0, 65536))
+    ROU_XML_FILE = random.sample(self.ROU_XML_FILE_LIST, 1)
+    traci.start(self.SUMO_CMD + ROU_XML_FILE, label=self.sim_label)
+    self.tc = traci.getConnection(self.sim_label)
 
   @property
   def agt_ctrl(self):

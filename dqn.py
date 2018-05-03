@@ -5,9 +5,9 @@ from include import *
 from sumo_cfgs import *
 from utils import class_vars
 import random
+import tensorflow as tf
 import numpy as np
 from replay_mem import ReplayMemory
-import tensorflow as tf
 import time
 
 class DQNCfg():
@@ -61,7 +61,7 @@ class DQNAgent:
   def remember(self, traj):
     if self.play == True:
       return
-    traj = [(self.reshape(obs_dict), action, reward, agt.reshape(next_obs_dict), done)
+    traj = [(self.reshape(obs_dict), action, reward, self.reshape(next_obs_dict), done)
             for obs_dict, action, reward, next_obs_dict, done in traj]
     self.memory.add_traj(traj)
 
@@ -77,7 +77,7 @@ class DQNAgent:
     explore_set = set([action for action in range(self.action_size) if np.random.rand() <= self.epsilon])
     explore_set = explore_set - action_set
 
-    return action_set, explore_set
+    return (action_set, explore_set)
   
   def replay(self):
     if self.play == True or len(self.memory) == 0:
@@ -121,16 +121,14 @@ class DQNAgent:
     targets_f = self.target_model.predict_on_batch(states)
     targets_f[np.arange(targets_f.shape[0]), actions] = targets
 
-    print(self.name , " training starts", time.time(), flush = True)
+    #print(self.name , " training starts", time.time(), flush = True)
     self.model.train_on_batch(states, targets_f)
-    print(self.name, " training ends", time.time(), flush = True)
-    """
+    #print(self.name, " training ends", time.time(), flush = True)
     if np.any(np.isnan(self.model.predict_on_batch(states))):
       print("\nNAN...")
       import time
       while True:
         time.sleep(100)
-    """
 
     if self.gamma < self.gamma_max:
       self.gamma += self.gamma_inc
@@ -144,4 +142,6 @@ class DQNAgent:
     return tf.keras.models.load_model(self.name + ".sav", custom_objects={"tf": tf, "NUM_VEH_CONSIDERED": sumo_cfg.NUM_VEH_CONSIDERED})
 
   def save(self):
+    if self.play == True:
+      return
     self.model.save(self.name + ".sav")

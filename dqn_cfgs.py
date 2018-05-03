@@ -9,7 +9,6 @@ from sumo_cfgs import *
 from dqn import DQNCfg
 from math import pi
 
-
 def reshape_safety(obs_dict):
   """reshape gym observation to keras neural network input"""
   out0 = np.array([], dtype = np.float32)
@@ -187,7 +186,7 @@ cfg_comfort = DQNCfg(name = "comfort",
                      gamma_max = 0,
                      epsilon = 0.5,
                      threshold = -8,
-                     memory_size = 64,
+                     memory_size = 640,
                      replay_batch_size = 32,
                      _build_model = build_model_comfort,
                      tf_cfg = tf_cfg_comfort,
@@ -202,7 +201,7 @@ cfg_speed = DQNCfg(name = "speed",
                    gamma_max = 0,
                    epsilon = 0.5,
                    threshold = -8,
-                   memory_size = 64,
+                   memory_size = 640,
                    replay_batch_size = 32,
                    _build_model = build_model_speed,
                    tf_cfg = tf_cfg_speed,
