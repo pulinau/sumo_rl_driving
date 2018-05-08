@@ -15,7 +15,7 @@ from sumo_cfgs import sumo_cfg
 from dqn_cfgs import cfg_safety, cfg_regulation, cfg_comfort, cfg_speed
 
 def run_env(sumo_cfg, end_q, obs_q_list, action_q_list, traj_q_list, play, max_ep, id):
-  max_step = 720
+  max_step = 2000
   env = MultiObjSumoEnv(sumo_cfg)
 
   for ep in range(max_ep):
@@ -33,46 +33,50 @@ def run_env(sumo_cfg, end_q, obs_q_list, action_q_list, traj_q_list, play, max_e
         else:
           env.agt_ctrl = False
       else:
-        if random.uniform(0, 1) < 0.03:
+        if random.uniform(0, 1) < 0.01:
           if env.agt_ctrl == True:
             env.agt_ctrl = False
           else:
             env.agt_ctrl = True
 
       # select action
-      for obs_q in obs_q_list:
-        obs_q.put(obs_dict)
-
-      action_set_list, explr_set_list = [], []
-      for action_q in action_q_list:
-        while action_q.empty():
-          if not end_q.empty():
-            return
-        action_set, explr_set = action_q.get()
-
-        action_set_list += [action_set]
-        explr_set_list += [explr_set]
-
-      action, action_info = select_action(action_set_list, explr_set_list)
       if env.agt_ctrl == False:
-        action_info == "sumo"
+        action = 0
+        action_info = "sumo"
+      else:
+        action_set_list, explr_set_list = [], []
+
+        for obs_q in obs_q_list:
+          obs_q.put(obs_dict)
+
+        for action_q in action_q_list:
+          while action_q.empty():
+            if not end_q.empty():
+              return
+          action_set, explr_set = action_q.get()
+
+          action_set_list += [action_set]
+          explr_set_list += [explr_set]
+
+        action, action_info = select_action(action_set_list, explr_set_list)
 
       next_obs_dict, reward_list, env_state, action_dict = env.step(
         {"lane_change": ActionLaneChange(action // 7), "accel_level": ActionAccel(action % 7)})
-      if env_state == EnvState.DONE:
-        print("Ego ", id, " drove out of scene, step: ", step)
-        break
       action = action_dict["lane_change"].value * 7 + action_dict["accel_level"].value
-
       traj.append((obs_dict, action, reward_list, next_obs_dict, env_state != EnvState.NORMAL))
 
       obs_dict = next_obs_dict
 
-      if env_state != EnvState.NORMAL or step == max_step - 1:
-        print("Simulation ", id, " terminated, step: ", step, action_dict, action_info, reward_list, env_state,
+      if env_state == EnvState.DONE:
+        print("Sim ", id, " success, step: ", step)
+        break
+      if env_state != EnvState.NORMAL:
+        print("Sim ", id, " terminated, step: ", step, action_dict, action_info, reward_list, env_state,
               env.agt_ctrl)
         break
-
+      if step == max_step - 1
+        print("Sim ", id, " timeout, step: ", step)
+        break
 
     for i, traj_q in enumerate(traj_q_list):
       traj_q.put([(obs_dict, action, reward_list[i], next_obs_dict, done)
@@ -90,17 +94,13 @@ def select_action(action_set_list, explr_set_list):
       invalid += [(x, "explr: " + name) for x in explr_set]
     else:
       invalid += [(x, "explr: " + name) for x in (explr_set & valid)]
-    valid = valid & action_set
-    if len(valid) == 0:
-      #print("no available action for " + name)
+    if len(valid & action_set) == 0:
+      print("no available action for " + name)
       break
+    valid = valid & action_set
 
-  valid = [(x, "valid") for x in valid]
-
-  if len(valid) == 0 and len(invalid) == 0:
-    return (random.sample(range(action_size), 1)[0], "exploration")
-  else:
-    return random.sample(valid + invalid, 1)[0]
+  valid = [(x, "exploit") for x in valid]
+  return random.sample(valid + invalid, 1)[0]
 
 def run_QAgent(sumo_cfg, dqn_cfg, end_q, obs_q_list, action_q_list, traj_q_list, max_ep):
   agt = DQNAgent(sumo_cfg, dqn_cfg)

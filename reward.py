@@ -8,10 +8,11 @@ def get_reward_list(env):
     return [0] * 4
   r_safety = 10 * get_reward_safety(env)
   r_regulation = get_reward_regulation(env)
+  r_demo = 10 * get_reward_demo(env)
   r_comfort = 10 * get_reward_comfort(env)
   r_speed = 10 * get_reward_speed(env)
   return [r_safety, r_regulation, r_comfort, r_speed]
-  
+
 def get_reward_safety(env):
   if env.env_state == EnvState.CRASH:
     return -1

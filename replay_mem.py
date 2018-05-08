@@ -8,11 +8,20 @@ import time
 class ReplayMemory():
   def __init__(self, memory_size, end_pred):
     self.traj_mem = deque(maxlen = memory_size)
+    self.end_pred = end_pred
 
   def add_traj(self, traj):
-    state, action, reward, next_state, done = traj[-1]
-    traj = [(x[0], x[1], reward, next_state, done, i) for i, x in enumerate(traj[::-1])]
-    self.traj_mem.append(random.sample(traj[:-1], min(32, len(traj)-1)) + [traj[-1]])
+    traj = []
+    for state, action, reward, next_state, done in traj[::-1]:
+      if done or self.end_pred(reward):
+        end_reward, end_state, end_done = reward, next_state, done
+        if len(traj) != 0:
+          self.traj_mem.append(traj)
+        traj = []
+        i = 0
+      traj.append((state, action, end_reward, end_state, end_done, i))
+      i += 1
+    self.traj_mem.append(traj)
 
   def sample_end(self, n):
     indices = random.sample(range(len(self.traj_mem)), min(n, len(self.traj_mem)))

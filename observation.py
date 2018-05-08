@@ -55,7 +55,7 @@ def get_veh_dict(env):
       veh_dict[veh_id]["next_normal_edge_id"] = route[env.tc.vehicle.getRouteIndex(veh_id) + 1]
     else:
       veh_dict[veh_id]["next_normal_edge_id"] = None
-  
+
   return veh_dict
 
 def get_lanelet_dict(sumo_net_xml_file):

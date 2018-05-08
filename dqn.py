@@ -22,6 +22,7 @@ class DQNCfg():
                epsilon,
                threshold,
                memory_size,
+               traj_end_pred,
                replay_batch_size,
                _build_model,
                tf_cfg,
@@ -36,6 +37,7 @@ class DQNCfg():
     self.epsilon = epsilon
     self.threshold = threshold
     self.memory_size = memory_size
+    self.traj_end_pred = traj_end_pred
     self.replay_batch_size = replay_batch_size
     self._build_model = _build_model
     self.tf_cfg = tf_cfg
@@ -54,7 +56,7 @@ class DQNAgent:
       self.epsilon = 0
       self.model = self.load(sumo_cfg)
     else:
-      self.memory = ReplayMemory(self.memory_size, lambda x: x < -0.1)
+      self.memory = ReplayMemory(self.memory_size, self.traj_end_pred)
       self.model = self._build_model()
       self.target_model = self._build_model()
 
