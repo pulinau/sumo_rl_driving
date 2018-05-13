@@ -61,7 +61,7 @@ def run_env(sumo_cfg, end_q, obs_q_list, action_q_list, traj_q_list, play, max_e
         action, action_info = select_action(action_set_list, explr_set_list)
 
       next_obs_dict, reward_list, env_state, action_dict = env.step(
-        {"lane_change": ActionLaneChange(action // 7), "accel_level": ActionAccel(action % 7)})
+        {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
       action = action_dict["lane_change"].value * 7 + action_dict["accel_level"].value
       traj.append((obs_dict, action, reward_list, next_obs_dict, env_state != EnvState.NORMAL))
 
@@ -74,7 +74,7 @@ def run_env(sumo_cfg, end_q, obs_q_list, action_q_list, traj_q_list, play, max_e
         print("Sim ", id, " terminated, step: ", step, action_dict, action_info, reward_list, env_state,
               env.agt_ctrl)
         break
-      if step == max_step - 1
+      if step == max_step - 1:
         print("Sim ", id, " timeout, step: ", step)
         break
 

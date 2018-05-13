@@ -37,23 +37,23 @@ tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.25
 def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(4, ))
   env_input = tf.keras.layers.Input(shape=(10* NUM_VEH_CONSIDERED, 1, 1))
-  l1_0 = tf.keras.layers.Dense(128, activation = None)(ego_input)
-  l1_1 = tf.keras.layers.Conv2D(128, kernel_size = (10, 1),
+  l1_0 = tf.keras.layers.Dense(64, activation = None)(ego_input)
+  l1_1 = tf.keras.layers.Conv2D(64, kernel_size = (10, 1),
                                 strides = (10, 1), padding = 'valid',
                                 activation = None)(env_input)
-  l1_1 = tf.keras.layers.Lambda(lambda x: tf.reduce_sum(tf.reshape(x, [-1, NUM_VEH_CONSIDERED, 128]), axis=1))(l1_1)
+  l1_1 = tf.keras.layers.Lambda(lambda x: tf.reduce_sum(tf.reshape(x, [-1, NUM_VEH_CONSIDERED, 64]), axis=1))(l1_1)
   l1 = tf.keras.layers.add([l1_0, l1_1])
-  l1 = tf.keras.layers.BatchNormalization()(l1)
+  #l1 = tf.keras.layers.BatchNormalization()(l1)
   l1 = tf.keras.layers.Activation(activation="sigmoid")(l1)
-  l2 = tf.keras.layers.Dense(64, activation=None)(l1)
-  l2 = tf.keras.layers.BatchNormalization()(l2)
+  l2 = tf.keras.layers.Dense(32, activation=None)(l1)
+  #l2 = tf.keras.layers.BatchNormalization()(l2)
   l2 = tf.keras.layers.Activation('sigmoid')(l2)
-  l3 = tf.keras.layers.Dense(64, activation=None)(l2)
-  l3 = tf.keras.layers.BatchNormalization()(l3)
+  l3 = tf.keras.layers.Dense(32, activation=None)(l2)
+  #l3 = tf.keras.layers.BatchNormalization()(l3)
   l3 = tf.keras.layers.Activation('sigmoid')(l3)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
   model = tf.keras.models.Model(inputs = [ego_input, env_input], outputs=y)
-  opt = tf.keras.optimizers.SGD(lr = 0.005, clipnorm = 1)
+  opt = tf.keras.optimizers.SGD(lr = 0.003, clipnorm = 1)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -94,22 +94,22 @@ tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.25
 def build_model_regulation():
   ego_input = tf.keras.layers.Input(shape=(6 + 2*NUM_LANE_CONSIDERED, ))
   env_input = tf.keras.layers.Input(shape=(16*NUM_VEH_CONSIDERED, 1, 1))
-  l1_0 = tf.keras.layers.Dense(128, activation = None)(ego_input)
-  l1_1 = tf.keras.layers.Conv2D(128, kernel_size = (16, 1), strides = (16, 1), padding = 'valid',
+  l1_0 = tf.keras.layers.Dense(64, activation = None)(ego_input)
+  l1_1 = tf.keras.layers.Conv2D(64, kernel_size = (16, 1), strides = (16, 1), padding = 'valid',
                 activation = None)(env_input)
-  l1_1 = tf.keras.layers.Lambda(lambda x: tf.reduce_sum(tf.reshape(x, [-1, NUM_VEH_CONSIDERED, 128]), axis=1))(l1_1)
+  l1_1 = tf.keras.layers.Lambda(lambda x: tf.reduce_sum(tf.reshape(x, [-1, NUM_VEH_CONSIDERED, 64]), axis=1))(l1_1)
   l1 = tf.keras.layers.add([l1_0, l1_1])
-  l1 = tf.keras.layers.BatchNormalization()(l1)
+  #l1 = tf.keras.layers.BatchNormalization()(l1)
   l1 = tf.keras.layers.Activation(activation="sigmoid")(l1)
-  l2 = tf.keras.layers.Dense(64, activation=None)(l1)
-  l2 = tf.keras.layers.BatchNormalization()(l2)
+  l2 = tf.keras.layers.Dense(32, activation=None)(l1)
+  #l2 = tf.keras.layers.BatchNormalization()(l2)
   l2 = tf.keras.layers.Activation('sigmoid')(l2)
-  l3 = tf.keras.layers.Dense(64, activation=None)(l2)
-  l3 = tf.keras.layers.BatchNormalization()(l3)
+  l3 = tf.keras.layers.Dense(32, activation=None)(l2)
+  #l3 = tf.keras.layers.BatchNormalization()(l3)
   l3 = tf.keras.layers.Activation('sigmoid')(l3)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
-  model = tf.keras.models.Model(inputs = [ego_input, env_input], outputs=y)
-  opt = tf.keras.optimizers.SGD(lr = 0.005, clipnorm = 1)
+  model = tf.keras.models.Model(inputs = [ego_input, env_input], outputs = y)
+  opt = tf.keras.optimizers.SGD(lr = 0.003, clipnorm = 1)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -121,10 +121,11 @@ def reshape_comfort(obs_dict):
 tf_cfg_comfort = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_comfort():
-  model = tf.keras.models.Sequential()
-  model.add(tf.keras.layers.Dense(8, input_dim=1, activation='sigmoid'))
-  model.add(tf.keras.layers.Dense(8, activation='sigmoid'))
-  model.add(tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear'))
+  input = tf.keras.layers.Input(shape=(1, ))
+  l1 = tf.keras.layers.Dense(8, input_dim=1, activation='sigmoid')(input)
+  l2 = tf.keras.layers.Dense(8, activation='sigmoid')(l1)
+  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l2)
+  model = tf.keras.models.Model(inputs = [input], outputs = y)
   opt = tf.keras.optimizers.SGD(clipnorm = 1)
   model.compile(loss='logcosh', optimizer=opt)
   return model
@@ -137,10 +138,11 @@ def reshape_speed(obs_dict):
 tf_cfg_speed = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_speed():
-  model = tf.keras.models.Sequential()
-  model.add(tf.keras.layers.Dense(8, input_dim=1, activation='sigmoid'))
-  model.add(tf.keras.layers.Dense(8, activation='sigmoid'))
-  model.add(tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear'))
+  input = tf.keras.layers.Input(shape=(1, ))
+  l1 = tf.keras.layers.Dense(8, input_dim=1, activation='sigmoid')(input)
+  l2 = tf.keras.layers.Dense(8, activation='sigmoid')(l1)
+  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l2)
+  model = tf.keras.models.Model(inputs = [input], outputs = y)
   opt = tf.keras.optimizers.SGD(clipnorm = 1)
   model.compile(loss='logcosh', optimizer=opt)
   return model
@@ -151,10 +153,14 @@ cfg_safety = DQNCfg(name = "safety",
                     play = False,
                     state_size = 4 + 10*NUM_VEH_CONSIDERED,
                     action_size = action_size,
+                    pretrain_low_target=-10,
+                    pretrain_high_target=0,
                     gamma = 0.8,
                     gamma_inc = 0.0005,
                     gamma_max = 0.90,
-                    epsilon = 0.01,
+                    epsilon = 0.3,
+                    epsilon_dec = 0.0005,
+                    epsilon_min = 0.05,
                     threshold = -8,
                     memory_size = 6400,
                     traj_end_pred = lambda x: x < -0.1,
@@ -167,10 +173,14 @@ cfg_regulation = DQNCfg(name = "regulation",
                         play = False,
                         state_size = 6 + 2*NUM_LANE_CONSIDERED + 16*NUM_VEH_CONSIDERED,
                         action_size = action_size,
+                        pretrain_low_target=-10,
+                        pretrain_high_target=0,
                         gamma = 0.8,
                         gamma_inc = 0.0005,
                         gamma_max = 0.90,
-                        epsilon = 0.01,
+                        epsilon=0.3,
+                        epsilon_dec=0.0002,
+                        epsilon_min=0.05,
                         threshold = -8,
                         memory_size = 6400,
                         traj_end_pred = lambda x: x < -0.1,
@@ -183,10 +193,14 @@ cfg_comfort = DQNCfg(name = "comfort",
                      play = False,
                      state_size = 1,
                      action_size = action_size,
+                     pretrain_low_target=-10,
+                     pretrain_high_target=0,
                      gamma = 0,
                      gamma_inc = 0,
                      gamma_max = 0,
-                     epsilon = 0.2,
+                     epsilon=0.3,
+                     epsilon_dec=0.005,
+                     epsilon_min=0.1,
                      threshold = -8,
                      memory_size = 640,
                      traj_end_pred = lambda _: True,
@@ -199,10 +213,14 @@ cfg_speed = DQNCfg(name = "speed",
                    play = False,
                    state_size = 1,
                    action_size = action_size,
+                   pretrain_low_target=-10,
+                   pretrain_high_target=0,
                    gamma = 0,
                    gamma_inc = 0,
                    gamma_max = 0,
-                   epsilon = 0.2,
+                   epsilon=0.3,
+                   epsilon_dec=0.005,
+                   epsilon_min=0.1,
                    threshold = -8,
                    memory_size = 640,
                    traj_end_pred = lambda _: True,

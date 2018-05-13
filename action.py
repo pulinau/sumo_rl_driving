@@ -153,3 +153,21 @@ def infer_action(env):
       accel_level = ActionAccel.MAXDECEL.value
   action_dict = {"lane_change":ActionLaneChange(lane_change), "accel_level":ActionAccel(accel_level)}
   return action_dict
+
+def loosen_correct_actions(actions):
+  # loose the correct action
+  assert (len(ActionAccel) > 0)
+  state_idx = []
+  correct_actions = []
+  for i, a in enumerate(actions):
+    if a % len(ActionAccel) < len(ActionAccel) - 1 and a % len(ActionAccel) > 0:
+      state_idx += [i] * 3
+      correct_actions += [a - 1, a, a + 1]
+    elif a % len(ActionAccel) == len(ActionAccel) - 1:
+      state_idx += [i] * 2
+      correct_actions += [a - 1, a]
+    elif a % len(ActionAccel) == 0:
+      state_idx += [i] * 2
+      correct_actions += [a, a + 1]
+
+  return np.array(state_idx), np.array(correct_actions)
