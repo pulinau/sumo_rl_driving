@@ -96,11 +96,12 @@ def select_action(action_set_list, explr_set_list):
     if len(valid) == 0:
       valid = valid | action_set
       invalid += [(x, "explr: " + name) for x in explr_set]
-    else:
-      invalid += [(x, "explr: " + name) for x in (explr_set & valid)]
-    if len(valid & action_set) == 0:
+    elif len(valid & action_set) == 0:
+      invalid += [(x, "explr: " + name) for x in valid]
       print("no available action for " + name)
       break
+    else:
+      invalid += [(x, "explr: " + name) for x in (explr_set & valid)]
     valid = valid & action_set
 
   valid = [(x, "exploit") for x in valid]

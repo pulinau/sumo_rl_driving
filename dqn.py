@@ -79,9 +79,11 @@ class DQNAgent:
   def select_actions(self, obs_dict):
     act_values = self.model.predict(self.reshape(obs_dict))[0]
 
+    return act_values
+
     idx = np.argsort(act_values)
-    #action_set = set(np.where(act_values > self.threshold)[0]) | set(act_values[idx[-6:]])
-    action_set = set(act_values[idx[-6:]])
+
+    action_set = set(np.where(act_values > self.threshold)[0]) | set(idx[-6:])
     explore_set = set([action for action in range(self.action_size) if np.random.rand() <= self.epsilon])
     explore_set = explore_set - action_set
 
