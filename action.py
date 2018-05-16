@@ -156,7 +156,7 @@ def infer_action(env):
 
 def loosen_correct_actions(actions):
   # loose the correct action
-  assert (len(ActionAccel) > 0)
+  assert (len(ActionAccel) >= 2)
   state_idx = []
   correct_actions = []
   for i, a in enumerate(actions):
