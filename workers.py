@@ -25,6 +25,7 @@ def run_env(sumo_cfg, end_q, obs_q_list, action_q_list, traj_q_list, play, max_e
 
     for step in range(max_step):
 
+      """
       if play:
         env.agt_ctrl = True
       elif step == 0:
@@ -33,11 +34,13 @@ def run_env(sumo_cfg, end_q, obs_q_list, action_q_list, traj_q_list, play, max_e
         else:
           env.agt_ctrl = False
       else:
-        if random.uniform(0, 1) < 0.01:
+        if random.uniform(0, 1) < 0.1:
           if env.agt_ctrl == True:
             env.agt_ctrl = False
           else:
             env.agt_ctrl = True
+      """
+      env.agt_ctrl = True
 
       # select action
       if env.agt_ctrl == False:
@@ -63,6 +66,7 @@ def run_env(sumo_cfg, end_q, obs_q_list, action_q_list, traj_q_list, play, max_e
       next_obs_dict, reward_list, env_state, action_dict = env.step(
         {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
       action = action_dict["lane_change"].value * 7 + action_dict["accel_level"].value
+      print(action, action_info)
       traj.append((obs_dict, action, reward_list, next_obs_dict, env_state != EnvState.NORMAL))
 
       obs_dict = next_obs_dict

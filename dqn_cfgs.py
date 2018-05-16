@@ -53,7 +53,7 @@ def build_model_safety():
   l3 = tf.keras.layers.Activation('sigmoid')(l3)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
   model = tf.keras.models.Model(inputs = [ego_input, env_input], outputs=y)
-  opt = tf.keras.optimizers.SGD(lr = 0.003, clipnorm = 1)
+  opt = tf.keras.optimizers.RMSprop(lr=0.002)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -109,7 +109,7 @@ def build_model_regulation():
   l3 = tf.keras.layers.Activation('sigmoid')(l3)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
   model = tf.keras.models.Model(inputs = [ego_input, env_input], outputs = y)
-  opt = tf.keras.optimizers.SGD(lr = 0.003, clipnorm = 1)
+  opt = tf.keras.optimizers.RMSprop(lr=0.002)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -126,7 +126,7 @@ def build_model_comfort():
   l2 = tf.keras.layers.Dense(8, activation='sigmoid')(l1)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l2)
   model = tf.keras.models.Model(inputs = [input], outputs = y)
-  opt = tf.keras.optimizers.SGD(clipnorm = 1)
+  opt = tf.keras.optimizers.opt = tf.keras.optimizers.RMSprop(lr=0.001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -143,7 +143,7 @@ def build_model_speed():
   l2 = tf.keras.layers.Dense(8, activation='sigmoid')(l1)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l2)
   model = tf.keras.models.Model(inputs = [input], outputs = y)
-  opt = tf.keras.optimizers.SGD(clipnorm = 1)
+  opt = tf.keras.optimizers.RMSprop(lr=0.001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -161,10 +161,10 @@ cfg_safety = DQNCfg(name = "safety",
                     epsilon = 0.3,
                     epsilon_dec = 0.0005,
                     epsilon_min = 0.05,
-                    threshold = -8,
+                    threshold = -3,
                     memory_size = 6400,
                     traj_end_pred = lambda x: x < -0.1,
-                    replay_batch_size = 32,
+                    replay_batch_size = 640,
                     _build_model = build_model_safety,
                     tf_cfg = tf_cfg_safety,
                     reshape = reshape_safety)
@@ -181,10 +181,10 @@ cfg_regulation = DQNCfg(name = "regulation",
                         epsilon=0.3,
                         epsilon_dec=0.0002,
                         epsilon_min=0.05,
-                        threshold = -8,
+                        threshold = -3,
                         memory_size = 6400,
                         traj_end_pred = lambda x: x < -0.1,
-                        replay_batch_size = 32,
+                        replay_batch_size = 640,
                         _build_model = build_model_regulation,
                         tf_cfg = tf_cfg_regulation,
                         reshape = reshape_regulation)
@@ -201,7 +201,7 @@ cfg_comfort = DQNCfg(name = "comfort",
                      epsilon=0.3,
                      epsilon_dec=0.005,
                      epsilon_min=0.1,
-                     threshold = -8,
+                     threshold = -6,
                      memory_size = 640,
                      traj_end_pred = lambda _: True,
                      replay_batch_size = 32,
@@ -221,7 +221,7 @@ cfg_speed = DQNCfg(name = "speed",
                    epsilon=0.3,
                    epsilon_dec=0.005,
                    epsilon_min=0.1,
-                   threshold = -8,
+                   threshold = -6,
                    memory_size = 640,
                    traj_end_pred = lambda _: True,
                    replay_batch_size = 32,

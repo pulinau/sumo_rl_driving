@@ -161,10 +161,13 @@ class DQNAgent:
 
     print(self.name, targets_f[0])
     #print(self.name , " training starts", time.time(), flush = True)
-    self.model.train_on_batch(states, targets_f)
+    id = random.randint(0, 65536)
+    for i in range(2):
+      print(self.name, " id:", id, " ep:", i, self.model.train_on_batch(states, targets_f))
+
     #print(self.name, " training ends", time.time(), flush = True)
     if np.any(np.isnan(self.model.predict_on_batch(states))):
-      print("\n###################3NAN...####################\n")
+      print("\n###################NAN...####################\n")
       import time
       while True:
         time.sleep(1000)

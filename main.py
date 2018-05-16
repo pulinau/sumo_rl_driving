@@ -42,7 +42,7 @@ if __name__ == "__main__":
                                                [obs_q[i] for obs_q in obs_queues],
                                                [action_q[i] for action_q in action_queues],
                                                [traj_q[i] for traj_q in traj_queues],
-                                               False, max_ep, i,))
+                                               args.play, max_ep, i,))
               for i in range(sim_inst)]
 
 
