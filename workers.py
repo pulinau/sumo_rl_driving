@@ -88,24 +88,37 @@ def run_env(sumo_cfg, end_q, obs_q_list, action_q_list, traj_q_list, play, max_e
 
   end_q.put(True)
 
-def select_action(action_set_list, explr_set_list):
-  valid = set()
-  invalid = [] # invalid stores the exploration actions
+def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list):
+  """
+  Select an action based on the action choice of each objective. The underlying assumption is that there are at least 3
+  actions that are satisfy all objectives relatively in a state.
+  :param dqn_cfg_list:
+  :param action_set_list: list of "good enough" actions of each objective
+  :param explr_set_list: list of actions each objective want to explore
+  :param sorted_idx_list: list of sorted actions based on desirability of each objective,
+                          used in case there's no "good enough" action that satisfies all objectives
+  :return: action
+  """
+  valid = action_set_list[0]
+  invalid = explr_set_list[0]
+  invalid_list = [(x, "explr: " + dqn_cfg_list[0].name) for x in invalid] # exploration actions with info
 
-  for action_set, explr_set, name in zip(action_set_list, explr_set_list, ["safety", "regulation", "comfort", "speed"]):
-    if len(valid) == 0:
-      valid = valid | action_set
-      invalid += [(x, "explr: " + name) for x in explr_set]
-    elif len(valid & action_set) == 0:
-      invalid += [(x, "explr: " + name) for x in valid]
-      print("no available action for " + name)
+  for action_set, explr_set, sorted_idx, dqn_cfg in zip(action_set_list, explr_set_list, sorted_idx_list, dqn_cfg_list):
+    if len(valid & action_set) < 3:
+      new_invalid = [(sorted_idx.index(x), x) for x in valid - action_set]
+      new_invalid = sorted(new_invalid)[:3 - len(valid & action_set)]
+      new_invalid = [x[1] for x in new_invalid]
+      invalid = invalid | set(new_invalid)
+      invalid_list += [(x, "explr: " + dqn_cfg.name) for x in new_invalid]
+      print("no available action for " + dqn_cfg.name)
       break
-    else:
-      invalid += [(x, "explr: " + name) for x in (explr_set & valid)]
+    new_invalid = explr_set & valid - invalid
+    invalid = invalid | new_invalid
+    invalid_list += [(x, "explr: " + dqn_cfg.name) for x in new_invalid]
     valid = valid & action_set
 
   valid = [(x, "exploit") for x in valid]
-  return random.sample(valid + invalid, 1)[0]
+  return random.sample(valid + invalid_list, 1)[0]
 
 def run_QAgent(sumo_cfg, dqn_cfg, end_q, obs_q_list, action_q_list, traj_q_list, max_ep):
   agt = DQNAgent(sumo_cfg, dqn_cfg)
