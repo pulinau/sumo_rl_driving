@@ -57,13 +57,14 @@ class DQNAgent:
     _attrs = class_vars(dqn_cfg)
     for _attr in _attrs:
       setattr(self, _attr, getattr(dqn_cfg, _attr))
+    self.sumo_cfg = sumo_cfg
 
     assert self.memory_size >= self.replay_batch_size
 
     tf.keras.backend.set_session(tf.Session(config=self.tf_cfg))
     if self.play == True:
       self.epsilon = 0
-      self.model = self.load(sumo_cfg)
+      self.model = self.load()
     else:
       self.memory = ReplayMemory(self.traj_end_pred, self.memory_size)
       self.model = self._build_model()
@@ -93,30 +94,34 @@ class DQNAgent:
     if self.play == True or len(traj_list) == 0:
       return
 
-    self.pretrain_mem = ReplayMemory(end_pred=True)
-    for traj in traj_list:
+    try:
+      self._load_model("pretrain_" + self.name + ".sav")
+    except:
+      self.pretrain_mem = ReplayMemory(end_pred=True)
+      for traj in traj_list:
       traj = [(self.reshape(obs_dict), action, reward, self.reshape(next_obs_dict), done)
               for obs_dict, action, reward, next_obs_dict, done in traj]
       self.pretrain_mem.add_traj(traj)
 
-    states = [s[0] for s in self.pretrain_mem.traj_mem]
-    actions = [s[1] for s in self.pretrain_mem.traj_mem]
+      states = [s[0] for s in self.pretrain_mem.traj_mem]
+      actions = [s[1] for s in self.pretrain_mem.traj_mem]
 
-    state_idx, correct_actions = loosen_correct_actions(actions)
+      state_idx, correct_actions = loosen_correct_actions(actions)
 
-    temp = []
-    for i in range(len(states[0])):
-      arr = np.reshape(np.array([], dtype=np.float32), (0,) + states[0][i][0].shape)
-      for x in states:
-        arr = np.append(arr, x[i], axis=0)
-      temp += [arr]
-    states = temp
+      temp = []
+      for i in range(len(states[0])):
+        arr = np.reshape(np.array([], dtype=np.float32), (0,) + states[0][i][0].shape)
+        for x in states:
+          arr = np.append(arr, x[i], axis=0)
+        temp += [arr]
+      states = temp
 
-    targets_f = self.pretrain_low_target * np.reshape(np.array([1.0], dtype=np.float32), (states[0].shape[0], self.action_size))
-    targets_f[state_idx, correct_actions] = self.pretrain_high_target
+      targets_f = self.pretrain_low_target * np.reshape(np.array([1.0], dtype=np.float32), (states[0].shape[0], self.action_size))
+      targets_f[state_idx, correct_actions] = self.pretrain_high_target
 
-    self.model.fit(states, targets_f, epochs = ep)
-    self.pretrain_mem = None
+      self.model.fit(states, targets_f, epochs = ep)
+      self.pretrain_mem = None
+      self.save_model("pretrain_" + self.name + ".sav")
 
   def replay(self):
     if self.play == True or len(self.memory) == 0:
@@ -184,10 +189,10 @@ class DQNAgent:
       return
     self.target_model.set_weights(self.model.get_weights())
 
-  def load(self, sumo_cfg):
-    return tf.keras.models.load_model(self.name + ".sav", custom_objects={"tf": tf, "NUM_VEH_CONSIDERED": sumo_cfg.NUM_VEH_CONSIDERED})
+  def load(self):
+    return tf.keras.models.load_model(self.name + ".sav", custom_objects={"tf": tf, "NUM_VEH_CONSIDERED": self.sumo_cfg.NUM_VEH_CONSIDERED})
 
-  def save(self):
+  def save_model(self, name):
     if self.play == True:
       return
-    self.model.save(self.name + ".sav")
+    self.model.save(name)
