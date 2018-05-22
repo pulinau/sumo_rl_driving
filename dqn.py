@@ -66,7 +66,7 @@ class DQNAgent:
     tf.keras.backend.set_session(tf.Session(config=self.tf_cfg))
     if self.play == True:
       self.epsilon = 0
-      self.model = self.load()
+      self.model = self._load_model(self.name + ".sav")
     else:
       self.memory = ReplayMemory(self.traj_end_pred, self.memory_size)
       self.model = self._build_model()
@@ -109,22 +109,22 @@ class DQNAgent:
       states = [s[0][0] for s in self.pretrain_mem.traj_mem]
       actions = [s[0][1] for s in self.pretrain_mem.traj_mem]
 
-    state_idx, correct_actions = loosen_correct_actions(actions)
+      state_idx, correct_actions = loosen_correct_actions(actions)
 
-    temp = []
-    for i in range(len(states[0])):
-      arr = np.reshape(np.array([], dtype=np.float32), (0,) + states[0][i][0].shape)
-      for x in states:
-        arr = np.append(arr, x[i], axis=0)
-      temp += [arr]
-    states = temp
+      temp = []
+      for i in range(len(states[0])):
+        arr = np.reshape(np.array([], dtype=np.float32), (0,) + states[0][i][0].shape)
+        for x in states:
+          arr = np.append(arr, x[i], axis=0)
+        temp += [arr]
+      states = temp
 
       targets_f = self.pretrain_low_target * np.ones((states[0].shape[0], self.action_size))
       targets_f[state_idx, correct_actions] = self.pretrain_high_target
 
       self.model.fit(states, targets_f, epochs = ep)
       self.pretrain_mem = None
-      self.save_model("pretrain_" + self.name + ".sav")
+      self.save_model(name="pretrain_" + self.name + ".sav")
 
   def replay(self):
     if self.play == True or len(self.memory) == 0 or self._select_actions is not None:
@@ -192,10 +192,10 @@ class DQNAgent:
       return
     self.target_model.set_weights(self.model.get_weights())
 
-  def load(self):
-    return tf.keras.models.load_model(self.name + ".sav", custom_objects={"tf": tf, "NUM_VEH_CONSIDERED": self.sumo_cfg.NUM_VEH_CONSIDERED})
+  def _load_model(self, filename):
+    return tf.keras.models.load_model(filename, custom_objects={"tf": tf, "NUM_VEH_CONSIDERED": self.sumo_cfg.NUM_VEH_CONSIDERED})
 
-  def save_model(self, name):
+  def save_model(self, name=self.name + ".sav"):
     if self.play == True:
       return
     self.model.save(name)
