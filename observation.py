@@ -173,14 +173,22 @@ def get_obs_dict(env):
   # correct lane
   # if next normal edge doesn't exist, consider ego to be already in correct lane
   obs_dict["ego_correct_lane_gap"] = 0
+  min_lane_gap = None
   for x in lane_id_list_ego_next_normal_edge:
     for y in lane_id_list_ego_edge:
-      if internal_lane_id_between_lanes(y, x, lanelet_dict)!= None:
-        obs_dict["ego_correct_lane_gap"] = lanelet_dict[y]["lane_index"] - ego_dict["lane_index"]
-        if obs_dict["ego_correct_lane_gap"] > 0:
-          obs_dict["ego_correct_lane_gap"] = min(obs_dict["ego_correct_lane_gap"], env.NUM_LANE_CONSIDERED)
-        else:
-          obs_dict["ego_correct_lane_gap"] = max(obs_dict["ego_correct_lane_gap"], -env.NUM_LANE_CONSIDERED)
+      if internal_lane_id_between_lanes(y, x, lanelet_dict) != None:
+        lane_gap = lanelet_dict[y]["lane_index"] - ego_dict["lane_index"]
+        if min_lane_gap is None or abs(lane_gap) < min_lane_gap:
+          min_lane_gap = lane_gap
+  if min_lane_gap == None:
+    obs_dict["ego_correct_lane_gap"] = 0
+  else:
+    obs_dict["ego_correct_lane_gap"] = min_lane_gap
+
+  if obs_dict["ego_correct_lane_gap"] > 0:
+    obs_dict["ego_correct_lane_gap"] = min(obs_dict["ego_correct_lane_gap"], env.NUM_LANE_CONSIDERED)
+  else:
+    obs_dict["ego_correct_lane_gap"] = max(obs_dict["ego_correct_lane_gap"], -env.NUM_LANE_CONSIDERED)
   
   # vehicles inside region of insterest
   def in_ROI(ego_position, veh_position):

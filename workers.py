@@ -14,7 +14,7 @@ import queue
 from sumo_cfgs import sumo_cfg
 from dqn_cfgs import cfg_safety, cfg_regulation, cfg_comfort, cfg_speed
 
-def run_env(sumo_cfg, end_q, obs_q_list, action_q_list, traj_q_list, play, max_ep, id):
+def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_list, play, max_ep, id):
   max_step = 2000
   env = MultiObjSumoEnv(sumo_cfg)
 
@@ -47,7 +47,7 @@ def run_env(sumo_cfg, end_q, obs_q_list, action_q_list, traj_q_list, play, max_e
         action = 0
         action_info = "sumo"
       else:
-        action_set_list, explr_set_list = [], []
+        action_set_list, explr_set_list, sorted_idx_list = [], [], []
 
         for obs_q in obs_q_list:
           obs_q.put(obs_dict)
@@ -56,16 +56,17 @@ def run_env(sumo_cfg, end_q, obs_q_list, action_q_list, traj_q_list, play, max_e
           while action_q.empty():
             if not end_q.empty():
               return
-          action_set, explr_set = action_q.get()
+          action_set, explr_set, sorted_idx = action_q.get()
 
           action_set_list += [action_set]
           explr_set_list += [explr_set]
+          sorted_idx_list += [sorted_idx]
 
-        action, action_info = select_action(action_set_list, explr_set_list)
+        action, action_info = select_action(dqn_cfg_list, action_set_list, explr_set_list)
 
       next_obs_dict, reward_list, env_state, action_dict = env.step(
         {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
-      action = action_dict["lane_change"].value * 7 + action_dict["accel_level"].value
+      action = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
       print(action, action_info)
       traj.append((obs_dict, action, reward_list, next_obs_dict, env_state != EnvState.NORMAL))
 
@@ -120,8 +121,9 @@ def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list
   valid = [(x, "exploit") for x in valid]
   return random.sample(valid + invalid_list, 1)[0]
 
-def run_QAgent(sumo_cfg, dqn_cfg, end_q, obs_q_list, action_q_list, traj_q_list, max_ep):
+def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list, max_ep):
   agt = DQNAgent(sumo_cfg, dqn_cfg)
+  agt.pretrain(pretrain_traj_list, 1)
 
   for ep in range(max_ep):
     for obs_q, action_q in zip(obs_q_list, action_q_list):
