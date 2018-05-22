@@ -61,6 +61,9 @@ class DQNAgent:
       setattr(self, _attr, getattr(dqn_cfg, _attr))
     self.sumo_cfg = sumo_cfg
 
+    if self._select_actions is not None:
+      return
+
     assert self.memory_size >= self.replay_batch_size
 
     tf.keras.backend.set_session(tf.Session(config=self.tf_cfg))
@@ -73,38 +76,45 @@ class DQNAgent:
       self.target_model = self._build_model()
 
   def remember(self, traj):
-    if self.play == True or self._select_actions is not None:
+    if self._select_actions is not None or self.play == True:
       return
     traj = [(self.reshape(obs_dict), action, reward, self.reshape(next_obs_dict), done)
             for obs_dict, action, reward, next_obs_dict, done in traj]
     self.memory.add_traj(traj)
 
   def select_actions(self, obs_dict):
+    """
+    select actions based on Q value
+    :param obs_dict:
+    :return: (action_set, explore_set, sorted_idx) exploit action set, explore action set and a np.array of actions
+              sorted according to descending desirability
+    """
     if self._select_actions is not None:
-      return self._select_actions(obs_dict)
+      return self._select_actions(self.reshape(obs_dict))
 
     act_values = self.model.predict(self.reshape(obs_dict))[0]
 
-    sorted_idx = np.argsort(act_values)
+    sorted_idx = np.argsort(act_values)[::-1]
 
-    action_set = set(np.where(act_values > self.threshold)[0]) | set(sorted_idx[-6:])
+    action_set = set(np.where(act_values > self.threshold)[0]) | set(sorted_idx[:6])
     explore_set = set([action for action in range(self.action_size) if np.random.rand() <= self.epsilon])
     explore_set = explore_set - action_set
 
     return (action_set, explore_set, sorted_idx)
 
   def pretrain(self, traj_list, ep):
-    if self.play == True or len(traj_list) == 0  or self._select_actions is not None:
+    if self._select_actions is not None or self.play == True or len(traj_list) == 0:
       return
 
     try:
       self._load_model("pretrain_" + self.name + ".sav")
     except:
       self.pretrain_mem = ReplayMemory(end_pred=True)
-      for traj in traj_list:
-      traj = [(self.reshape(obs_dict), action, reward, None, done)
-              for obs_dict, action, reward, next_obs_dict, done in traj]
-      self.pretrain_mem.add_traj(traj)
+      for i, traj in enumerate(traj_list):
+        print(self.name + ": adding traj" + str(i) + "to pretrain memory")
+        traj = [(self.reshape(obs_dict), action, None, None, done)
+                for obs_dict, action, reward, next_obs_dict, done in traj]
+        self.pretrain_mem.add_traj(traj)
 
       states = [s[0][0] for s in self.pretrain_mem.traj_mem]
       actions = [s[0][1] for s in self.pretrain_mem.traj_mem]
@@ -127,7 +137,7 @@ class DQNAgent:
       self.save_model(name="pretrain_" + self.name + ".sav")
 
   def replay(self):
-    if self.play == True or len(self.memory) == 0 or self._select_actions is not None:
+    if self._select_actions is not None or self.play == True or len(self.memory) == 0:
       return
 
     #print(self.name, " sampling starts", time.time())
@@ -188,14 +198,16 @@ class DQNAgent:
       self.epsilon -= self.epsilon_dec
 
   def update_target(self):
-    if self.play == True or self._select_actions is not None:
+    if self._select_actions is not None or self.play == True:
       return
     self.target_model.set_weights(self.model.get_weights())
 
   def _load_model(self, filename):
     return tf.keras.models.load_model(filename, custom_objects={"tf": tf, "NUM_VEH_CONSIDERED": self.sumo_cfg.NUM_VEH_CONSIDERED})
 
-  def save_model(self, name=self.name + ".sav"):
-    if self.play == True:
+  def save_model(self, name=None):
+    if self._select_actions is not None or self.play == True:
       return
+    if name is None:
+      name = self.name + ".sav"
     self.model.save(name)

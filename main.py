@@ -3,9 +3,6 @@ __author__ = "Changjian Li"
 
 import argparse
 
-from include import *
-from action import *
-from observation import *
 from sumo_gym import *
 from dqn import *
 
@@ -13,7 +10,7 @@ import random
 import multiprocessing as mp
 
 from sumo_cfgs import sumo_cfg
-from dqn_cfgs import cfg_safety, cfg_regulation, cfg_comfort, cfg_speed
+from dqn_cfgs import cfg_safety, cfg_regulation, cfg_speed_comfort
 from workers import run_env, run_QAgent
 
 if __name__ == "__main__":
@@ -24,7 +21,7 @@ if __name__ == "__main__":
   env = MultiObjSumoEnv(sumo_cfg)
   max_ep = 50000
   sim_inst = 6
-  dqn_cfg_list = [cfg_safety, cfg_regulation, cfg_comfort, cfg_speed]
+  dqn_cfg_list = [cfg_safety, cfg_regulation, cfg_speed_comfort]
   if args.play:
     print("True")
     for dqn_cfg in dqn_cfg_list:
@@ -56,7 +53,7 @@ if __name__ == "__main__":
               for i in range(sim_inst)]
 
 
-  agt_list = [mp.Process(target=run_QAgent, args=(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list, 720*4*max_ep))
+  agt_list = [mp.Process(target=run_QAgent, args=(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list, 720*sim_inst*max_ep))
               for dqn_cfg, obs_q_list, action_q_list, traj_q_list in zip(dqn_cfg_list, obs_queues, action_queues, traj_queues)]
 
   [p.start() for p in env_list]

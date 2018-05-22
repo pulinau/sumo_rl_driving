@@ -12,7 +12,6 @@ import multiprocessing as mp
 import queue
 
 from sumo_cfgs import sumo_cfg
-from dqn_cfgs import cfg_safety, cfg_regulation, cfg_comfort, cfg_speed
 
 def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_list, play, max_ep, id):
   max_step = 2000
@@ -62,7 +61,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           explr_set_list += [explr_set]
           sorted_idx_list += [sorted_idx]
 
-        action, action_info = select_action(dqn_cfg_list, action_set_list, explr_set_list)
+        action, action_info = select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list)
 
       next_obs_dict, reward_list, env_state, action_dict = env.step(
         {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
@@ -96,7 +95,7 @@ def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list
   :param dqn_cfg_list:
   :param action_set_list: list of "good enough" actions of each objective
   :param explr_set_list: list of actions each objective want to explore
-  :param sorted_idx_list: list of sorted actions based on desirability of each objective,
+  :param sorted_idx_list: list of sorted actions based on (descending) desirability of each objective,
                           used in case there's no "good enough" action that satisfies all objectives
   :return: action
   """
@@ -111,7 +110,7 @@ def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list
       new_invalid = [x[1] for x in new_invalid]
       invalid = invalid | set(new_invalid)
       invalid_list += [(x, "explr: " + dqn_cfg.name) for x in new_invalid]
-      print("no available action for " + dqn_cfg.name)
+      print("not enough actions for " + dqn_cfg.name)
       break
     new_invalid = explr_set & valid - invalid
     invalid = invalid | new_invalid
@@ -144,6 +143,6 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
 
     if ep % 100 == 100-1:
       agt.update_target()
-      agt.save()
+      agt.save_model()
 
   end_q.put(True)

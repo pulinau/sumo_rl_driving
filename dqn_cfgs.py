@@ -199,7 +199,7 @@ def select_actions_speed_comfort(state):
                      ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
                      ]
   elif ego_speed > MAX_VEH_SPEED + 1.4:
-    if ego_correct_lane_gap == 0
+    if ego_correct_lane_gap == 0:
       valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value]
       sorted_idx  = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
@@ -360,41 +360,6 @@ def select_actions_speed_comfort(state):
                      ]
   return (set(valid), set([]), sorted_idx)
 
-def reshape_comfort(obs_dict):
-  return [np.reshape(np.array([0], dtype = np.float32), (1, -1))]
-
-#tf_cfg_comfort = tf.ConfigProto()
-#tf_cfg_comfort.gpu_options.per_process_gpu_memory_fraction = 0.05
-tf_cfg_comfort = tf.ConfigProto(device_count = {"GPU": 0})
-
-def build_model_comfort():
-  input = tf.keras.layers.Input(shape=(1, ))
-  l1 = tf.keras.layers.Dense(8, input_dim=1, activation='sigmoid')(input)
-  l2 = tf.keras.layers.Dense(8, activation='sigmoid')(l1)
-  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l2)
-  model = tf.keras.models.Model(inputs = [input], outputs = y)
-  opt = tf.keras.optimizers.opt = tf.keras.optimizers.RMSprop(lr=0.001)
-  model.compile(loss='logcosh', optimizer=opt)
-  return model
-
-def reshape_speed(obs_dict):
-  return [np.reshape(np.array(obs_dict["ego_speed"]/MAX_VEH_SPEED, dtype = np.float32), (1, -1))]
-
-#tf_cfg_speed = tf.ConfigProto()
-#tf_cfg_speed.gpu_options.per_process_gpu_memory_fraction = 0.05
-tf_cfg_speed = tf.ConfigProto(device_count = {"GPU": 0})
-
-def build_model_speed():
-  input = tf.keras.layers.Input(shape=(1, ))
-  l1 = tf.keras.layers.Dense(8, input_dim=1, activation='sigmoid')(input)
-  l2 = tf.keras.layers.Dense(8, activation='sigmoid')(l1)
-  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l2)
-  model = tf.keras.models.Model(inputs = [input], outputs = y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.001)
-  model.compile(loss='logcosh', optimizer=opt)
-  return model
-
-
 action_size = len(ActionLaneChange) * len(ActionAccel)
 
 cfg_safety = DQNCfg(name = "safety",
@@ -437,42 +402,23 @@ cfg_regulation = DQNCfg(name = "regulation",
                         tf_cfg = tf_cfg_regulation,
                         reshape = reshape_regulation)
 
-cfg_comfort = DQNCfg(name = "comfort",
-                     play = False,
-                     state_size = 1,
-                     action_size = action_size,
-                     pretrain_low_target=-10,
-                     pretrain_high_target=0,
-                     gamma = 0,
-                     gamma_inc = 0,
-                     gamma_max = 0,
-                     epsilon=0.3,
-                     epsilon_dec=0.005,
-                     epsilon_min=0.1,
-                     threshold = -6,
-                     memory_size = 640,
-                     traj_end_pred = lambda _: True,
-                     replay_batch_size = 32,
-                     _build_model = build_model_comfort,
-                     tf_cfg = tf_cfg_comfort,
-                     reshape = reshape_comfort)
-
-cfg_speed = DQNCfg(name = "speed",
-                   play = False,
-                   state_size = 1,
-                   action_size = action_size,
-                   pretrain_low_target=-10,
-                   pretrain_high_target=0,
-                   gamma = 0,
-                   gamma_inc = 0,
-                   gamma_max = 0,
-                   epsilon=0.3,
-                   epsilon_dec=0.005,
-                   epsilon_min=0.1,
-                   threshold = -6,
-                   memory_size = 640,
-                   traj_end_pred = lambda _: True,
-                   replay_batch_size = 32,
-                   _build_model = build_model_speed,
-                   tf_cfg = tf_cfg_speed,
-                   reshape = reshape_speed)
+cfg_speed_comfort = DQNCfg(name = "speed_comfort",
+                           play = False,
+                           state_size = 2,
+                           action_size = action_size,
+                           pretrain_low_target=None,
+                           pretrain_high_target=None,
+                           gamma = None,
+                           gamma_inc = None,
+                           gamma_max = None,
+                           epsilon=None,
+                           epsilon_dec=None,
+                           epsilon_min=None,
+                           threshold = None,
+                           memory_size = None,
+                           traj_end_pred = None,
+                           replay_batch_size = None,
+                           _build_model = None,
+                           tf_cfg = None,
+                           reshape = reshape_speed_comfort,
+                           _select_actions=select_actions_speed_comfort)
