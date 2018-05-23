@@ -100,7 +100,7 @@ class DQNAgent:
     explore_set = set([action for action in range(self.action_size) if np.random.rand() <= self.epsilon])
     explore_set = explore_set - action_set
 
-    return (action_set, explore_set, sorted_idx)
+    return (action_set, explore_set, list(sorted_idx))
 
   def pretrain(self, traj_list, ep):
     if self._select_actions is not None or self.play == True or len(traj_list) == 0:
@@ -110,8 +110,7 @@ class DQNAgent:
       self._load_model("pretrain_" + self.name + ".sav")
     except:
       self.pretrain_mem = ReplayMemory(end_pred=True)
-      for i, traj in enumerate(traj_list):
-        print(self.name + ": adding traj" + str(i) + "to pretrain memory")
+      for traj in traj_list:
         traj = [(self.reshape(obs_dict), action, None, None, done)
                 for obs_dict, action, reward, next_obs_dict, done in traj]
         self.pretrain_mem.add_traj(traj)
@@ -124,7 +123,8 @@ class DQNAgent:
       temp = []
       for i in range(len(states[0])):
         arr = np.reshape(np.array([], dtype=np.float32), (0,) + states[0][i][0].shape)
-        for x in states:
+        for j, x in enumerate(states):
+          print(self.name + " processing states: " + str(j) + "/" + str(len(states)))
           arr = np.append(arr, x[i], axis=0)
         temp += [arr]
       states = temp

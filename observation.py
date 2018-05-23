@@ -2,7 +2,6 @@
 __author__ = "Changjian Li"
 
 import heapq
-from math import pi
 
 from include import *
 
@@ -17,8 +16,8 @@ def get_observation_space(env):
              "speed": spaces.Box(0, env.MAX_VEH_SPEED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),  # absolute speed
              "dist_to_end_of_lane": spaces.Box(0, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),
              "in_intersection": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
-             "relative_position": spaces.Box(-env.OBSERVATION_RADIUS, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED, 2), dtype=np.float32),
-             "relative_heading": spaces.Box(-pi, pi, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),
+             "relative_position": spaces.Box(-env.OBSERVATION_RADIUS, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED, 2), dtype=np.float32), 
+             "relative_heading": spaces.Box(-np.pi, np.pi, (env.NUM_VEH_CONSIDERED,), dtype=np.float32), # anti-clockwise
              "has_priority": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "veh_relation_peer": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "veh_relation_conflict": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
@@ -237,18 +236,18 @@ def get_obs_dict(env):
       obs_dict["in_intersection"][veh_index] = 1
     
     # transform the position to ego coordinate
-    ego_angle_rad = ego_dict["angle"]/180 * pi
-    rotation_mat = np.array([[np.cos(ego_angle_rad), -np.sin(ego_angle_rad)],
-                             [np.sin(ego_angle_rad), np.cos(ego_angle_rad)]])
+    ego_angle_rad = ego_dict["angle"]/180 * np.pi
+    rotation_mat = np.array([[np.cos(-ego_angle_rad), -np.sin(-ego_angle_rad)],
+                             [np.sin(-ego_angle_rad), np.cos(-ego_angle_rad)]])
     relative_position = np.array(state_dict["position"]) - np.array(ego_dict["position"])
-    relative_position = np.matmul(rotation_mat,relative_position)
+    relative_position = np.matmul(rotation_mat, relative_position)
     obs_dict["relative_position"][veh_index] = relative_position
     
-    relative_heading = -(state_dict["angle"] - ego_dict["angle"])/180 * pi
-    if relative_heading > pi:
-      relative_heading -= 2*pi
-    elif relative_heading < -pi:
-      relative_heading += 2*pi
+    relative_heading = -(state_dict["angle"] - ego_dict["angle"])/180 * np.pi # anti-clockwise
+    if relative_heading > np.pi:
+      relative_heading -= 2*np.pi
+    elif relative_heading < -np.pi:
+      relative_heading += 2*np.pi
     obs_dict["relative_heading"][veh_index] = relative_heading
     
     # vehicle has priority over ego if the vehicle is
