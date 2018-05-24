@@ -7,23 +7,21 @@ import tensorflow as tf
 from include import *
 from sumo_cfgs import *
 from dqn import DQNCfg
-from math import pi
 
 def reshape_safety(obs_dict):
   """reshape gym observation to keras neural network input"""
-  out0 = np.array([], dtype = np.float32)
-  out0  = np.append(out0, np.array(obs_dict["ego_speed"]/MAX_VEH_SPEED))
-  out0 = np.append(out0,
-                   np.maximum.reduce([np.array(obs_dict["ego_dist_to_end_of_lane"]) / OBSERVATION_RADIUS, np.array(1)]))
-  out0  = np.append(out0, np.array(obs_dict["ego_exists_left_lane"]))
-  out0  = np.append(out0, np.array(obs_dict["ego_exists_right_lane"]))
+  out0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
+                   min(obs_dict["ego_dist_to_end_of_lane"]/OBSERVATION_RADIUS, 1.0),
+                   obs_dict["ego_exists_left_lane"],
+                   obs_dict["ego_exists_right_lane"]
+                   ], dtype = np.float32)
   out1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
   out1  = np.append(out1, np.array([obs_dict["exists_vehicle"]]), axis=0)
   out1  = np.append(out1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
-  out1  = np.append(out1, np.maximum.reduce([np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
-                                            np.array([[1.0] * NUM_VEH_CONSIDERED])]), axis = 0)
+  out1  = np.append(out1, np.minimum(np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
+                                     np.ones((1, NUM_VEH_CONSIDERED))), axis = 0)
   out1 = np.append(out1, np.array(obs_dict["relative_position"]).T / OBSERVATION_RADIUS, axis=0)
-  out1  = np.append(out1, np.array([obs_dict["relative_heading"]])/pi, axis=0)
+  out1  = np.append(out1, np.array([obs_dict["relative_heading"]])/np.pi, axis=0)
   out1  = np.append(out1, np.array([obs_dict["veh_relation_left"]]), axis=0)
   out1  = np.append(out1, np.array([obs_dict["veh_relation_right"]]), axis=0)
   out1  = np.append(out1, np.array([obs_dict["veh_relation_ahead"]]), axis=0)
@@ -31,7 +29,7 @@ def reshape_safety(obs_dict):
   return [np.reshape(out0, (1,) + out0.shape), np.reshape(out1.T, (1, -1, 1, 1))]
 
 tf_cfg_safety = tf.ConfigProto()
-tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.25
+tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
 #tf_cfg_safety = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_safety():
@@ -58,24 +56,22 @@ def build_model_safety():
   return model
 
 def reshape_regulation(obs_dict):
-  out0 = np.array([], dtype = np.float32)
-  out0 = np.append(out0, np.array(obs_dict["ego_speed"])/MAX_VEH_SPEED)
-  out0 = np.append(out0,
-                   np.maximum.reduce([np.array(obs_dict["ego_dist_to_end_of_lane"]) / OBSERVATION_RADIUS, np.array(1)]))
-  out0 = np.append(out0, np.array(obs_dict["ego_in_intersection"]))
-  out0 = np.append(out0, np.array(obs_dict["ego_exists_left_lane"]))
-  out0 = np.append(out0, np.array(obs_dict["ego_exists_right_lane"]))
-  lane_gap_1hot = np.array([0] * (2*NUM_LANE_CONSIDERED + 1))
+  lane_gap_1hot = [0] * (2*NUM_LANE_CONSIDERED + 1)
   lane_gap_1hot[obs_dict["ego_correct_lane_gap"] + NUM_LANE_CONSIDERED] = 1
-  out0 = np.append(out0, lane_gap_1hot)
+  out0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
+                   min(obs_dict["ego_dist_to_end_of_lane"] / OBSERVATION_RADIUS, 1.0),
+                   obs_dict["ego_in_intersection"],
+                   obs_dict["ego_exists_left_lane"],
+                   obs_dict["ego_exists_right_lane"]
+                   ] + lane_gap_1hot, dtype = np.float32)
   out1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
   out1 = np.append(out1, np.array([obs_dict["exists_vehicle"]]), axis=0)
   out1 = np.append(out1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
-  out1  = np.append(out1, np.maximum.reduce([np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
-                                            np.array([[1.0] * NUM_VEH_CONSIDERED])]), axis = 0)
+  out1  = np.append(out1, np.minimum(np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
+                                     np.ones((1, NUM_VEH_CONSIDERED))), axis = 0)
   out1 = np.append(out1, np.array([obs_dict["in_intersection"]]), axis=0)
-  out1  = np.append(out1, np.array(obs_dict["relative_position"]).T/OBSERVATION_RADIUS, axis=0)
-  out1  = np.append(out1, np.array([obs_dict["relative_heading"]])/pi, axis=0)
+  out1 = np.append(out1, np.array(obs_dict["relative_position"]).T / OBSERVATION_RADIUS, axis=0)
+  out1  = np.append(out1, np.array([obs_dict["relative_heading"]])/np.pi, axis=0)
   out1  = np.append(out1, np.array([obs_dict["has_priority"]]), axis=0)
   out1  = np.append(out1, np.array([obs_dict["veh_relation_peer"]]), axis=0)
   out1  = np.append(out1, np.array([obs_dict["veh_relation_conflict"]]), axis=0)
@@ -88,7 +84,7 @@ def reshape_regulation(obs_dict):
   return [np.reshape(out0, (1, -1)), np.reshape(out1.T, (1, -1, 1, 1))]
 
 tf_cfg_regulation = tf.ConfigProto()
-tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.25
+tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.4
 #tf_cfg_regulation = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_regulation():
