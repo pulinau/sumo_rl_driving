@@ -115,9 +115,7 @@ def build_model_regulation():
 
 
 def reshape_speed_comfort(obs_dict):
-  out = np.array([], dtype = np.float32)
-  out = np.append(out, np.array(obs_dict["ego_speed"]))
-  out = np.append(out, np.array(obs_dict["ego_correct_lane_gap"]))
+  out = np.array([obs_dict["ego_speed"], obs_dict["ego_correct_lane_gap"]], dtype = np.float32)
   return [np.reshape(out, (1,-1))]
 
 def select_actions_speed_comfort(state):

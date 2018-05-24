@@ -123,9 +123,7 @@ class DQNAgent:
 
       temp = []
       for i in range(len(states[0])):
-        arr = np.reshape(np.array([], dtype=np.float32), (0,) + states[0][i][0].shape)
-        for x in states:
-          arr = np.append(arr, x[i], axis=0)
+        arr = [x[i][0] for x in states]
         temp += [arr]
       states = temp
 
@@ -157,16 +155,12 @@ class DQNAgent:
     temp = []
 
     for i in range(len(states[0])):
-      arr = np.reshape(np.array([], dtype=np.float32), (0,) + states[0][i][0].shape)
-      for x in states:
-        arr = np.append(arr, x[i], axis = 0)
+      arr = [x[i][0] for x in states]
       temp += [arr]
     states = temp
     temp = []
     for i in range(len(next_states[0])):
-      arr = np.reshape(np.array([], dtype = np.float32), (0, ) + next_states[0][i][0].shape)
-      for x in next_states:
-        arr = np.append(arr, x[i], axis = 0)
+      arr = [x[i][0] for x in next_states]
       temp += [arr]
     next_states = temp
 
