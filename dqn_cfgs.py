@@ -10,23 +10,25 @@ from dqn import DQNCfg
 
 def reshape_safety(obs_dict):
   """reshape gym observation to keras neural network input"""
-  out0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
+  o0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
                    min(obs_dict["ego_dist_to_end_of_lane"]/OBSERVATION_RADIUS, 1.0),
                    obs_dict["ego_exists_left_lane"],
                    obs_dict["ego_exists_right_lane"]
                    ], dtype = np.float32)
-  out1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
-  out1  = np.append(out1, np.array([obs_dict["exists_vehicle"]]), axis=0)
-  out1  = np.append(out1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
-  out1  = np.append(out1, np.minimum(np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
+  o1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
+  o1  = np.append(o1, np.array([obs_dict["exists_vehicle"]]), axis=0)
+  o1  = np.append(o1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
+  o1  = np.append(o1, np.minimum(np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
                                      np.ones((1, NUM_VEH_CONSIDERED))), axis = 0)
-  out1 = np.append(out1, np.array(obs_dict["relative_position"]).T / OBSERVATION_RADIUS, axis=0)
-  out1  = np.append(out1, np.array([obs_dict["relative_heading"]])/np.pi, axis=0)
-  out1  = np.append(out1, np.array([obs_dict["veh_relation_left"]]), axis=0)
-  out1  = np.append(out1, np.array([obs_dict["veh_relation_right"]]), axis=0)
-  out1  = np.append(out1, np.array([obs_dict["veh_relation_ahead"]]), axis=0)
-  out1  = np.append(out1, np.array([obs_dict["veh_relation_behind"]]), axis=0)
-  return [np.reshape(out0, (1,) + out0.shape), np.reshape(out1.T, (1, -1, 1, 1))]
+  o1 = np.append(o1, np.array(obs_dict["relative_position"]).T / OBSERVATION_RADIUS, axis=0)
+  o1  = np.append(o1, np.array([obs_dict["relative_heading"]])/np.pi, axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_left"]]), axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_right"]]), axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_ahead"]]), axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_behind"]]), axis=0)
+
+  o = [o0] + [x for x in o1.T]
+  return [np.reshape(x, (1,) + x.shape) for x in o]
 
 tf_cfg_safety = tf.ConfigProto()
 tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
@@ -34,54 +36,55 @@ tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
 
 def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(4, ))
-  env_input = tf.keras.layers.Input(shape=(10* NUM_VEH_CONSIDERED, 1, 1))
-  l1_0 = tf.keras.layers.Dense(64, activation = None)(ego_input)
-  l1_1 = tf.keras.layers.Conv2D(64, kernel_size = (10, 1),
-                                strides = (10, 1), padding = 'valid',
-                                activation = None)(env_input)
-  l1_1 = tf.keras.layers.Lambda(lambda x: tf.reduce_sum(tf.reshape(x, [-1, NUM_VEH_CONSIDERED, 64]), axis=1))(l1_1)
-  l1 = tf.keras.layers.add([l1_0, l1_1])
-  #l1 = tf.keras.layers.BatchNormalization()(l1)
-  l1 = tf.keras.layers.Activation(activation="sigmoid")(l1)
-  l2 = tf.keras.layers.Dense(32, activation=None)(l1)
-  #l2 = tf.keras.layers.BatchNormalization()(l2)
-  l2 = tf.keras.layers.Activation('sigmoid')(l2)
-  l3 = tf.keras.layers.Dense(32, activation=None)(l2)
-  #l3 = tf.keras.layers.BatchNormalization()(l3)
-  l3 = tf.keras.layers.Activation('sigmoid')(l3)
-  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
-  model = tf.keras.models.Model(inputs = [ego_input, env_input], outputs=y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.002)
+  ego_l1 = tf.keras.layers.Dense(10, activation=None)(ego_input)
+
+  veh_inputs = [tf.keras.layers.Input(shape=(10,)) for _ in range(NUM_VEH_CONSIDERED)]
+  shared_Dense1 = tf.keras.layers.Dense(10, activation=None)
+  veh_l1 = [shared_Dense1(x) for x in veh_inputs]
+  veh_l1 = [tf.keras.layers.add([ego_l1, x]) for x in veh_l1]
+  veh_l1 = [tf.keras.layers.Activation(activation="sigmoid")(x) for x in veh_l1]
+  shared_Dense2 = tf.keras.layers.Dense(32, activation=None)
+  veh_l2 = [shared_Dense2(x) for x in veh_l1]
+
+  l3 = tf.keras.layers.add(veh_l2)
+  l3 = tf.keras.layers.Activation(activation="sigmoid")(l3)
+  l4 = tf.keras.layers.Dense(32, activation="sigmoid")(l3)
+  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
+
+  model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
+  opt = tf.keras.optimizers.RMSprop(lr=0.001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
 def reshape_regulation(obs_dict):
   lane_gap_1hot = [0] * (2*NUM_LANE_CONSIDERED + 1)
   lane_gap_1hot[obs_dict["ego_correct_lane_gap"] + NUM_LANE_CONSIDERED] = 1
-  out0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
+  o0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
                    min(obs_dict["ego_dist_to_end_of_lane"] / OBSERVATION_RADIUS, 1.0),
                    obs_dict["ego_in_intersection"],
                    obs_dict["ego_exists_left_lane"],
                    obs_dict["ego_exists_right_lane"]
                    ] + lane_gap_1hot, dtype = np.float32)
-  out1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
-  out1 = np.append(out1, np.array([obs_dict["exists_vehicle"]]), axis=0)
-  out1 = np.append(out1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
-  out1  = np.append(out1, np.minimum(np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
+  o1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
+  o1 = np.append(o1, np.array([obs_dict["exists_vehicle"]]), axis=0)
+  o1 = np.append(o1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
+  o1  = np.append(o1, np.minimum(np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
                                      np.ones((1, NUM_VEH_CONSIDERED))), axis = 0)
-  out1 = np.append(out1, np.array([obs_dict["in_intersection"]]), axis=0)
-  out1 = np.append(out1, np.array(obs_dict["relative_position"]).T / OBSERVATION_RADIUS, axis=0)
-  out1  = np.append(out1, np.array([obs_dict["relative_heading"]])/np.pi, axis=0)
-  out1  = np.append(out1, np.array([obs_dict["has_priority"]]), axis=0)
-  out1  = np.append(out1, np.array([obs_dict["veh_relation_peer"]]), axis=0)
-  out1  = np.append(out1, np.array([obs_dict["veh_relation_conflict"]]), axis=0)
-  out1  = np.append(out1, np.array([obs_dict["veh_relation_next"]]), axis=0)
-  out1  = np.append(out1, np.array([obs_dict["veh_relation_prev"]]), axis=0)
-  out1  = np.append(out1, np.array([obs_dict["veh_relation_left"]]), axis=0)
-  out1  = np.append(out1, np.array([obs_dict["veh_relation_right"]]), axis=0)
-  out1  = np.append(out1, np.array([obs_dict["veh_relation_ahead"]]), axis=0)
-  out1  = np.append(out1, np.array([obs_dict["veh_relation_behind"]]), axis=0)
-  return [np.reshape(out0, (1, -1)), np.reshape(out1.T, (1, -1, 1, 1))]
+  o1 = np.append(o1, np.array([obs_dict["in_intersection"]]), axis=0)
+  o1 = np.append(o1, np.array(obs_dict["relative_position"]).T / OBSERVATION_RADIUS, axis=0)
+  o1  = np.append(o1, np.array([obs_dict["relative_heading"]])/np.pi, axis=0)
+  o1  = np.append(o1, np.array([obs_dict["has_priority"]]), axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_peer"]]), axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_conflict"]]), axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_next"]]), axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_prev"]]), axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_left"]]), axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_right"]]), axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_ahead"]]), axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_behind"]]), axis=0)
+
+  o = [o0] + [x for x in o1.T]
+  return [np.reshape(x, (1,) + x.shape) for x in o]
 
 tf_cfg_regulation = tf.ConfigProto()
 tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.4
@@ -89,23 +92,23 @@ tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.4
 
 def build_model_regulation():
   ego_input = tf.keras.layers.Input(shape=(6 + 2*NUM_LANE_CONSIDERED, ))
-  env_input = tf.keras.layers.Input(shape=(16*NUM_VEH_CONSIDERED, 1, 1))
-  l1_0 = tf.keras.layers.Dense(64, activation = None)(ego_input)
-  l1_1 = tf.keras.layers.Conv2D(64, kernel_size = (16, 1), strides = (16, 1), padding = 'valid',
-                activation = None)(env_input)
-  l1_1 = tf.keras.layers.Lambda(lambda x: tf.reduce_sum(tf.reshape(x, [-1, NUM_VEH_CONSIDERED, 64]), axis=1))(l1_1)
-  l1 = tf.keras.layers.add([l1_0, l1_1])
-  #l1 = tf.keras.layers.BatchNormalization()(l1)
-  l1 = tf.keras.layers.Activation(activation="sigmoid")(l1)
-  l2 = tf.keras.layers.Dense(32, activation=None)(l1)
-  #l2 = tf.keras.layers.BatchNormalization()(l2)
-  l2 = tf.keras.layers.Activation('sigmoid')(l2)
-  l3 = tf.keras.layers.Dense(32, activation=None)(l2)
-  #l3 = tf.keras.layers.BatchNormalization()(l3)
-  l3 = tf.keras.layers.Activation('sigmoid')(l3)
-  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
-  model = tf.keras.models.Model(inputs = [ego_input, env_input], outputs = y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.002)
+  ego_l1 = tf.keras.layers.Dense(10, activation=None)(ego_input)
+
+  veh_inputs = [tf.keras.layers.Input(shape=(16,)) for _ in range(NUM_VEH_CONSIDERED)]
+  shared_Dense1 = tf.keras.layers.Dense(10, activation=None)
+  veh_l1 = [shared_Dense1(x) for x in veh_inputs]
+  veh_l1 = [tf.keras.layers.add([ego_l1, x]) for x in veh_l1]
+  veh_l1 = [tf.keras.layers.Activation(activation="sigmoid")(x) for x in veh_l1]
+  shared_Dense2 = tf.keras.layers.Dense(32, activation=None)
+  veh_l2 = [shared_Dense2(x) for x in veh_l1]
+
+  l3 = tf.keras.layers.add(veh_l2)
+  l3 = tf.keras.layers.Activation(activation="sigmoid")(l3)
+  l4 = tf.keras.layers.Dense(32, activation="sigmoid")(l3)
+  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
+
+  model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
+  opt = tf.keras.optimizers.RMSprop(lr=0.001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -365,9 +368,9 @@ cfg_safety = DQNCfg(name = "safety",
                     gamma = 0.8,
                     gamma_inc = 0.0005,
                     gamma_max = 0.90,
-                    epsilon = 0.3,
-                    epsilon_dec = 0.0005,
-                    epsilon_min = 0.05,
+                    epsilon = 0.1,
+                    epsilon_dec = 0.00001,
+                    epsilon_min = 0.01,
                     threshold = -3,
                     memory_size = 6400,
                     traj_end_pred = lambda x: x < -0.1,
@@ -385,9 +388,9 @@ cfg_regulation = DQNCfg(name = "regulation",
                         gamma = 0.8,
                         gamma_inc = 0.0005,
                         gamma_max = 0.90,
-                        epsilon=0.3,
-                        epsilon_dec=0.0002,
-                        epsilon_min=0.05,
+                        epsilon=0.1,
+                        epsilon_dec=0.00001,
+                        epsilon_min=0.02,
                         threshold = -3,
                         memory_size = 6400,
                         traj_end_pred = lambda x: x < -0.1,

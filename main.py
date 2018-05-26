@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
   env = MultiObjSumoEnv(sumo_cfg)
   max_ep = 50000
-  sim_inst = 6
+  sim_inst = 8
   dqn_cfg_list = [cfg_safety, cfg_regulation, cfg_speed_comfort]
   if args.play:
     print("True")
@@ -29,12 +29,13 @@ if __name__ == "__main__":
     max_ep = 10
     sim_inst = 1
   #"""
-  with open("examples.npz", "rb") as file:
-    npzfile = np.load(file)
-    mem = npzfile[npzfile.files[0]]
-    pretrain_traj_list = [[(obs_dict, action, None, None, True)] for traj in mem for obs_dict, action in traj]
-    mem = None
-    npzfile = None
+  if args.play != True:
+    with open("examples.npz", "rb") as file:
+      npzfile = np.load(file)
+      mem = npzfile[npzfile.files[0]]
+      pretrain_traj_list = [[(obs_dict, action, None, None, True)] for traj in mem for obs_dict, action in traj]
+      mem = None
+      npzfile = None
   #"""
   #pretrain_traj_list = []
 

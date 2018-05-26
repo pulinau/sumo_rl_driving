@@ -126,7 +126,7 @@ class DQNAgent:
         temp += [arr]
       states = temp
 
-      targets_f = self.pretrain_low_target * np.ones((states[0].shape[0], self.action_size))
+      targets_f = self.pretrain_low_target * np.ones((len(states[0]), self.action_size))
       targets_f[state_idx, correct_actions] = self.pretrain_high_target
 
       self.model.fit(states, targets_f, epochs = ep)
@@ -176,7 +176,7 @@ class DQNAgent:
     #print(self.name , " training starts", time.time(), flush = True)
     id = random.randint(0, 65536)
     for i in range(2):
-      print(self.name, " id:", id, " ep:", i, self.model.train_on_batch(states, targets_f))
+      print(self.name, " id:", id, " ep:", i, "training loss: ", self.model.train_on_batch(states, targets_f))
 
     #print(self.name, " training ends", time.time(), flush = True)
     if np.any(np.isnan(self.model.predict_on_batch(states))):
