@@ -11,10 +11,11 @@ from dqn import DQNCfg
 def reshape_safety(obs_dict):
   """reshape gym observation to keras neural network input"""
   o0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
-                   min(obs_dict["ego_dist_to_end_of_lane"]/OBSERVATION_RADIUS, 1.0),
-                   obs_dict["ego_exists_left_lane"],
-                   obs_dict["ego_exists_right_lane"]
-                   ], dtype = np.float32)
+                 min(obs_dict["ego_dist_to_end_of_lane"]/OBSERVATION_RADIUS, 1.0),
+                 obs_dict["ego_in_intersection"]
+                 obs_dict["ego_exists_left_lane"],
+                 obs_dict["ego_exists_right_lane"]
+                 ], dtype = np.float32)
   o1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
   o1  = np.append(o1, np.array([obs_dict["exists_vehicle"]]), axis=0)
   o1  = np.append(o1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
@@ -22,10 +23,12 @@ def reshape_safety(obs_dict):
                                      np.ones((1, NUM_VEH_CONSIDERED))), axis = 0)
   o1 = np.append(o1, np.array(obs_dict["relative_position"]).T / OBSERVATION_RADIUS, axis=0)
   o1  = np.append(o1, np.array([obs_dict["relative_heading"]])/np.pi, axis=0)
+  o1 = np.append(o1, np.array([obs_dict["veh_relation_peer"]]), axis=0)
+  o1 = np.append(o1, np.array([obs_dict["veh_relation_conflict"]]), axis=0)
+  o1 = np.append(o1, np.array([obs_dict["veh_relation_next"]]), axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_left"]]), axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_right"]]), axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_ahead"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["veh_relation_behind"]]), axis=0)
 
   o = [o0] + [x for x in o1.T]
   return [np.reshape(x, (1,) + x.shape) for x in o]
@@ -35,10 +38,10 @@ tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
 #tf_cfg_safety = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_safety():
-  ego_input = tf.keras.layers.Input(shape=(4, ))
-  ego_l1 = tf.keras.layers.Dense(10, activation=None)(ego_input)
+  ego_input = tf.keras.layers.Input(shape=(5, ))
+  ego_l1 = tf.keras.layers.Dense(12, activation=None)(ego_input)
 
-  veh_inputs = [tf.keras.layers.Input(shape=(10,)) for _ in range(NUM_VEH_CONSIDERED)]
+  veh_inputs = [tf.keras.layers.Input(shape=(12,)) for _ in range(NUM_VEH_CONSIDERED)]
   shared_Dense1 = tf.keras.layers.Dense(10, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
   veh_l1 = [tf.keras.layers.add([ego_l1, x]) for x in veh_l1]
@@ -385,13 +388,13 @@ cfg_regulation = DQNCfg(name = "regulation",
                         action_size = action_size,
                         pretrain_low_target=-10,
                         pretrain_high_target=0,
-                        gamma = 0.8,
+                        gamma = 0.9,
                         gamma_inc = 0.0005,
-                        gamma_max = 0.90,
+                        gamma_max = 0.99,
                         epsilon=0.1,
                         epsilon_dec=0.00001,
                         epsilon_min=0.02,
-                        threshold = -3,
+                        threshold = -8,
                         memory_size = 6400,
                         traj_end_pred = lambda x: x < -0.1,
                         replay_batch_size = 640,

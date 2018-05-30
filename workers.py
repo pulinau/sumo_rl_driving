@@ -109,8 +109,7 @@ def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list
       new_invalid = sorted(new_invalid)[:3 - len(valid & action_set)]
       new_invalid = [x[1] for x in new_invalid]
       invalid = invalid | set(new_invalid)
-      invalid_list += [(x, "explr: " + dqn_cfg.name) for x in new_invalid]
-      print("not enough actions for " + dqn_cfg.name)
+      invalid_list += [(x, "compromise: " + dqn_cfg.name) for x in new_invalid]
       break
     new_invalid = explr_set & valid - invalid
     invalid = invalid | new_invalid
