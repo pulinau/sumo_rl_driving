@@ -41,7 +41,7 @@ def get_veh_dict(env):
     veh_dict[veh_id]["position"] = env.tc.vehicle.getPosition(veh_id)
     veh_dict[veh_id]["angle"] = env.tc.vehicle.getAngle(veh_id) # in degree. North is zero, clockwise
     veh_dict[veh_id]["speed"] = env.tc.vehicle.getSpeed(veh_id)
-    veh_dict[veh_id]["dimension"]  = (env.tc.vehicle.getLength(veh_id),env.tc.vehicle.getWidth(veh_id))
+    veh_dict[veh_id]["dimension"] = (env.tc.vehicle.getLength(veh_id), env.tc.vehicle.getWidth(veh_id))
     veh_dict[veh_id]["edge_id"] = env.tc.vehicle.getRoadID(veh_id)
     veh_dict[veh_id]["lane_id"] = env.tc.vehicle.getLaneID(veh_id)
     veh_dict[veh_id]["lane_index"] = env.tc.vehicle.getLaneIndex(veh_id)

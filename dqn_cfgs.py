@@ -91,7 +91,7 @@ def reshape_safety(obs_dict):
   """reshape gym observation to keras neural network input"""
   o0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
                  min(obs_dict["ego_dist_to_end_of_lane"]/OBSERVATION_RADIUS, 1.0),
-                 obs_dict["ego_in_intersection"]
+                 obs_dict["ego_in_intersection"],
                  obs_dict["ego_exists_left_lane"],
                  obs_dict["ego_exists_right_lane"]
                  ], dtype = np.float32)
@@ -468,9 +468,9 @@ cfg_safety = DQNCfg(name = "safety",
                     action_size = action_size,
                     pretrain_low_target=-10,
                     pretrain_high_target=0,
-                    gamma = 0.8,
+                    gamma = 0.9,
                     gamma_inc = 0.0005,
-                    gamma_max = 0.90,
+                    gamma_max = 0.99,
                     epsilon = 0.1,
                     epsilon_dec = 0.00001,
                     epsilon_min = 0.01,
