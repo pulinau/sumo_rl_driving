@@ -110,6 +110,11 @@ def get_lanelet_dict(sumo_net_xml_file):
   for edge in edges:
     for lane in edge.getLanes():
       lane_id = lane.getID()
+      # check if it's already the same
+      if set(lanelet_dict[lane_id]["next_normal_lane_id_list"]) == set([conn.getToLane().getID() for conn in lane.getOutgoing()]):
+        print("redundant")
+      else:
+        print("NOT redundant")
       lanelet_dict[lane_id]["next_normal_lane_id_list"] = [conn.getToLane().getID() for conn in lane.getOutgoing()] 
       for next_lane_id in lanelet_dict[lane_id]["next_lane_id_list"]:
         lanelet_dict[next_lane_id]["prev_normal_lane_id_list"] += [lane_id]
@@ -317,7 +322,7 @@ def waypoint_intersect(waypoints0, waypoints1):
     for n in range(len(waypoints1)-1):
       if intersect(waypoints0[m], waypoints0[m+1], waypoints1[n], waypoints1[n+1]):
         return True
-  return  False
+  return False
 
 def internal_lane_id_between_lanes(from_lane_id, to_lane_id, lanelet_dict):
   if from_lane_id[0] == ':':
@@ -330,4 +335,4 @@ def internal_lane_id_between_lanes(from_lane_id, to_lane_id, lanelet_dict):
     for lane_id in lanelet_dict[from_lane_id]["next_lane_id_list"]:
       if lane_id in lanelet_dict[to_lane_id]["prev_lane_id_list"]:
         return lane_id
-    return None
+  return None
