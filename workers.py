@@ -24,22 +24,15 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
 
     for step in range(max_step):
 
-      """
       if play:
         env.agt_ctrl = True
       elif step == 0:
-        if random.uniform(0, 1) < 0.5:
-          env.agt_ctrl = True
-        else:
+        if random.uniform(0, 1) < 0.2:
           env.agt_ctrl = False
       else:
-        if random.uniform(0, 1) < 0.1:
-          if env.agt_ctrl == True:
-            env.agt_ctrl = False
-          else:
+        if random.uniform(0, 1) < 0.01:
+          if env.agt_ctrl == False:
             env.agt_ctrl = True
-      """
-      env.agt_ctrl = True
 
       # select action
       if env.agt_ctrl == False:

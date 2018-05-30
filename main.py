@@ -10,7 +10,7 @@ import random
 import multiprocessing as mp
 
 from sumo_cfgs import sumo_cfg
-from dqn_cfgs import cfg_safety, cfg_regulation, cfg_speed_comfort
+from dqn_cfgs import cfg_validity, cfg_safety, cfg_regulation, cfg_speed_comfort
 from workers import run_env, run_QAgent
 
 if __name__ == "__main__":
@@ -21,7 +21,7 @@ if __name__ == "__main__":
   env = MultiObjSumoEnv(sumo_cfg)
   max_ep = 50000
   sim_inst = 8
-  dqn_cfg_list = [cfg_safety, cfg_regulation, cfg_speed_comfort]
+  dqn_cfg_list = [cfg_validity, cfg_safety, cfg_regulation, cfg_speed_comfort]
   if args.play:
     print("True")
     for dqn_cfg in dqn_cfg_list:

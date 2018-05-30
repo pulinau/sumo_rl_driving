@@ -8,6 +8,85 @@ from include import *
 from sumo_cfgs import *
 from dqn import DQNCfg
 
+def reshape_validity(obs_dict):
+  out = np.array([obs_dict["ego_exists_left_lane"], obs_dict["ego_exists_right_lane"]], dtype=np.int32)
+  return [np.reshape(out, (1, -1))]
+
+def select_actions_validity(state):
+    ego_exists_left_lane = state[0][0][0]
+    ego_exists_right_lane = state[0][0][1]
+
+    if ego_exists_left_lane == 0 and ego_exists_right_lane == 0:
+      valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
+               ]
+      sorted_idx = []
+    if ego_exists_left_lane == 0 and ego_exists_right_lane == 1:
+      valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
+               ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+               ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+               ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+               ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+               ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+               ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+               ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
+               ]
+      sorted_idx = []
+    if ego_exists_left_lane == 1 and ego_exists_right_lane == 0:
+      valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
+               ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+               ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+               ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+               ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+               ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+               ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+               ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
+               ]
+      sorted_idx = []
+    if ego_exists_left_lane == 1 and ego_exists_right_lane == 1:
+        valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
+                 ]
+        sorted_idx = []
+
+    return (set(valid), set([]), sorted_idx)
+
 def reshape_safety(obs_dict):
   """reshape gym observation to keras neural network input"""
   o0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
@@ -361,6 +440,27 @@ def select_actions_speed_comfort(state):
   return (set(valid), set([]), sorted_idx)
 
 action_size = len(ActionLaneChange) * len(ActionAccel)
+
+cfg_validity = DQNCfg(name = "validity",
+                      play=False,
+                      state_size=2,
+                      action_size=action_size,
+                      pretrain_low_target=None,
+                      pretrain_high_target=None,
+                      gamma=None,
+                      gamma_inc=None,
+                      gamma_max=None,
+                      epsilon=None,
+                      epsilon_dec=None,
+                      epsilon_min=None,
+                      threshold=None,
+                      memory_size=None,
+                      traj_end_pred=None,
+                      replay_batch_size=None,
+                      _build_model=None,
+                      tf_cfg=None,
+                      reshape=reshape_validity,
+                      _select_actions=select_actions_validity)
 
 cfg_safety = DQNCfg(name = "safety",
                     play = False,
