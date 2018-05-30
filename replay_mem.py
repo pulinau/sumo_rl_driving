@@ -12,15 +12,15 @@ class ReplayMemory():
 
   def add_traj(self, traj):
     traj_seg = []
-    for state, action, reward, next_state, done in traj[::-1]:
-      if done or self.end_pred(reward):
+    for i, (state, action, reward, next_state, done) in enumerate(traj[::-1]):
+      if i == 0 or done or self.end_pred(reward):
         end_reward, end_state, end_done = reward, next_state, done
         if len(traj_seg) != 0:
           self.traj_mem.append(traj_seg)
         traj_seg = []
-        i = 0
-      traj_seg.append((state, action, end_reward, end_state, end_done, i))
-      i += 1
+        step = 0
+      traj_seg.append((state, action, end_reward, end_state, end_done, step))
+      step += 1
     self.traj_mem.append(traj_seg)
 
   def sample_end(self, n):

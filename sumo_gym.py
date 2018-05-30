@@ -4,7 +4,7 @@ __author__ = "Changjian Li"
 import random
 
 from action import get_action_space, disable_collision_check, enable_collision_check, act, infer_action
-from observation import get_observation_space, get_veh_dict, get_obs_dict
+from observation import get_observation_space, get_veh_dict, get_obs_dict, get_lanelet_dict, get_edge_dict
 from reward import get_reward_list
 from utils import class_vars
 from collections import deque
@@ -54,7 +54,10 @@ class SumoGymEnv(gym.Env):
     
     self.action_space = get_action_space()
     self.obsevation_space = get_observation_space(self)
-    
+
+    self.lanelet_dict = get_lanelet_dict(self.NET_XML_FILE)
+    self.edge_dict = get_edge_dict(self.NET_XML_FILE)
+
     self.env_state = EnvState.NOT_STARTED
     self._agt_ctrl = False # whether the ego car is controlled by RL agent
     self.veh_dict_hist = deque(maxlen=2)

@@ -118,7 +118,7 @@ tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
 
 def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(5, ))
-  ego_l1 = tf.keras.layers.Dense(12, activation=None)(ego_input)
+  ego_l1 = tf.keras.layers.Dense(10, activation=None)(ego_input)
 
   veh_inputs = [tf.keras.layers.Input(shape=(12,)) for _ in range(NUM_VEH_CONSIDERED)]
   shared_Dense1 = tf.keras.layers.Dense(10, activation=None)

@@ -104,21 +104,6 @@ def get_lanelet_dict(sumo_net_xml_file):
         lanelet_dict[lane_id]["right_lane_id"] = edge.getLanes()[lane_index-1].getID()
     # "left" and "right" connections for opposite direction lane are not added
   
-  # now ignore the internal edges/lanes
-  net = sumolib.net.readNet(sumo_net_xml_file, withInternal=False)
-  edges = net.getEdges()
-  for edge in edges:
-    for lane in edge.getLanes():
-      lane_id = lane.getID()
-      # check if it's already the same
-      if set(lanelet_dict[lane_id]["next_normal_lane_id_list"]) == set([conn.getToLane().getID() for conn in lane.getOutgoing()]):
-        print("redundant")
-      else:
-        print("NOT redundant")
-      lanelet_dict[lane_id]["next_normal_lane_id_list"] = [conn.getToLane().getID() for conn in lane.getOutgoing()] 
-      for next_lane_id in lanelet_dict[lane_id]["next_lane_id_list"]:
-        lanelet_dict[next_lane_id]["prev_normal_lane_id_list"] += [lane_id]
-  
   return lanelet_dict
   
 def get_edge_dict(sumo_net_xml_file):
@@ -142,8 +127,8 @@ def get_edge_dict(sumo_net_xml_file):
 def get_obs_dict(env):
   
   veh_dict = get_veh_dict(env)
-  lanelet_dict = get_lanelet_dict(env.NET_XML_FILE)
-  edge_dict = get_edge_dict(env.NET_XML_FILE)
+  lanelet_dict = env.lanelet_dict
+  edge_dict = env.edge_dict
   
   obs_dict = {}
   
@@ -242,8 +227,8 @@ def get_obs_dict(env):
     
     # transform the position to ego coordinate
     ego_angle_rad = ego_dict["angle"]/180 * np.pi
-    rotation_mat = np.array([[np.cos(-ego_angle_rad), -np.sin(-ego_angle_rad)],
-                             [np.sin(-ego_angle_rad), np.cos(-ego_angle_rad)]])
+    rotation_mat = np.array([[np.cos(ego_angle_rad), -np.sin(ego_angle_rad)],
+                             [np.sin(ego_angle_rad), np.cos(ego_angle_rad)]])
     relative_position = np.array(state_dict["position"]) - np.array(ego_dict["position"])
     relative_position = np.matmul(rotation_mat, relative_position)
     obs_dict["relative_position"][veh_index] = relative_position

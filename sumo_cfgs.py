@@ -22,6 +22,7 @@ SUMO_CMD = [SUMO_BIN,
             "--time-to-teleport", "-1",
             "--collision.action", "warn",
             "--collision.check-junctions", "true",
+            "--xml-validation", "never",
             "--step-length", str(SUMO_TIME_STEP),
             "-n", NET_XML_FILE,
             "-r"]
@@ -37,7 +38,7 @@ MAX_VEH_SPEED = 55.55
 # --------------------------
 NUM_LANE_CONSIDERED = 3 # number of lanes considered on each side of ego
 NUM_VEH_CONSIDERED = 16
-OBSERVATION_RADIUS = 600
+OBSERVATION_RADIUS = 100
 
 # --------------------------
 #         reward
