@@ -21,7 +21,7 @@ def get_reward_regulation(env):
   obs_dict = env.obs_dict_hist[-1]
   veh_dict = env.veh_dict_hist[-1]
   
-  if obs_dict["ego_dist_to_end_of_lane"] < 10:
+  if obs_dict["ego_dist_to_end_of_lane"] < 2:
     if obs_dict["ego_correct_lane_gap"] != 0:
       return -1
     

@@ -191,22 +191,21 @@ def get_obs_dict(env):
   veh_id_list_ROI = [k for k, v in veh_dict.items() if k!=env.EGO_VEH_ID and in_ROI(ego_dict["position"], v["position"])]
 
   # now deal with the relavant vehicles
+  obs_dict["veh_relation_next"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["veh_relation_prev"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["exists_vehicle"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["speed"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["dist_to_end_of_lane"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["in_intersection"] = [0] * env.NUM_VEH_CONSIDERED
-  obs_dict["relative_position"] = [[0, 0]] * env.NUM_VEH_CONSIDERED
+  obs_dict["relative_position"] = [[-env.OBSERVATION_RADIUS, -env.OBSERVATION_RADIUS]] * env.NUM_VEH_CONSIDERED
   obs_dict["relative_heading"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["has_priority"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["veh_relation_peer"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["veh_relation_conflict"] = [0] * env.NUM_VEH_CONSIDERED
-  obs_dict["veh_relation_next"] = [0] * env.NUM_VEH_CONSIDERED
-  obs_dict["veh_relation_prev"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["veh_relation_left"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["veh_relation_right"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["veh_relation_ahead"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["veh_relation_behind"] = [0] * env.NUM_VEH_CONSIDERED
-  obs_dict["veh_relation_irrelevant"] = [0] * env.NUM_VEH_CONSIDERED
 
   # sort veh within ROI by distance to ego
   veh_heap = []
@@ -217,7 +216,19 @@ def get_obs_dict(env):
   for veh_index in range(min(env.NUM_VEH_CONSIDERED, len(veh_heap))):
     _, veh_id = heapq.heappop(veh_heap)
     state_dict = veh_dict[veh_id]
-    
+
+    # NEXT, PREV
+    if state_dict["lane_id"] in lanelet_dict[ego_dict["lane_id"]]["next_lane_id_list"]:
+      obs_dict["veh_relation_next"][veh_index] = 1 # NEXT
+    if ego_dict["lane_id"] in lanelet_dict[state_dict["lane_id"]]["next_lane_id_list"]:
+      obs_dict["veh_relation_prev"][veh_index] = 1 # PREV
+
+    # if not approaching the same intersection, these are completely irrelevant, thus can be ignored
+    if edge_dict[ego_dict["edge_id"]]["to_node_id"] != edge_dict[state_dict["edge_id"]]["to_node_id"] and \
+       obs_dict["veh_relation_next"][veh_index] == 0 and \
+       obs_dict["veh_relation_prev"][veh_index] == 0:
+      continue
+
     obs_dict["exists_vehicle"][veh_index] = 1
     obs_dict["speed"][veh_index] = state_dict["speed"]
     obs_dict["dist_to_end_of_lane"][veh_index] = min(state_dict["lane_length"] - state_dict["lane_position"], env.OBSERVATION_RADIUS)
@@ -272,12 +283,6 @@ def get_obs_dict(env):
               if lane_id0 != None and lane_id1 != None:
                 if waypoint_intersect(lanelet_dict[lane_id0]["waypoint"], lanelet_dict[lane_id1]["waypoint"]) == True:
                   obs_dict["veh_relation_conflict"][veh_index] = 1 # CONFLICT
-    
-    # NEXT, PREV
-    if state_dict["lane_id"] in lanelet_dict[ego_dict["lane_id"]]["next_lane_id_list"]:
-      obs_dict["veh_relation_next"][veh_index] = 1 # NEXT
-    if ego_dict["lane_id"] in lanelet_dict[state_dict["lane_id"]]["next_lane_id_list"]:
-      obs_dict["veh_relation_prev"][veh_index] = 1 # PREV
     
     # LEFT, RIGHT
     if state_dict["lane_id"] == lanelet_dict[ego_dict["lane_id"]]["left_lane_id"]:

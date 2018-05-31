@@ -118,19 +118,19 @@ tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
 
 def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(5, ))
-  ego_l1 = tf.keras.layers.Dense(10, activation=None)(ego_input)
+  ego_l1 = tf.keras.layers.Dense(16, activation=None)(ego_input)
 
   veh_inputs = [tf.keras.layers.Input(shape=(12,)) for _ in range(NUM_VEH_CONSIDERED)]
-  shared_Dense1 = tf.keras.layers.Dense(10, activation=None)
+  shared_Dense1 = tf.keras.layers.Dense(16, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
   veh_l1 = [tf.keras.layers.add([ego_l1, x]) for x in veh_l1]
   veh_l1 = [tf.keras.layers.Activation(activation="sigmoid")(x) for x in veh_l1]
-  shared_Dense2 = tf.keras.layers.Dense(32, activation=None)
+  shared_Dense2 = tf.keras.layers.Dense(64, activation=None)
   veh_l2 = [shared_Dense2(x) for x in veh_l1]
 
   l3 = tf.keras.layers.add(veh_l2)
   l3 = tf.keras.layers.Activation(activation="sigmoid")(l3)
-  l4 = tf.keras.layers.Dense(32, activation="sigmoid")(l3)
+  l4 = tf.keras.layers.Dense(64, activation="sigmoid")(l3)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
 
   model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
@@ -143,9 +143,7 @@ def reshape_regulation(obs_dict):
   lane_gap_1hot[obs_dict["ego_correct_lane_gap"] + NUM_LANE_CONSIDERED] = 1
   o0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
                    min(obs_dict["ego_dist_to_end_of_lane"] / OBSERVATION_RADIUS, 1.0),
-                   obs_dict["ego_in_intersection"],
-                   obs_dict["ego_exists_left_lane"],
-                   obs_dict["ego_exists_right_lane"]
+                   obs_dict["ego_in_intersection"]
                    ] + lane_gap_1hot, dtype = np.float32)
   o1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
   o1 = np.append(o1, np.array([obs_dict["exists_vehicle"]]), axis=0)
@@ -153,17 +151,9 @@ def reshape_regulation(obs_dict):
   o1  = np.append(o1, np.minimum(np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
                                      np.ones((1, NUM_VEH_CONSIDERED))), axis = 0)
   o1 = np.append(o1, np.array([obs_dict["in_intersection"]]), axis=0)
-  o1 = np.append(o1, np.array(obs_dict["relative_position"]).T / OBSERVATION_RADIUS, axis=0)
-  o1  = np.append(o1, np.array([obs_dict["relative_heading"]])/np.pi, axis=0)
   o1  = np.append(o1, np.array([obs_dict["has_priority"]]), axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_peer"]]), axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_conflict"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["veh_relation_next"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["veh_relation_prev"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["veh_relation_left"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["veh_relation_right"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["veh_relation_ahead"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["veh_relation_behind"]]), axis=0)
 
   o = [o0] + [x for x in o1.T]
   return [np.reshape(x, (1,) + x.shape) for x in o]
@@ -173,20 +163,20 @@ tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.4
 #tf_cfg_regulation = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_regulation():
-  ego_input = tf.keras.layers.Input(shape=(6 + 2*NUM_LANE_CONSIDERED, ))
-  ego_l1 = tf.keras.layers.Dense(10, activation=None)(ego_input)
+  ego_input = tf.keras.layers.Input(shape=(4 + 2*NUM_LANE_CONSIDERED, ))
+  ego_l1 = tf.keras.layers.Dense(16, activation=None)(ego_input)
 
-  veh_inputs = [tf.keras.layers.Input(shape=(16,)) for _ in range(NUM_VEH_CONSIDERED)]
-  shared_Dense1 = tf.keras.layers.Dense(10, activation=None)
+  veh_inputs = [tf.keras.layers.Input(shape=(7,)) for _ in range(NUM_VEH_CONSIDERED)]
+  shared_Dense1 = tf.keras.layers.Dense(16, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
   veh_l1 = [tf.keras.layers.add([ego_l1, x]) for x in veh_l1]
   veh_l1 = [tf.keras.layers.Activation(activation="sigmoid")(x) for x in veh_l1]
-  shared_Dense2 = tf.keras.layers.Dense(32, activation=None)
+  shared_Dense2 = tf.keras.layers.Dense(64, activation=None)
   veh_l2 = [shared_Dense2(x) for x in veh_l1]
 
   l3 = tf.keras.layers.add(veh_l2)
   l3 = tf.keras.layers.Activation(activation="sigmoid")(l3)
-  l4 = tf.keras.layers.Dense(32, activation="sigmoid")(l3)
+  l4 = tf.keras.layers.Dense(64, activation="sigmoid")(l3)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
 
   model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)

@@ -100,7 +100,7 @@ class SumoGymEnv(gym.Env):
       # 1st time step starts the simulation, 
       # 2nd makes sure that all initial vehicles (departure time < SUMO_TIME_STEP) are in scene
       self.tc.simulationStep()
-      #self.tc.simulationStep()
+      self.tc.simulationStep()
       self.veh_dict_hist.append(get_veh_dict(self))
       self.obs_dict_hist.append(get_obs_dict(self))
       self.agt_ctrl = True

@@ -28,7 +28,7 @@ if __name__ == "__main__":
       dqn_cfg.play = True
     max_ep = 10
     sim_inst = 1
-  #"""
+  """
   if args.play != True:
     with open("examples.npz", "rb") as file:
       npzfile = np.load(file)
@@ -36,8 +36,8 @@ if __name__ == "__main__":
       pretrain_traj_list = [[(obs_dict, action, None, None, True)] for traj in mem for obs_dict, action in traj]
       mem = None
       npzfile = None
-  #"""
-  #pretrain_traj_list = []
+  """
+  pretrain_traj_list = []
 
   obs_queues = [[mp.Queue() for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
   action_queues = [[mp.Queue() for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
