@@ -54,7 +54,7 @@ if __name__ == "__main__":
               for i in range(sim_inst)]
 
 
-  agt_list = [mp.Process(target=run_QAgent, args=(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list, 720*sim_inst*max_ep))
+  agt_list = [mp.Process(target=run_QAgent, args=(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list))
               for dqn_cfg, obs_q_list, action_q_list, traj_q_list in zip(dqn_cfg_list, obs_queues, action_queues, traj_queues)]
 
   [p.start() for p in env_list]

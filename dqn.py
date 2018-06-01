@@ -164,9 +164,10 @@ class DQNAgent:
     next_states = temp
 
     backup = (self.gamma**(steps+1)) * np.array(dones) * np.amax(self.target_model.predict_on_batch(next_states), axis = 1)
-    # clamp targets larger than zero to zero
 
+    # clamp targets larger than zero to zero
     backup[np.where(backup > 0)] = 0
+
     targets = (self.gamma**steps)*rewards + backup
     targets_f = self.target_model.predict_on_batch(states)
     targets_f[np.arange(targets_f.shape[0]), actions] = targets

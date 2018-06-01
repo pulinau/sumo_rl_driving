@@ -27,10 +27,10 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       if play:
         env.agt_ctrl = True
       elif step == 0:
-        if random.uniform(0, 1) < 0.2:
+        if random.uniform(0, 1) < 0.1:
           env.agt_ctrl = False
       else:
-        if random.uniform(0, 1) < 0.007:
+        if random.uniform(0, 1) < 0.02:
           if env.agt_ctrl == False:
             env.agt_ctrl = True
 
@@ -115,17 +115,19 @@ def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list
   valid = [(x, "exploit") for x in valid]
   return random.sample(valid + invalid_list, 1)[0]
 
-def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list, max_ep):
+def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list):
   agt = DQNAgent(sumo_cfg, dqn_cfg)
   agt.pretrain(pretrain_traj_list, 1)
 
-  for ep in range(max_ep):
+  ep = 0
+  while True:
     for obs_q, action_q in zip(obs_q_list, action_q_list):
-      while obs_q.empty():
+      try:
+        obs_dict = obs_q.get(block=False)
+        action_q.put(agt.select_actions(obs_dict))
+      except queue.Empty:
         if not end_q.empty():
           return
-      obs_dict = obs_q.get()
-      action_q.put(agt.select_actions(obs_dict))
 
     for traj_q in traj_q_list:
       try:
@@ -133,11 +135,11 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
       except queue.Empty:
         pass
 
-    print("training ", agt.name, " episode: {}/{}".format(ep, max_ep))
+    #print("training ", agt.name, " episode: {}/{}".format(ep, max_ep))
     agt.replay()
 
     if ep % 100 == 100-1:
       agt.update_target()
       agt.save_model()
 
-  end_q.put(True)
+    ep += 1
