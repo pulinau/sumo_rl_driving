@@ -29,6 +29,7 @@ class DQNCfg():
                memory_size,
                traj_end_pred,
                replay_batch_size,
+               traj_end_ratio,
                _build_model,
                tf_cfg,
                reshape,
@@ -49,6 +50,7 @@ class DQNCfg():
     self.memory_size = memory_size
     self.traj_end_pred = traj_end_pred
     self.replay_batch_size = replay_batch_size
+    self.traj_end_ratio = traj_end_ratio # ratio states where bootstrap happens in the sample
     self._build_model = _build_model
     self.tf_cfg = tf_cfg
     self.reshape = reshape
@@ -138,7 +140,7 @@ class DQNAgent:
       return
 
     #print(self.name, " sampling starts", time.time())
-    minibatch = self.memory.sample_end(self.replay_batch_size) + self.memory.sample_traj(self.replay_batch_size//8)
+    minibatch = self.memory.sample(self.replay_batch_size, self.traj_end_ratio)
     #print(self.name, " sampling ends", time.time())
 
     states = [s[0] for s in minibatch]
@@ -172,19 +174,22 @@ class DQNAgent:
     targets_f = self.target_model.predict_on_batch(states)
     targets_f[np.arange(targets_f.shape[0]), actions] = targets
 
-
-    print(self.name, targets_f[0])
     #print(self.name , " training starts", time.time(), flush = True)
-    id = random.randint(0, 65536)
-    for i in range(2):
-      print(self.name, " id:", id, " ep:", i, "training loss: ", self.model.train_on_batch(states, targets_f))
+
+    if random.uniform(0, 1) < 0.01:
+      id = random.randint(0, 65536)
+      print(self.name, " id:", id, targets_f[0])
+      for i in range(2):
+        print(self.name, " id:", id, " ep:", i, "training loss: ", self.model.train_on_batch(states, targets_f))
 
     #print(self.name, " training ends", time.time(), flush = True)
+    """
     if np.any(np.isnan(self.model.predict_on_batch(states))):
       print("\n###################NAN...####################\n")
       import time
       while True:
         time.sleep(1000)
+    """
 
     if self.gamma < self.gamma_max:
       self.gamma += self.gamma_inc

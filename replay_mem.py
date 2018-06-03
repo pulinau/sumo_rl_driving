@@ -6,7 +6,16 @@ import random
 import time
 
 class ReplayMemory():
+  """
+  Replay memory for dynamic n-step look-ahead. Since the problem domain has very sparse reward,
+  instead of using a fixed look-ahead time step, bootstrap is only done when the reward is actually received.
+  Insignificant reward in between can be ignored by supplying a predicate, which is treated as 0 reward.
+  """
   def __init__(self, end_pred, memory_size=None):
+    """
+    :param end_pred: decide whether the reward is significant enough to be considered
+    :param memory_size: max replay momory size
+    """
     self.traj_mem = deque(maxlen = memory_size)
     self.end_pred = end_pred
     self.avg_traj_seg_len = 0
@@ -19,13 +28,15 @@ class ReplayMemory():
         #if not done and i == 0:
         #  end_done = True
         if len(traj_seg) != 0:
-          self.avg_traj_seg_len = (len(traj_mem) * self.avg_traj_seg_len + len(traj_seg)) / (len(traj_mem) + 1)
+          self.avg_traj_seg_len = (len(self.traj_mem) * self.avg_traj_seg_len + len(traj_seg)) / \
+                                  (len(self.traj_mem) + 1)
           self.traj_mem.append(traj_seg)
         traj_seg = []
         step = 0
       traj_seg.append((state, action, end_reward, end_state, end_done, step))
       step += 1
-    self.avg_traj_seg_len = (len(traj_mem) * self.avg_traj_seg_len + len(traj_seg)) / (len(traj_mem) + 1)
+    self.avg_traj_seg_len = (len(self.traj_mem) * self.avg_traj_seg_len + len(traj_seg)) / \
+                            (len(self.traj_mem) + 1)
     self.traj_mem.append(traj_seg)
 
   def sample_end(self, n):
