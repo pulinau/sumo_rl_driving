@@ -10,6 +10,7 @@ import numpy as np
 from replay_mem import ReplayMemory
 from action import loosen_correct_actions
 import time
+import multiprocessing as mp
 
 class DQNCfg():
   def __init__(self, 
@@ -72,6 +73,9 @@ class DQNAgent:
       self.model = self._load_model(self.name + ".sav")
     else:
       self.memory = ReplayMemory(self.traj_end_pred, self.memory_size)
+      self.sample_q = mp.Queue()
+      self.p = mp.Process(target=feed_sample, args=(self,))
+      self.p.start()
       self.model = self._build_model()
       self.target_model = self._build_model()
 
@@ -133,35 +137,44 @@ class DQNAgent:
       self.pretrain_mem = None
       self.save_model(name="pretrain_" + self.name + ".sav")
 
+  def feed_samples(self):
+    if self._select_actions is not None or self.play == True or len(self.memory) == 0:
+      return
+    if len(self.sample_q) < 2:
+      # print(self.name, " sampling starts", time.time())
+      minibatch = self.memory.sample(self.replay_batch_size, self.traj_end_ratio)
+      # print(self.name, " sampling ends", time.time())
+
+      states = [s[0] for s in minibatch]
+      actions = [s[1] for s in minibatch]
+      rewards = [s[2] for s in minibatch]
+      next_states = [s[3] for s in minibatch]
+      dones = [np.float(not s[4]) for s in minibatch]
+      steps = [s[5] for s in minibatch]
+
+      actions = np.array(actions)
+      rewards = np.array(rewards)
+      steps = np.array(steps)
+      temp = []
+
+      for i in range(len(states[0])):
+        arr = [x[i][0] for x in states]
+        temp += [arr]
+      states = temp
+      temp = []
+      for i in range(len(next_states[0])):
+        arr = [x[i][0] for x in next_states]
+        temp += [arr]
+      next_states = temp
+
+      self.sample_q.put((states, actions, rewards, next_states, dones, steps))
+
+
   def replay(self):
     if self._select_actions is not None or self.play == True or len(self.memory) == 0:
       return
 
-    #print(self.name, " sampling starts", time.time())
-    minibatch = self.memory.sample_end(self.replay_batch_size) + self.memory.sample_traj(self.replay_batch_size//8)
-    #print(self.name, " sampling ends", time.time())
-
-    states = [s[0] for s in minibatch]
-    actions = [s[1] for s in minibatch]
-    rewards = [s[2] for s in minibatch]
-    next_states = [s[3] for s in minibatch]
-    dones = [np.float(not s[4]) for s in minibatch]
-    steps = [s[5] for s in minibatch]
-    
-    actions = np.array(actions)
-    rewards = np.array(rewards)
-    steps = np.array(steps)
-    temp = []
-
-    for i in range(len(states[0])):
-      arr = [x[i][0] for x in states]
-      temp += [arr]
-    states = temp
-    temp = []
-    for i in range(len(next_states[0])):
-      arr = [x[i][0] for x in next_states]
-      temp += [arr]
-    next_states = temp
+    states, actions, rewards, next_states, dones, steps = self.sample_q.get()
 
     backup = (self.gamma**(steps+1)) * np.array(dones) * np.amax(self.target_model.predict_on_batch(next_states), axis = 1)
 
@@ -171,7 +184,6 @@ class DQNAgent:
     targets = (self.gamma**steps)*rewards + backup
     targets_f = self.target_model.predict_on_batch(states)
     targets_f[np.arange(targets_f.shape[0]), actions] = targets
-
 
     print(self.name, targets_f[0])
     #print(self.name , " training starts", time.time(), flush = True)
