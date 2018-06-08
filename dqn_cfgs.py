@@ -113,7 +113,7 @@ def reshape_safety(obs_dict):
   return [np.reshape(x, (1,) + x.shape) for x in o]
 
 tf_cfg_safety = tf.ConfigProto()
-tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
+tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.45
 #tf_cfg_safety = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_safety():
@@ -134,7 +134,7 @@ def build_model_safety():
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
 
   model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.005)
+  opt = tf.keras.optimizers.RMSprop(lr=0.01)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -159,7 +159,7 @@ def reshape_regulation(obs_dict):
   return [np.reshape(x, (1,) + x.shape) for x in o]
 
 tf_cfg_regulation = tf.ConfigProto()
-tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.4
+tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.45
 #tf_cfg_regulation = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_regulation():
@@ -180,7 +180,7 @@ def build_model_regulation():
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
 
   model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.005)
+  opt = tf.keras.optimizers.RMSprop(lr=0.01)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -447,6 +447,7 @@ cfg_validity = DQNCfg(name = "validity",
                       memory_size=None,
                       traj_end_pred=None,
                       replay_batch_size=None,
+                      traj_end_ratio= None,
                       _build_model=None,
                       tf_cfg=None,
                       reshape=reshape_validity,
@@ -467,7 +468,8 @@ cfg_safety = DQNCfg(name = "safety",
                     threshold = -3,
                     memory_size = 6400,
                     traj_end_pred = lambda x: x < -0.1,
-                    replay_batch_size = 640,
+                    replay_batch_size = 64,
+                    traj_end_ratio= 0.001,
                     _build_model = build_model_safety,
                     tf_cfg = tf_cfg_safety,
                     reshape = reshape_safety)
@@ -488,6 +490,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         memory_size = 6400,
                         traj_end_pred = lambda x: x < -0.1,
                         replay_batch_size = 640,
+                        traj_end_ratio= 0.2,
                         _build_model = build_model_regulation,
                         tf_cfg = tf_cfg_regulation,
                         reshape = reshape_regulation)
@@ -508,6 +511,7 @@ cfg_speed_comfort = DQNCfg(name = "speed_comfort",
                            memory_size = None,
                            traj_end_pred = None,
                            replay_batch_size = None,
+                           traj_end_ratio= None,
                            _build_model = None,
                            tf_cfg = None,
                            reshape = reshape_speed_comfort,

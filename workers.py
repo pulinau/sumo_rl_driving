@@ -24,15 +24,15 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
 
     for step in range(max_step):
 
-      if play:
-        env.agt_ctrl = True
-      elif step == 0:
-        if random.uniform(0, 1) < 0.1:
-          env.agt_ctrl = False
+      if step == 0:
+        if play:
+          env.agt_ctrl = True
+        else:
+          if random.uniform(0, 1) < 0.02:
+            env.agt_ctrl = False
       else:
-        if random.uniform(0, 1) < 0.02:
-          if env.agt_ctrl == False:
-            env.agt_ctrl = True
+        if env.agt_ctrl == False and random.uniform(0, 1) < 0.02:
+          env.agt_ctrl = True
 
       # select action
       if env.agt_ctrl == False:
@@ -59,7 +59,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       next_obs_dict, reward_list, env_state, action_dict = env.step(
         {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
       action = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
-      print(action, action_info)
+      #print(action, action_info)
       traj.append((obs_dict, action, reward_list, next_obs_dict, env_state != EnvState.NORMAL))
 
       obs_dict = next_obs_dict
@@ -135,10 +135,11 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
       except queue.Empty:
         pass
 
-    #print("training ", agt.name, " episode: {}/{}".format(ep, max_ep))
+    #if agt.name == 'regulation' or agt.name == 'safety':
+    #  print("training ", agt.name, " episode: {}".format(ep))
     agt.replay()
 
-    if ep % 100 == 100-1:
+    if ep % 10000 == 10000-1:
       agt.update_target()
       agt.save_model()
 
