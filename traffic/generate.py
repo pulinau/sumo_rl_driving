@@ -13,18 +13,18 @@ for i in range(1024):
     randomTripArg = " -n test.net.xml -r " + temp0_file_name + \
                     " -e 0.1" + \
                     " -p " + str(period) + \
-                    ' --fringe-factor 10 --trip-attributes="departLane=\\"random\\" departSpeed=\\"random\\" departPos=\\"random_free\\""'   
+                    ' --xml-validation never --fringe-factor 10 --trip-attributes="departLane=\\"random\\" departSpeed=\\"random\\" departPos=\\"random_free\\""'   
     subprocess.run(randomTrip + randomTripArg, shell=True, check=True)
     
     os.remove("trips.trips.xml")
 
-    period = 2
+    period = random.randrange(1, 5)/1000
     temp1_file_name = "temp1.rou.xml"
     randomTripArg = " -n test.net.xml -r " + temp1_file_name + \
                     ' --prefix 1_' + \
                     " -b 0.2 -e 640" + \
                     " -p " + str(period) + \
-                    ' --fringe-factor 10 --trip-attributes="departLane=\\"random\\" departSpeed=\\"random\\" departPos=\\"base\\""'
+                    ' --xml-validation never --fringe-factor 10 --trip-attributes="departLane=\\"random\\" departSpeed=\\"random\\" departPos=\\"base\\""'
     subprocess.run(randomTrip + randomTripArg, shell=True, check=True)
     
     with open(temp0_file_name, "r+") as fd_in0, open(temp1_file_name, "r+") as fd_in1, open("test"+str(i)+".rou.xml", "w+") as fd_out:

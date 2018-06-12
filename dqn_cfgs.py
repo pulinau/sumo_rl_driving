@@ -99,7 +99,7 @@ def reshape_safety(obs_dict):
   o1  = np.append(o1, np.array([obs_dict["exists_vehicle"]]), axis=0)
   o1  = np.append(o1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
   o1  = np.append(o1, np.minimum(np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
-                                     np.ones((1, NUM_VEH_CONSIDERED))), axis = 0)
+                                 np.ones((1, NUM_VEH_CONSIDERED))), axis = 0)
   o1 = np.append(o1, np.array(obs_dict["relative_position"]).T / OBSERVATION_RADIUS, axis=0)
   o1  = np.append(o1, np.array([obs_dict["relative_heading"]])/np.pi, axis=0)
   o1 = np.append(o1, np.array([obs_dict["veh_relation_peer"]]), axis=0)
@@ -110,7 +110,7 @@ def reshape_safety(obs_dict):
   o1  = np.append(o1, np.array([obs_dict["veh_relation_ahead"]]), axis=0)
 
   o = [o0] + [x for x in o1.T]
-  return [np.reshape(x, (1,) + x.shape) for x in o]
+  return [[x] for x in o]
 
 tf_cfg_safety = tf.ConfigProto()
 tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.45
@@ -156,7 +156,7 @@ def reshape_regulation(obs_dict):
   o1  = np.append(o1, np.array([obs_dict["veh_relation_conflict"]]), axis=0)
 
   o = [o0] + [x for x in o1.T]
-  return [np.reshape(x, (1,) + x.shape) for x in o]
+  return [[x] for x in o]
 
 tf_cfg_regulation = tf.ConfigProto()
 tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.45

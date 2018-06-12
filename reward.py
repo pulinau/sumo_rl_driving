@@ -29,7 +29,7 @@ def get_reward_regulation(env):
       if obs_dict["exists_vehicle"][i] == 1 and \
          obs_dict["has_priority"][i] == 1 and \
          (obs_dict["veh_relation_peer"][i] == 1 or obs_dict["veh_relation_conflict"][i] == 1) and \
-         obs_dict["dist_to_end_of_lane"][i] < 10 * obs_dict["speed"][i] and \
+         obs_dict["dist_to_end_of_lane"][i] < 60 and \
          obs_dict["ego_speed"] > 0.2:
         return -1
 

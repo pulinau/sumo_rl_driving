@@ -11,6 +11,8 @@ from replay_mem import ReplayMemory
 from action import loosen_correct_actions
 import time
 import multiprocessing as mp
+import queue
+import dill as pickle
 
 class DQNCfg():
   def __init__(self, 
@@ -57,6 +59,25 @@ class DQNCfg():
     self.reshape = reshape
     self._select_actions = _select_actions
 
+def feed_samples(mem_q, sample_q, sample_size, traj_end_ratio):
+  replay_mem = None
+  while True:
+    try:
+      replay_mem = mem_q.get(block=False)
+    except queue.Empty:
+      if replay_mem is None:
+        continue
+      else:
+        pass
+
+    if len(replay_mem) == 0:
+      print("replay_mem_len: ", len(replay_mem))
+      time.sleep(0.1)
+      continue
+    elif sample_q.qsize() < 10:
+      sample_q.put(replay_mem.sample(sample_size, traj_end_ratio))
+      print("sample_queue size: ", sample_q.qsize())
+
 class DQNAgent:
   def __init__(self, sumo_cfg, dqn_cfg):
     _attrs = class_vars(dqn_cfg)
@@ -74,9 +95,9 @@ class DQNAgent:
       self.epsilon = 0
       self.model = self._load_model(self.name + ".sav")
     else:
-      self.memory = ReplayMemory(self.traj_end_pred, self.memory_size)
-      self.sample_q = mp.Queue()
-      self.p = mp.Process(target=feed_sample, args=(self,))
+      self.memory = ReplayMemory(self.memory_size)
+      self.mem_q, self.sample_q = mp.Queue(), mp.Queue()
+      self.p = mp.Process(target=feed_samples, args=(self.mem_q, self.sample_q, self.replay_batch_size, self.traj_end_ratio))
       self.p.start()
       self.model = self._build_model()
       self.target_model = self._build_model()
@@ -86,7 +107,7 @@ class DQNAgent:
       return
     traj = [(self.reshape(obs_dict), action, reward, self.reshape(next_obs_dict), done)
             for obs_dict, action, reward, next_obs_dict, done in traj]
-    self.memory.add_traj(traj)
+    self.memory.add_traj(traj, self.traj_end_pred)
 
   def select_actions(self, obs_dict):
     """
@@ -139,46 +160,17 @@ class DQNAgent:
       self.pretrain_mem = None
       self.save_model(name="pretrain_" + self.name + ".sav")
 
-  def feed_samples(self):
-    if self._select_actions is not None or self.play == True or len(self.memory) == 0:
-      return
-    if len(self.sample_q) < 2:
-      # print(self.name, " sampling starts", time.time())
-      minibatch = self.memory.sample(self.replay_batch_size, self.traj_end_ratio)
-      # print(self.name, " sampling ends", time.time())
-
-      states = [s[0] for s in minibatch]
-      actions = [s[1] for s in minibatch]
-      rewards = [s[2] for s in minibatch]
-      next_states = [s[3] for s in minibatch]
-      dones = [np.float(not s[4]) for s in minibatch]
-      steps = [s[5] for s in minibatch]
-
-      actions = np.array(actions)
-      rewards = np.array(rewards)
-      steps = np.array(steps)
-      temp = []
-
-      for i in range(len(states[0])):
-        arr = [x[i][0] for x in states]
-        temp += [arr]
-      states = temp
-      temp = []
-      for i in range(len(next_states[0])):
-        arr = [x[i][0] for x in next_states]
-        temp += [arr]
-      next_states = temp
-
-      self.sample_q.put((states, actions, rewards, next_states, dones, steps))
-
-
   def replay(self):
     if self._select_actions is not None or self.play == True or len(self.memory) == 0:
       return
 
-    states, actions, rewards, next_states, dones, steps = self.sample_q.get()
+    try:
+      states, actions, rewards, next_states, not_dones, steps = self.sample_q.get(block=False)
+    except queue.Empty:
+      print("empty")
+      return
 
-    backup = (self.gamma**(steps+1)) * np.array(dones) * np.amax(self.target_model.predict_on_batch(next_states), axis = 1)
+    backup = (self.gamma**(steps+1)) * np.array(not_dones) * np.amax(self.target_model.predict_on_batch(next_states), axis = 1)
 
     # clamp targets larger than zero to zero
     backup[np.where(backup > 0)] = 0
@@ -197,18 +189,16 @@ class DQNAgent:
         print(self.name, " id:", id, " ep:", i, "training loss: ", self.model.train_on_batch(states, targets_f))
 
     #print(self.name, " training ends", time.time(), flush = True)
-    """
-    if np.any(np.isnan(self.model.predict_on_batch(states))):
-      print("\n###################NAN...####################\n")
-      import time
-      while True:
-        time.sleep(1000)
-    """
 
     if self.gamma < self.gamma_max:
       self.gamma += self.gamma_inc
     if self.epsilon > self.epsilon_min:
       self.epsilon -= self.epsilon_dec
+
+  def send_memory(self):
+    if self._select_actions is not None or self.play == True:
+      return
+    self.mem_q.put(self.memory)
 
   def update_target(self):
     if self._select_actions is not None or self.play == True:

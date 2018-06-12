@@ -128,18 +128,21 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
       except queue.Empty:
         if not end_q.empty():
           return
+        else:
+          continue
 
     for traj_q in traj_q_list:
       try:
         agt.remember(traj_q.get(block=False))
       except queue.Empty:
-        pass
+        continue
 
     #if agt.name == 'regulation' or agt.name == 'safety':
     #  print("training ", agt.name, " episode: {}".format(ep))
     agt.replay()
 
-    if ep % 10000 == 10000-1:
+    if ep % 1000 == 1000-1:
+      agt.send_memory()
       agt.update_target()
       agt.save_model()
 
