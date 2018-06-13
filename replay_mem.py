@@ -19,6 +19,7 @@ class ReplayMemory():
     :param max_len: max replay momory size
     """
     assert max_len > 0
+    self.max_len = max_len
 
     self.states = []
     self.actions = []
@@ -44,10 +45,10 @@ class ReplayMemory():
         #if not done and i == 0:
         #  end_done = True
         if len(traj_seg) != 0:
-          self.avg_traj_seg_len = (len(self.traj_mem) * self.avg_traj_seg_len + len(traj_seg)) / \
-                                  (len(self.traj_mem) + 1)
+          self.avg_traj_seg_len = (len(self.end_actions) * self.avg_traj_seg_len + len(traj_seg)) / \
+                                  (len(self.end_actions) + 1)
           for i, x in enumerate(traj_seg):
-            self.add(x, i == len(traj_seg))
+            self.add(x, i == len(traj_seg)-1)
         traj_seg = []
         step = 0
       traj_seg.append((state, action, end_reward, end_state, end_done, step))
@@ -55,20 +56,20 @@ class ReplayMemory():
     self.avg_traj_seg_len = (len(self.end_actions) * self.avg_traj_seg_len + len(traj_seg)) / \
                             (len(self.end_actions) + 1)
     for i, x in enumerate(traj_seg):
-      self.add(x, i == len(traj_seg))
+      self.add(x, i == len(traj_seg)-1)
 
   def add(self, tran, is_end):
     state, action, reward, next_state, done, step = tran
 
-    if len(self.actions) > 2 * max_len:
+    if len(self.actions) > 2 * self.max_len:
       for i in range(len(self.states)):
-        self.states[i] = self.states[i][max_len:]
-      self.actions = self.actions[max_len:]
-      self.rewards = self.rewards[man_len:]
+        self.states[i] = self.states[i][self.max_len:]
+      self.actions = self.actions[self.max_len:]
+      self.rewards = self.rewards[self.max_len:]
       for i in range(len(self.next_states)):
-        self.next_states[i] = self.next_states[i][max_len:]
-      self.not_dones = self.not_dones[max_len:]
-      self.steps = self.steps[max_len:]
+        self.next_states[i] = self.next_states[i][self.max_len:]
+      self.not_dones = self.not_dones[self.max_len:]
+      self.steps = self.steps[self.max_len:]
 
     self.actions += [action]
     self.rewards += [reward]
@@ -88,32 +89,32 @@ class ReplayMemory():
         self.next_states[i] += next_state[i]
 
     if is_end:
-      if len(self.end_actions) > 2 * max_len:
+      if len(self.end_actions) > 2 * self.max_len:
         for i in range(len(self.end_states)):
-          self.end_states[i] = self.end_states[i][max_len:]
-        self.end_actions = self.end_actions[max_len:]
-        self.end_rewards = self.end_rewards[man_len:]
+          self.end_states[i] = self.end_states[i][self.max_len:]
+        self.end_actions = self.end_actions[self.max_len:]
+        self.end_rewards = self.end_rewards[self.max_len:]
         for i in range(len(self.end_next_states)):
-          self.end_next_states[i] = self.end_next_states[i][max_len:]
-        self.end_not_dones = self.end_not_dones[max_len:]
-        self.end_steps = self.end_steps[max_len:]
+          self.end_next_states[i] = self.end_next_states[i][self.max_len:]
+        self.end_not_dones = self.end_not_dones[self.max_len:]
+        self.end_steps = self.end_steps[self.max_len:]
 
-      self.end_actions += [end_action]
-      self.end_rewards += [end_reward]
-      self.end_not_dones += [not end_done]
-      self.end_steps += [end_step]
+      self.end_actions += [action]
+      self.end_rewards += [reward]
+      self.end_not_dones += [not done]
+      self.end_steps += [step]
       if len(self.end_states) == 0:
-        for i in range(len(end_state)):
-          self.end_states += [end_state[i]]
+        for i in range(len(state)):
+          self.end_states += [state[i]]
       else:
         for i in range(len(self.end_states)):
-          self.end_states[i] += end_state[i]
+          self.end_states[i] += state[i]
       if len(self.end_next_states) == 0:
-        for i in range(len(end_next_state)):
-          self.end_next_states += [end_next_state[i]]
+        for i in range(len(next_state)):
+          self.end_next_states += [next_state[i]]
       else:
         for i in range(len(self.end_next_states)):
-          self.end_next_states[i] += end_next_state[i]
+          self.end_next_states[i] += next_state[i]
 
   def sample_end(self, n):
     assert len(self.end_actions) > 0 and n > 0
@@ -148,14 +149,14 @@ class ReplayMemory():
     assert traj_end_ratio < 1 and traj_end_ratio > 0, "traj_end_ratio must lie between 0 and 1"
     alpha = self.avg_traj_seg_len / (1/traj_end_ratio -1 + self.avg_traj_seg_len)
     end_states, end_actions, end_rewards, \
-      end_next_states, end_not_dones, end_steps =  self.sample_end(min(int(alpha*n), 1))
+      end_next_states, end_not_dones, end_steps =  self.sample_end(max(int(alpha*n), 1))
     states, actions, rewards, \
-      next_states, not_dones, steps = self.sample_traj(min(int((1-alpha)*n), 1))
+      next_states, not_dones, steps = self.sample_traj(max(int((1-alpha)*n), 1))
     actions += end_actions
     rewards += end_rewards
     not_dones += end_not_dones
     steps += end_steps
-    for i in len(states):
+    for i in range(len(states)):
       states[i] += end_states[i]
       next_states[i] += end_next_states[i]
     return (states, actions, rewards, next_states, not_dones, steps)

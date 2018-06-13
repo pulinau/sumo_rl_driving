@@ -71,12 +71,12 @@ def feed_samples(mem_q, sample_q, sample_size, traj_end_ratio):
         pass
 
     if len(replay_mem) == 0:
-      print("replay_mem_len: ", len(replay_mem))
-      time.sleep(0.1)
+      #print("replay_mem_len: ", len(replay_mem))
+      time.sleep(1)
       continue
-    elif sample_q.qsize() < 10:
+    elif sample_q.qsize() < 2000:
       sample_q.put(replay_mem.sample(sample_size, traj_end_ratio))
-      print("sample_queue size: ", sample_q.qsize())
+      #print("sample_queue size: ", sample_q.qsize())
 
 class DQNAgent:
   def __init__(self, sumo_cfg, dqn_cfg):
@@ -96,9 +96,12 @@ class DQNAgent:
       self.model = self._load_model(self.name + ".sav")
     else:
       self.memory = ReplayMemory(self.memory_size)
-      self.mem_q, self.sample_q = mp.Queue(), mp.Queue()
-      self.p = mp.Process(target=feed_samples, args=(self.mem_q, self.sample_q, self.replay_batch_size, self.traj_end_ratio))
-      self.p.start()
+      NUM_FEED = 1
+      self.mem_q_list = [mp.Queue() for _ in range(NUM_FEED)]
+      self.sample_q = mp.Queue()
+      self.p_list = [mp.Process(target=feed_samples, args=(mem_q, self.sample_q, self.replay_batch_size, self.traj_end_ratio))
+                     for mem_q in self.mem_q_list]
+      [p.start() for p in self.p_list]
       self.model = self._build_model()
       self.target_model = self._build_model()
 
@@ -167,8 +170,15 @@ class DQNAgent:
     try:
       states, actions, rewards, next_states, not_dones, steps = self.sample_q.get(block=False)
     except queue.Empty:
-      print("empty")
+      #print("replay qsize: ", self.sample_q.qsize())
+      #print(self.name, " empty")
       return
+
+    #states, actions, rewards, next_states, not_dones, steps = \
+    #  self.memory.sample(self.replay_batch_size, self.traj_end_ratio)
+    actions = np.array(actions)
+    rewards = np.array(rewards)
+    steps = np.array(steps)
 
     backup = (self.gamma**(steps+1)) * np.array(not_dones) * np.amax(self.target_model.predict_on_batch(next_states), axis = 1)
 
@@ -179,7 +189,7 @@ class DQNAgent:
     targets_f = self.target_model.predict_on_batch(states)
     targets_f[np.arange(targets_f.shape[0]), actions] = targets
 
-    print(self.name, targets_f[0])
+    #print(self.name, targets_f[0])
     #print(self.name , " training starts", time.time(), flush = True)
 
     if random.uniform(0, 1) < 0.01:
@@ -198,7 +208,7 @@ class DQNAgent:
   def send_memory(self):
     if self._select_actions is not None or self.play == True:
       return
-    self.mem_q.put(self.memory)
+    [mem_q.put(self.memory) for mem_q in self.mem_q_list]
 
   def update_target(self):
     if self._select_actions is not None or self.play == True:
