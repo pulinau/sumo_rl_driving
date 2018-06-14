@@ -182,16 +182,19 @@ class ReplayMemory():
     """
     while True:
       if not end_q.empty():
+#        try:
+#          self.lock.release()
+#        except:
+#          pass
         return
       if len(self.actions) == 0:
         time.sleep(0.1)
         continue
       elif samp_q.qsize() < 2000:
-        sample_q.put(self..sample(n, traj_end_ratio))
+        samp_q.put(self.sample(n, traj_end_ratio))
 
   def __len__(self):
     self.lock.acquire()
     l = len(self.actions)
     self.lock.release()
-
     return l

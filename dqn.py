@@ -12,6 +12,7 @@ from action import loosen_correct_actions
 import time
 import multiprocessing as mp
 import queue
+from copy import deepcopy
 import dill as pickle
 
 class DQNCfg():
@@ -77,8 +78,8 @@ class DQNAgent:
       self.model = self._load_model(self.name + ".sav")
     else:
       self.memory = ReplayMemory(self.memory_size)
-      self.sample_q, self.end_replay_q = mp.Queue(), mp.Queue()
-      self.feed_samp_p = mp.Process(target=self.memory.feed_samp,
+      self.sample_q, self.end_replay_q = mp.Queue(maxsize=5000), mp.Queue()
+      self.feed_samp_p = mp.Process(target=deepcopy(self.memory).feed_samp,
                                     args=(self.replay_batch_size, self.traj_end_ratio, self.sample_q, self.end_replay_q))
       self.feed_samp_p.start()
       self.model = self._build_model()
@@ -144,6 +145,7 @@ class DQNAgent:
 
   def replay(self):
     if self._select_actions is not None or self.play == True or len(self.memory) == 0:
+#      print("empty")
       return
 
     try:
@@ -188,13 +190,11 @@ class DQNAgent:
     if self._select_actions is not None or self.play == True:
       return
     self.end_replay_q.put(True)
-    end_replay_q = mp.Queue()
-    p = mp.Process(target=self.memory.feed_samp,
-                   args=(self.replay_batch_size, self.traj_end_ratio, self.sample_q, end_replay_q))
-    p.start()
     self.feed_samp_p.join()
-    self.feed_samp_p = p
-    self.end_replay_q = end_replay_q
+    self.end_replay_q = mp.Queue()
+    self.feed_samp_p = mp.Process(target=deepcopy(self.memory).feed_samp,
+                   args=(self.replay_batch_size, self.traj_end_ratio, self.sample_q, self.end_replay_q))
+    self.feed_samp_p.start()
 
   def update_target(self):
     if self._select_actions is not None or self.play == True:
