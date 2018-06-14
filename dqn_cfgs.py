@@ -453,6 +453,12 @@ cfg_validity = DQNCfg(name = "validity",
                       reshape=reshape_validity,
                       _select_actions=select_actions_validity)
 
+class lt():
+  def __init__(self, a):
+    self.a = a
+  def __call__(self, b):
+    return b < self.a
+
 cfg_safety = DQNCfg(name = "safety",
                     play = False,
                     state_size = 4 + 10*NUM_VEH_CONSIDERED,
@@ -467,7 +473,7 @@ cfg_safety = DQNCfg(name = "safety",
                     epsilon_min = 0.01,
                     threshold = -3,
                     memory_size = 6400,
-                    traj_end_pred = lambda x: x < -0.1,
+                    traj_end_pred = lt(-0.1),
                     replay_batch_size = 64,
                     traj_end_ratio= 0.001,
                     _build_model = build_model_safety,
@@ -488,7 +494,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         epsilon_min=0.02,
                         threshold = -8,
                         memory_size = 6400,
-                        traj_end_pred = lambda x: x < -0.1,
+                        traj_end_pred = lt(-0.1),
                         replay_batch_size = 640,
                         traj_end_ratio= 0.2,
                         _build_model = build_model_regulation,

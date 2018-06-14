@@ -141,8 +141,7 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
     #  print("training ", agt.name, " episode: {}".format(ep))
     agt.replay()
 
-    if ep % 100 == 100-1:
-      agt.update_replay()
+    if ep % 5000 == 5000-1:
       agt.update_target()
       agt.save_model()
 

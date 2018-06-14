@@ -6,6 +6,7 @@ import random
 import dill as pickle
 import time
 import multiprocessing as mp
+from multiprocessing.managers import BaseManager
 
 class ReplayMemory():
   """
@@ -57,7 +58,7 @@ class ReplayMemory():
           self.avg_traj_seg_len = (len(self.end_actions) * self.avg_traj_seg_len + len(traj_seg)) / \
                                   (len(self.end_actions) + 1)
           for i, x in enumerate(traj_seg):
-            self.add(x, i == len(traj_seg)-1)
+            self._add(x, i == len(traj_seg)-1)
         traj_seg = []
         step = 0
       traj_seg.append((state, action, end_reward, end_state, end_done, step))
@@ -65,9 +66,9 @@ class ReplayMemory():
     self.avg_traj_seg_len = (len(self.end_actions) * self.avg_traj_seg_len + len(traj_seg)) / \
                             (len(self.end_actions) + 1)
     for i, x in enumerate(traj_seg):
-      self.add(x, i == len(traj_seg)-1)
+      self._add(x, i == len(traj_seg)-1)
 
-  def add(self, tran, is_end):
+  def _add(self, tran, is_end):
     self.lock.acquire()
 
     state, action, reward, next_state, done, step = tran
@@ -172,29 +173,12 @@ class ReplayMemory():
       next_states[i] += end_next_states[i]
     return (states, actions, rewards, next_states, not_dones, steps)
 
-  def feed_samp(self, n, traj_end_ratio, samp_q, end_q):
-    """
-    :param n:
-    :param traj_end_ratio:
-    :param samp_q: multiprocess.Queue
-    :param end_q: multiprocess.Queue
-    :return:
-    """
-    while True:
-      if not end_q.empty():
-#        try:
-#          self.lock.release()
-#        except:
-#          pass
-        return
-      if len(self.actions) == 0:
-        time.sleep(0.1)
-        continue
-      elif samp_q.qsize() < 2000:
-        samp_q.put(self.sample(n, traj_end_ratio))
-
-  def __len__(self):
+  def size(self):
     self.lock.acquire()
     l = len(self.actions)
     self.lock.release()
     return l
+
+class ReplayMemoryManager(BaseManager):
+  pass
+ReplayMemoryManager.register('ReplayMemory', ReplayMemory)

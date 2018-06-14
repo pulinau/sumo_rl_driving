@@ -7,7 +7,7 @@ from utils import class_vars
 import random
 import tensorflow as tf
 import numpy as np
-from replay_mem import ReplayMemory
+from replay_mem import ReplayMemory, ReplayMemoryManager
 from action import loosen_correct_actions
 import time
 import multiprocessing as mp
@@ -60,6 +60,16 @@ class DQNCfg():
     self.reshape = reshape
     self._select_actions = _select_actions
 
+def feed_samp(replay_mem, samp_size, traj_end_ratio, samp_q, end_q):
+  while True:
+    if not end_q.empty():
+      return
+    if replay_mem.size() == 0:
+      time.sleep(1)
+      continue
+    elif samp_q.qsize() < 10000:
+      samp_q.put(replay_mem.sample(samp_size, traj_end_ratio))
+
 class DQNAgent:
   def __init__(self, sumo_cfg, dqn_cfg):
     _attrs = class_vars(dqn_cfg)
@@ -77,13 +87,23 @@ class DQNAgent:
       self.epsilon = 0
       self.model = self._load_model(self.name + ".sav")
     else:
-      self.memory = ReplayMemory(self.memory_size)
-      self.sample_q, self.end_replay_q = mp.Queue(maxsize=5000), mp.Queue()
-      self.feed_samp_p = mp.Process(target=deepcopy(self.memory).feed_samp,
-                                    args=(self.replay_batch_size, self.traj_end_ratio, self.sample_q, self.end_replay_q))
+      manager = ReplayMemoryManager()
+      manager.start()
+      self.memory = manager.ReplayMemory(self.memory_size)
+      self.sample_q = mp.Queue(maxsize=10000)
+      self.end_replay_q = mp.Queue(maxsize=5)
+      self.feed_samp_p = mp.Process(target=feed_samp, args=(self.memory,
+                                                            self.replay_batch_size,
+                                                            self.traj_end_ratio,
+                                                            self.sample_q,
+                                                            self.end_replay_q))
       self.feed_samp_p.start()
       self.model = self._build_model()
       self.target_model = self._build_model()
+
+  def __del__(self):
+    self.end_replay_q.put(True)
+    self.feed_samp_p.join()
 
   def remember(self, traj):
     if self._select_actions is not None or self.play == True:
@@ -144,8 +164,7 @@ class DQNAgent:
       self.save_model(name="pretrain_" + self.name + ".sav")
 
   def replay(self):
-    if self._select_actions is not None or self.play == True or len(self.memory) == 0:
-#      print("empty")
+    if self._select_actions is not None or self.play == True or self.memory.size() == 0:
       return
 
     try:
@@ -185,16 +204,6 @@ class DQNAgent:
       self.gamma += self.gamma_inc
     if self.epsilon > self.epsilon_min:
       self.epsilon -= self.epsilon_dec
-
-  def update_replay(self):
-    if self._select_actions is not None or self.play == True:
-      return
-    self.end_replay_q.put(True)
-    self.feed_samp_p.join()
-    self.end_replay_q = mp.Queue()
-    self.feed_samp_p = mp.Process(target=deepcopy(self.memory).feed_samp,
-                   args=(self.replay_batch_size, self.traj_end_ratio, self.sample_q, self.end_replay_q))
-    self.feed_samp_p.start()
 
   def update_target(self):
     if self._select_actions is not None or self.play == True:
