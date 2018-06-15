@@ -18,7 +18,7 @@ class ReplayMemory():
     """
     :param max_len: max replay memory size
     """
-    assert max_len > 0
+    assert max_len > 0, "max_len must be greater than zero"
     self.max_len = max_len
 
     self.lock = mp.Lock()
@@ -48,6 +48,8 @@ class ReplayMemory():
     :param end_pred: decide whether the reward is significant enough to be considered
     :return:
     """
+    self.lock.acquire()
+
     traj_seg = []
     for i, (state, action, reward, next_state, done) in enumerate(traj[::-1]):
       if i == 0 or done or end_pred(reward):
@@ -68,9 +70,9 @@ class ReplayMemory():
     for i, x in enumerate(traj_seg):
       self._add(x, i == len(traj_seg)-1)
 
-  def _add(self, tran, is_end):
-    self.lock.acquire()
+    self.lock.release()
 
+  def _add(self, tran, is_end):
     state, action, reward, next_state, done, step = tran
 
     if len(self.actions) > 2 * self.max_len:
@@ -119,12 +121,11 @@ class ReplayMemory():
           self.end_states[i] += state[i]
           self.end_next_states[i] += next_state[i]
 
-    self.lock.release()
-
-  def sample_end(self, n):
+  def _sample_end(self, n):
     self.lock.acquire()
 
-    assert len(self.end_actions) > 0 and n > 0
+    assert n > 0, "sample size must be positive"
+    assert len(self.end_actions) > 0, "replay memory empty"
     indices = random.sample(range(len(self.end_actions)), min(n, len(self.end_actions)))
     actions = [self.end_actions[i] for i in indices]
     rewards = [self.end_rewards[i] for i in indices]
@@ -139,10 +140,11 @@ class ReplayMemory():
     self.lock.release()
     return samp
 
-  def sample_traj(self, n):
+  def _sample_traj(self, n):
     self.lock.acquire()
 
-    assert len(self.actions) > 0 and n > 0
+    assert n > 0, "sample size must be positive"
+    assert len(self.actions) > 0, "replay memory empty"
     indices = random.sample(range(len(self.actions)), min(n, len(self.actions)))
     actions = [self.actions[i] for i in indices]
     rewards = [self.rewards[i] for i in indices]
@@ -161,9 +163,9 @@ class ReplayMemory():
     assert traj_end_ratio < 1 and traj_end_ratio > 0, "traj_end_ratio must lie between 0 and 1"
     alpha = self.avg_traj_seg_len / (1/traj_end_ratio -1 + self.avg_traj_seg_len)
     end_states, end_actions, end_rewards, \
-      end_next_states, end_not_dones, end_steps =  self.sample_end(max(int(alpha*n), 1))
+      end_next_states, end_not_dones, end_steps =  self._sample_end(max(int(alpha*n), 1))
     states, actions, rewards, \
-      next_states, not_dones, steps = self.sample_traj(max(int((1-alpha)*n), 1))
+      next_states, not_dones, steps = self._sample_traj(max(int((1-alpha)*n), 1))
     actions += end_actions
     rewards += end_rewards
     not_dones += end_not_dones

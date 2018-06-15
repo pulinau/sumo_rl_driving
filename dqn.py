@@ -90,7 +90,7 @@ class DQNAgent:
       manager = ReplayMemoryManager()
       manager.start()
       self.memory = manager.ReplayMemory(self.memory_size)
-      self.sample_q = mp.Queue(maxsize=10000)
+      self.sample_q = mp.Queue(maxsize=1000)
       self.end_replay_q = mp.Queue(maxsize=5)
       self.feed_samp_p = mp.Process(target=feed_samp, args=(self.memory,
                                                             self.replay_batch_size,
