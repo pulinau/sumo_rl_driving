@@ -57,16 +57,16 @@ class ReplayMemory():
         if len(traj_seg) != 0:
           self.avg_traj_seg_len = (len(self.end_actions) * self.avg_traj_seg_len + len(traj_seg)) / \
                                   (len(self.end_actions) + 1)
-          for i, x in enumerate(traj_seg):
-            self._add(x, i == len(traj_seg)-1)
+          for j, x in enumerate(traj_seg):
+            self._add(x, j == len(traj_seg)-1)
         traj_seg = []
         step = 0
       traj_seg.append((state, action, end_reward, end_state, end_done, step))
       step += 1
     self.avg_traj_seg_len = (len(self.end_actions) * self.avg_traj_seg_len + len(traj_seg)) / \
                             (len(self.end_actions) + 1)
-    for i, x in enumerate(traj_seg):
-      self._add(x, i == len(traj_seg)-1)
+    for j, x in enumerate(traj_seg):
+      self._add(x, j == len(traj_seg)-1)
 
   def _add(self, tran, is_end):
     self.lock.acquire()
