@@ -98,7 +98,7 @@ class ReplayMemory():
         self.next_states[i] += next_state[i]
 
     if is_end:
-      cap = self.max_len/(self.avg_traj_seg_len+1)
+      cap = self.max_len//(self.avg_traj_seg_len+1) + 1
       if len(self.end_actions) > 2 * cap:
         for i in range(len(self.end_states)):
           self.end_states[i] = self.end_states[i][cap:]

@@ -44,17 +44,21 @@ if __name__ == "__main__":
   traj_queues = [[mp.Queue(maxsize=1000) for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
   end_q = mp.Queue(maxsize=5) # if end_q is not empty, then all process must stop
 
-  env_list = [mp.Process(target=run_env, args=(sumo_cfg,
-                                               dqn_cfg_list,
-                                               end_q,
-                                               [obs_q[i] for obs_q in obs_queues],
-                                               [action_q[i] for action_q in action_queues],
-                                               [traj_q[i] for traj_q in traj_queues],
-                                               args.play, max_ep, i,))
+  env_list = [mp.Process(target=run_env,
+                         name='sumo' + str(i),
+                         args=(sumo_cfg,
+                               dqn_cfg_list,
+                               end_q,
+                               [obs_q[i] for obs_q in obs_queues],
+                               [action_q[i] for action_q in action_queues],
+                               [traj_q[i] for traj_q in traj_queues],
+                               args.play, max_ep, i,))
               for i in range(sim_inst)]
 
 
-  agt_list = [mp.Process(target=run_QAgent, args=(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list))
+  agt_list = [mp.Process(target=run_QAgent,
+                         name='dqn ' + dqn_cfg.name,
+                         args=(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list))
               for dqn_cfg, obs_q_list, action_q_list, traj_q_list in zip(dqn_cfg_list, obs_queues, action_queues, traj_queues)]
 
   [p.start() for p in env_list]

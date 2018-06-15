@@ -67,7 +67,8 @@ def feed_samp(replay_mem, samp_size, traj_end_ratio, samp_q, end_q):
     if replay_mem.size() == 0:
       time.sleep(1)
       continue
-    elif samp_q.qsize() < 10000:
+    elif samp_q.qsize() < 1000:
+      #print("replay mem size: ", replay_mem.size())
       samp_q.put(replay_mem.sample(samp_size, traj_end_ratio))
 
 class DQNAgent:
@@ -92,11 +93,13 @@ class DQNAgent:
       self.memory = manager.ReplayMemory(self.memory_size)
       self.sample_q = mp.Queue(maxsize=1000)
       self.end_replay_q = mp.Queue(maxsize=5)
-      self.feed_samp_p = mp.Process(target=feed_samp, args=(self.memory,
-                                                            self.replay_batch_size,
-                                                            self.traj_end_ratio,
-                                                            self.sample_q,
-                                                            self.end_replay_q))
+      self.feed_samp_p = mp.Process(target=feed_samp,
+                                    name='feed_samp ' + self.name, 
+                                    args=(self.memory,
+                                          self.replay_batch_size,
+                                          self.traj_end_ratio,
+                                          self.sample_q,
+                                          self.end_replay_q))
       self.feed_samp_p.start()
       self.model = self._build_model()
       self.target_model = self._build_model()
