@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
   obs_queues = [[mp.Queue(maxsize=5) for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
   action_queues = [[mp.Queue(maxsize=5) for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
-  traj_queues = [[mp.Queue(maxsize=1000) for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
+  traj_queues = [[mp.Queue(maxsize=5) for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
   end_q = mp.Queue(maxsize=5) # if end_q is not empty, then all process must stop
 
   env_list = [mp.Process(target=run_env,

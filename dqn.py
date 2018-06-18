@@ -12,8 +12,6 @@ from action import loosen_correct_actions
 import time
 import multiprocessing as mp
 import queue
-from copy import deepcopy
-import dill as pickle
 
 class DQNCfg():
   def __init__(self, 
@@ -67,9 +65,9 @@ def feed_samp(replay_mem, samp_size, traj_end_ratio, samp_q, end_q):
     if replay_mem.size() == 0:
       time.sleep(1)
       continue
-    elif samp_q.qsize() < 1000:
-      #print("replay mem size: ", replay_mem.size())
+    elif samp_q.qsize() < 5000:
       samp_q.put(replay_mem.sample(samp_size, traj_end_ratio))
+      #print("replay mem size: ", replay_mem.size())
 
 class DQNAgent:
   def __init__(self, sumo_cfg, dqn_cfg):
@@ -90,11 +88,13 @@ class DQNAgent:
     else:
       manager = ReplayMemoryManager()
       manager.start()
-      self.memory = manager.ReplayMemory(self.memory_size)
-      self.sample_q = mp.Queue(maxsize=1000)
+      #self.lock = mp.Lock()
+      #self.cv = mp.Condition(self.lock)
+      self.memory = manager.ReplayMemory(self.memory_size, self.name)
+      self.sample_q = mp.Queue(maxsize=5000)
       self.end_replay_q = mp.Queue(maxsize=5)
       self.feed_samp_p = mp.Process(target=feed_samp,
-                                    name='feed_samp ' + self.name, 
+                                    name='feed_samp ' + self.name,
                                     args=(self.memory,
                                           self.replay_batch_size,
                                           self.traj_end_ratio,

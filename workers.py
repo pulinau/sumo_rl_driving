@@ -10,6 +10,7 @@ from dqn import *
 import random
 import multiprocessing as mp
 import queue
+from copy import deepcopy
 
 from sumo_cfgs import sumo_cfg
 
@@ -76,7 +77,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         break
 
     for i, traj_q in enumerate(traj_q_list):
-      traj_q.put([(obs_dict, action, reward_list[i], next_obs_dict, done)
+      traj_q.put([deepcopy((obs_dict, action, reward_list[i], next_obs_dict, done))
                   for obs_dict, action, reward_list, next_obs_dict, done in traj])
 
   end_q.put(True)

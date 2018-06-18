@@ -1,12 +1,11 @@
 #!python3
 __author__ = "Changjian Li"
 
-from collections import deque
 import random
-import dill as pickle
 import time
 import multiprocessing as mp
 from multiprocessing.managers import BaseManager
+from copy import deepcopy
 
 class ReplayMemory():
   """
@@ -14,7 +13,7 @@ class ReplayMemory():
   instead of using a fixed look-ahead time step, bootstrap is only done when the reward is actually received.
   Insignificant reward in between can be ignored by supplying a predicate, which is treated as 0 reward.
   """
-  def __init__(self, max_len):
+  def __init__(self, max_len, name):
     """
     :param max_len: max replay memory size
     """
@@ -40,6 +39,7 @@ class ReplayMemory():
 
     self.lock.release()
 
+    self.name = name
     self.avg_traj_seg_len = 0
 
   def add_traj(self, traj, end_pred):
@@ -53,7 +53,7 @@ class ReplayMemory():
     traj_seg = []
     for i, (state, action, reward, next_state, done) in enumerate(traj[::-1]):
       if i == 0 or done or end_pred(reward):
-        end_reward, end_state, end_done = reward, next_state, done
+        end_reward, end_state, end_done = deepcopy(reward), deepcopy(next_state), deepcopy(done)
         #if not done and i == 0:
         #  end_done = True
         if len(traj_seg) != 0:
@@ -63,7 +63,7 @@ class ReplayMemory():
             self._add(x, j == len(traj_seg)-1)
         traj_seg = []
         step = 0
-      traj_seg.append((state, action, end_reward, end_state, end_done, step))
+      traj_seg.append(deepcopy((state, action, end_reward, end_state, end_done, step)))
       step += 1
     self.avg_traj_seg_len = (len(self.end_actions) * self.avg_traj_seg_len + len(traj_seg)) / \
                             (len(self.end_actions) + 1)
@@ -73,9 +73,41 @@ class ReplayMemory():
     self.lock.release()
 
   def _add(self, tran, is_end):
-    state, action, reward, next_state, done, step = tran
+    state, action, reward, next_state, done, step = deepcopy(tran)
 
-    if len(self.actions) > 2 * self.max_len:
+    try:
+      assert len(self.actions) == len(self.rewards) and \
+             len(self.actions) == len(self.not_dones) and \
+             len(self.actions) == len(self.steps) and \
+             (len(self.actions) == 0 or len(self.actions) == len(self.states[0])) and \
+             (len(self.actions) == 0 or len(self.actions) == len(self.next_states[0])) and \
+             len(self.actions) == len(self.rewards), "must be of equal length"
+    except:
+      print('actions: ', self.actions)
+      print('rewards: ', self.rewards)
+      print('not_dones: ', self.not_dones)
+      print('steps: ', self.steps)
+      print('states: ', len(self.states[0]))
+      print('next_states: ', len(self.next_states[1]))
+      raise
+
+    try:
+      assert len(self.end_actions) == len(self.end_rewards) and \
+             len(self.end_actions) == len(self.end_not_dones) and \
+             len(self.end_actions) == len(self.end_steps) and \
+             (len(self.end_actions) == 0 or len(self.end_actions) == len(self.end_states[0])) and \
+             (len(self.end_actions) == 0 or len(self.end_actions) == len(self.end_next_states[0])) and \
+             len(self.end_actions) == len(self.end_rewards), "must be of equal length"
+    except:
+      print('actions: ', self.end_actions)
+      print('rewards: ', self.end_rewards)
+      print('not_dones: ', self.end_not_dones)
+      print('steps: ', self.end_steps)
+      print('states: ', len(self.end_states[0]))
+      print('next_states: ', len(self.end_next_states[1]))
+      raise
+
+    if len(self.actions) > 2 * self.max_len + 2:
       for i in range(len(self.states)):
         self.states[i] = self.states[i][self.max_len:]
         self.next_states[i] = self.next_states[i][self.max_len:]
@@ -93,12 +125,15 @@ class ReplayMemory():
         self.states += [state[i]]
         self.next_states += [next_state[i]]
     else:
-      for i in range(len(self.states)):
+      for i in range(len(state)):
         self.states[i] += state[i]
         self.next_states[i] += next_state[i]
 
     if is_end:
-      cap = self.max_len//(self.avg_traj_seg_len+1) + 1
+      # avoid using the same copy
+      state, action, reward, next_state, done, step = deepcopy(tran)
+
+      cap = int(self.max_len/(self.avg_traj_seg_len+1)) + 2
       if len(self.end_actions) > 2 * cap:
         for i in range(len(self.end_states)):
           self.end_states[i] = self.end_states[i][cap:]
@@ -117,15 +152,16 @@ class ReplayMemory():
           self.end_states += [state[i]]
           self.end_next_states += [next_state[i]]
       else:
-        for i in range(len(self.end_states)):
+        for i in range(len(state)):
           self.end_states[i] += state[i]
           self.end_next_states[i] += next_state[i]
 
   def _sample_end(self, n):
-    self.lock.acquire()
-
     assert n > 0, "sample size must be positive"
     assert len(self.end_actions) > 0, "replay memory empty"
+
+    self.lock.acquire()
+
     indices = random.sample(range(len(self.end_actions)), min(n, len(self.end_actions)))
     actions = [self.end_actions[i] for i in indices]
     rewards = [self.end_rewards[i] for i in indices]
@@ -135,16 +171,17 @@ class ReplayMemory():
               for x in self.end_states]
     next_states = [[x[i] for i in indices]
                    for x in self.end_next_states]
-    samp = (states, actions, rewards, next_states, not_dones, steps)
+    samp = deepcopy((states, actions, rewards, next_states, not_dones, steps))
 
     self.lock.release()
     return samp
 
   def _sample_traj(self, n):
-    self.lock.acquire()
-
     assert n > 0, "sample size must be positive"
     assert len(self.actions) > 0, "replay memory empty"
+
+    self.lock.acquire()
+
     indices = random.sample(range(len(self.actions)), min(n, len(self.actions)))
     actions = [self.actions[i] for i in indices]
     rewards = [self.rewards[i] for i in indices]
@@ -154,7 +191,7 @@ class ReplayMemory():
               for x in self.states]
     next_states = [[x[i] for i in indices]
                    for x in self.next_states]
-    samp = (states, actions, rewards, next_states, not_dones, steps)
+    samp = deepcopy((states, actions, rewards, next_states, not_dones, steps))
 
     self.lock.release()
     return samp
@@ -162,6 +199,7 @@ class ReplayMemory():
   def sample(self, n, traj_end_ratio):
     assert traj_end_ratio < 1 and traj_end_ratio > 0, "traj_end_ratio must lie between 0 and 1"
     alpha = self.avg_traj_seg_len / (1/traj_end_ratio -1 + self.avg_traj_seg_len)
+    assert alpha > 0 and alpha < 1, "alpha must be between 0 and 1"
     end_states, end_actions, end_rewards, \
       end_next_states, end_not_dones, end_steps =  self._sample_end(max(int(alpha*n), 1))
     states, actions, rewards, \
