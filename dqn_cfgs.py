@@ -134,7 +134,7 @@ def build_model_safety():
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
 
   model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.01)
+  opt = tf.keras.optimizers.RMSprop(lr=0.03)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -180,7 +180,7 @@ def build_model_regulation():
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
 
   model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.01)
+  opt = tf.keras.optimizers.RMSprop(lr=0.03)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 

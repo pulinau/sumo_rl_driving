@@ -93,20 +93,17 @@ class DQNAgent:
       self.memory = manager.ReplayMemory(self.memory_size, self.name)
       self.sample_q = mp.Queue(maxsize=5000)
       self.end_replay_q = mp.Queue(maxsize=5)
-      self.feed_samp_p = mp.Process(target=feed_samp,
-                                    name='feed_samp ' + self.name,
-                                    args=(self.memory,
-                                          self.replay_batch_size,
-                                          self.traj_end_ratio,
-                                          self.sample_q,
-                                          self.end_replay_q))
-      self.feed_samp_p.start()
+      self.feed_samp_p_list = [mp.Process(target=feed_samp,
+                                          name='feed_samp ' + self.name,
+                                          args=(self.memory,
+                                                self.replay_batch_size,
+                                                self.traj_end_ratio,
+                                                self.sample_q,
+                                                self.end_replay_q))
+                               for _ in range(4)]
+      [p.start() for p in self.feed_samp_p_list]
       self.model = self._build_model()
       self.target_model = self._build_model()
-
-  def __del__(self):
-    self.end_replay_q.put(True)
-    self.feed_samp_p.join()
 
   def remember(self, traj):
     if self._select_actions is not None or self.play == True:
