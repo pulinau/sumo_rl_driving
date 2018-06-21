@@ -123,7 +123,7 @@ class ReplayMemory():
     self.rewards += [reward]
     self.not_dones += [not done]
     self.steps += [step]
-    if len(self.states) == 0:
+    if self._size == 0:
       for i in range(len(state)):
         self.states += [state[i]]
         self.next_states += [next_state[i]]
@@ -161,10 +161,10 @@ class ReplayMemory():
           self.end_next_states[i] += next_state[i]
 
   def _sample_end(self, n):
+    self.lock.acquire()
+    
     assert n > 0, "sample size must be positive"
     assert len(self.end_actions) > 0, "replay memory empty"
-
-    self.lock.acquire()
 
     indices = random.sample(range(len(self.end_actions)), min(n, len(self.end_actions)))
     actions = [self.end_actions[i] for i in indices]
@@ -181,12 +181,12 @@ class ReplayMemory():
     return samp
 
   def _sample_traj(self, n):
-    assert n > 0, "sample size must be positive"
-    assert len(self.actions) > 0, "replay memory empty"
-
     self.lock.acquire()
 
-    indices = random.sample(range(len(self.actions)), min(n, self._size))
+    assert n > 0, "sample size must be positive"
+    assert self._size > 0, "replay memory empty"
+
+    indices = random.sample(range(self._size), min(n, self._size))
     actions = [self.actions[i] for i in indices]
     rewards = [self.rewards[i] for i in indices]
     not_dones = [self.not_dones[i] for i in indices]
