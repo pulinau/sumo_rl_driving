@@ -63,9 +63,9 @@ def feed_samp(replay_mem, samp_size, traj_end_ratio, samp_q, end_q):
     if not end_q.empty():
       return
     if replay_mem.size() == 0:
-      time.sleep(1)
+      time.sleep(5)
       continue
-    elif samp_q.qsize() < 5000:
+    elif samp_q.qsize() < 100:
       samp_q.put(replay_mem.sample(samp_size, traj_end_ratio))
       #print("replay mem size: ", replay_mem.size())
 
@@ -91,7 +91,7 @@ class DQNAgent:
       #self.lock = mp.Lock()
       #self.cv = mp.Condition(self.lock)
       self.memory = manager.ReplayMemory(self.memory_size, self.name)
-      self.sample_q = mp.Queue(maxsize=5000)
+      self.sample_q = mp.Queue(maxsize=100)
       self.end_replay_q = mp.Queue(maxsize=5)
       self.feed_samp_p_list = [mp.Process(target=feed_samp,
                                           name='feed_samp ' + self.name,
@@ -178,25 +178,24 @@ class DQNAgent:
     #  self.memory.sample(self.replay_batch_size, self.traj_end_ratio)
     actions = np.array(actions)
     rewards = np.array(rewards)
+    not_dones = np.array(not_dones)
     steps = np.array(steps)
 
-    backup = (self.gamma**(steps+1)) * np.array(not_dones) * np.amax(self.target_model.predict_on_batch(next_states), axis = 1)
+    backup = (self.gamma**(steps+1)) * not_dones * np.amax(self.target_model.predict_on_batch(next_states), axis = 1)
 
     # clamp targets larger than zero to zero
     backup[np.where(backup > 0)] = 0
 
     targets = (self.gamma**steps)*rewards + backup
-    targets_f = self.target_model.predict_on_batch(states)
+    #targets_f = self.target_model.predict_on_batch(states)
+    targets_f = np.ones((len(actions), self.action_size)) * 0.5 * (self.pretrain_low_target + self.pretrain_high_target)
     targets_f[np.arange(targets_f.shape[0]), actions] = targets
 
     #print(self.name, targets_f[0])
     #print(self.name , " training starts", time.time(), flush = True)
 
-    if random.uniform(0, 1) < 0.01:
-      id = random.randint(0, 65536)
-      print(self.name, " id:", id, targets_f[0])
-      for i in range(2):
-        print(self.name, " id:", id, " ep:", i, "training loss: ", self.model.train_on_batch(states, targets_f))
+    print(self.name, self.target_model.predict_on_batch(states)[0])
+    self.model.fit(states, targets_f, verbose=False)
 
     #print(self.name, " training ends", time.time(), flush = True)
 

@@ -134,7 +134,7 @@ def build_model_safety():
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
 
   model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.03)
+  opt = tf.keras.optimizers.RMSprop(lr=0.003)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -142,9 +142,9 @@ def reshape_regulation(obs_dict):
   lane_gap_1hot = [0] * (2*NUM_LANE_CONSIDERED + 1)
   lane_gap_1hot[obs_dict["ego_correct_lane_gap"] + NUM_LANE_CONSIDERED] = 1
   o0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
-                   min(obs_dict["ego_dist_to_end_of_lane"] / OBSERVATION_RADIUS, 1.0),
-                   obs_dict["ego_in_intersection"]
-                   ] + lane_gap_1hot, dtype = np.float32)
+                 min(obs_dict["ego_dist_to_end_of_lane"] / OBSERVATION_RADIUS, 1.0),
+                 obs_dict["ego_in_intersection"]
+                 ] + lane_gap_1hot, dtype = np.float32)
   o1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
   o1 = np.append(o1, np.array([obs_dict["exists_vehicle"]]), axis=0)
   o1 = np.append(o1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
@@ -180,7 +180,7 @@ def build_model_regulation():
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
 
   model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.03)
+  opt = tf.keras.optimizers.RMSprop(lr=0.003)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -468,9 +468,9 @@ cfg_safety = DQNCfg(name = "safety",
                     gamma = 0.9,
                     gamma_inc = 0.0005,
                     gamma_max = 0.99,
-                    epsilon = 0.1,
-                    epsilon_dec = 0.00001,
-                    epsilon_min = 0.01,
+                    epsilon = 0.2,
+                    epsilon_dec = 0.0000001,
+                    epsilon_min = 0.1,
                     threshold = -3,
                     memory_size = 6400,
                     traj_end_pred = lt(-0.1),
@@ -489,9 +489,9 @@ cfg_regulation = DQNCfg(name = "regulation",
                         gamma = 0.9,
                         gamma_inc = 0.0005,
                         gamma_max = 0.99,
-                        epsilon=0.1,
-                        epsilon_dec=0.00001,
-                        epsilon_min=0.02,
+                        epsilon=0.2,
+                        epsilon_dec=0.0000001,
+                        epsilon_min=0.1,
                         threshold = -8,
                         memory_size = 6400,
                         traj_end_pred = lt(-0.1),
