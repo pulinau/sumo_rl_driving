@@ -46,7 +46,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         action_set_list, explr_set_list, sorted_idx_list = [], [], []
 
         for obs_q in obs_q_list:
-          obs_q.put(obs_dict)
+          obs_q.put((obs_dict, None))
 
         for action_q in action_q_list:
           while action_q.empty():
@@ -58,13 +58,35 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           explr_set_list += [explr_set]
           sorted_idx_list += [sorted_idx]
 
-        action, action_info = select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list)
+        action, action_info = select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list, 3)
 
       next_obs_dict, reward_list, env_state, action_dict = env.step(
         {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
       action = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
       #print(action, action_info)
-      traj.append((obs_dict, action, reward_list, next_obs_dict, env_state != EnvState.NORMAL))
+
+      # choose tentative next action
+      for obs_q in obs_q_list:
+        obs_q.put((next_obs_dict, 0))
+
+      action_set_list, explr_set_list, sorted_idx_list = [], [], []
+      # next action list is only the tentative actions for training purpose, not the one actually taken
+      next_action_list = []
+
+      for i, action_q in enumerate(action_q_list):
+        while action_q.empty():
+          if not end_q.empty():
+            return
+        action_set, explr_set, sorted_idx = action_q.get()
+
+        action_set_list += [action_set]
+        explr_set_list += [explr_set]
+        sorted_idx_list += [sorted_idx]
+
+        action, action_info = select_action(dqn_cfg_list[:i + 1], action_set_list, explr_set_list, sorted_idx_list, 1)
+        next_action_list += [action]
+
+      traj.append((obs_dict, action, reward_list, next_obs_dict, next_action_list, env_state != EnvState.NORMAL))
 
       obs_dict = next_obs_dict
 
@@ -83,40 +105,35 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         break
 
     for i, traj_q in enumerate(traj_q_list):
-      traj_q.put(([deepcopy((obs_dict, action, reward_list[i], next_obs_dict, done))
-                   for obs_dict, action, reward_list, next_obs_dict, done in traj],
+      traj_q.put(([deepcopy((obs_dict, action, reward_list[i], next_obs_dict, next_action_list[i], done))
+                   for obs_dict, action, reward_list, next_obs_dict, next_action_list, done in traj],
                   prob))
 
   end_q.put(True)
 
-def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list):
+def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list, num_action):
   """
-  Select an action based on the action choice of each objective. The underlying assumption is that there are at least 3
-  actions that are satisfy all objectives relatively in a state.
+  Select an action based on the action choice of each objective.
   :param dqn_cfg_list:
   :param action_set_list: list of "good enough" actions of each objective
   :param explr_set_list: list of actions each objective want to explore
   :param sorted_idx_list: list of sorted actions based on (descending) desirability of each objective,
                           used in case there's no "good enough" action that satisfies all objectives
+  :param num_action: the least num of action that's assumed to exist
   :return: action
   """
   valid = action_set_list[0]
-  invalid = explr_set_list[0]
-  invalid_list = [(x, "explr: " + dqn_cfg_list[0].name) for x in invalid] # exploration actions with info
 
   for action_set, explr_set, sorted_idx, dqn_cfg in zip(action_set_list, explr_set_list, sorted_idx_list, dqn_cfg_list):
-    assert len(valid) >= 3, "number of valid actions must be greater or equal to 3 "
-    new_invalid = explr_set & valid - invalid
-    invalid = invalid | new_invalid
-    invalid_list += [(x, "explr: " + dqn_cfg.name) for x in new_invalid]
+    if len(explr_set) != 0:
+      return (random.sample(explr_set, 1)[0], "explr: " + dqn_cfg.name)
     new_invalid = valid - action_set
     valid = valid & action_set
 
-    if len(valid) < 3:
+    if len(valid) < num_action:
       new_invalid = [(sorted_idx.index(x), x) for x in new_invalid]
-      new_invalid = sorted(new_invalid)[:3 - len(valid)]
+      new_invalid = sorted(new_invalid)[:num_action - len(valid)]
       new_invalid = set([x[1] for x in new_invalid]) - invalid
-      invalid = invalid | new_invalid
       invalid_list += [(x, "compromise: " + dqn_cfg.name) for x in new_invalid]
       break
 
@@ -131,8 +148,8 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
   while True:
     for obs_q, action_q in zip(obs_q_list, action_q_list):
       try:
-        obs_dict = obs_q.get(block=False)
-        action_q.put(agt.select_actions(obs_dict))
+        obs_dict, epsilon = obs_q.get(block=False)
+        action_q.put(agt.select_actions(obs_dict, epsilon))
       except queue.Empty:
         if not end_q.empty():
           return
