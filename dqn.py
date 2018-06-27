@@ -108,11 +108,11 @@ class DQNAgent:
   def remember(self, traj):
     if self._select_actions is not None or self.play == True:
       return
-    traj = [(self.reshape(obs_dict), action, reward, self.reshape(next_obs_dict), done)
-            for obs_dict, action, reward, next_obs_dict, done in traj]
+    traj = [(self.reshape(obs_dict), action, reward, self.reshape(next_obs_dict), next_action, done)
+            for obs_dict, action, reward, next_obs_dict, next_action, done in traj]
     self.memory.add_traj(traj, self.traj_end_pred)
 
-  def select_actions(self, obs_dict):
+  def select_actions(self, obs_dict, epsilon=None):
     """
     select actions based on Q value
     :param obs_dict:
@@ -123,12 +123,16 @@ class DQNAgent:
       return self._select_actions(self.reshape(obs_dict))
 
     act_values = self.model.predict(self.reshape(obs_dict))[0]
-
     sorted_idx = np.argsort(act_values)[::-1]
 
-    action_set = set(np.where(act_values > self.threshold)[0]) | set(sorted_idx[:6])
-    explore_set = set([action for action in range(self.action_size) if np.random.rand() <= self.epsilon])
-    explore_set = explore_set - action_set
+    if epsilon is None:
+      epsilon = self.epsilon
+    if np.random.rand() <= epsilon:
+      action_set = set()
+      explore_set = set([np.random.randint(0, self.action_size)])
+    else:
+      action_set = set(np.where(act_values > self.threshold)[0])
+      explore_set = set()
 
     return (action_set, explore_set, list(sorted_idx))
 
@@ -168,7 +172,7 @@ class DQNAgent:
       return
 
     try:
-      states, actions, rewards, next_states, not_dones, steps = self.sample_q.get(block=False)
+      states, actions, rewards, next_states, next_actions, not_dones, steps = self.sample_q.get(block=False)
     except queue.Empty:
       #print("replay qsize: ", self.sample_q.qsize())
       #print(self.name, " empty")
@@ -177,10 +181,11 @@ class DQNAgent:
     #states, actions, rewards, next_states, not_dones, steps = \
     #  self.memory.sample(self.replay_batch_size, self.traj_end_ratio)
     actions = np.array(actions)
+    next_actions = np.array(next_actions)
     rewards = np.array(rewards)
     steps = np.array(steps)
 
-    backup = (self.gamma**(steps+1)) * np.array(not_dones) * np.amax(self.target_model.predict_on_batch(next_states), axis = 1)
+    backup = (self.gamma**(steps+1)) * np.array(not_dones) * self.target_model.predict_on_batch(next_states)[np.arange(len(next_actions)), next_actions]
 
     # clamp targets larger than zero to zero
     backup[np.where(backup > 0)] = 0
