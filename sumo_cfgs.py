@@ -25,7 +25,6 @@ SUMO_CMD = [SUMO_BIN,
 #           "--lanechange.duration", "2",
             "-r"]
 
-
 EGO_VEH_ID = "ego"
 MAX_VEH_ACCEL = 2.6
 MAX_VEH_DECEL = 4.5

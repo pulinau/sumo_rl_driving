@@ -16,7 +16,8 @@ import queue
 class DQNCfg():
   def __init__(self, 
                name, 
-               play, 
+               play,
+               resume,
                state_size, 
                action_size,
                pretrain_low_target,
@@ -38,6 +39,7 @@ class DQNCfg():
                _select_actions = None):
     self.name = name
     self.play = play # whether it's training or playing
+    self.resume = resume
     self.state_size = state_size
     self.action_size = action_size
     self.pretrain_low_target = pretrain_low_target
@@ -84,7 +86,6 @@ class DQNAgent:
     tf.keras.backend.set_session(tf.Session(config=self.tf_cfg))
     if self.play == True:
       self.epsilon = 0
-      self.model = self._load_model(self.name + ".sav")
     else:
       manager = ReplayMemoryManager()
       manager.start()
@@ -102,15 +103,23 @@ class DQNAgent:
                                                 self.end_replay_q))
                                for _ in range(4)]
       [p.start() for p in self.feed_samp_p_list]
+
+    if self.play == True:
+      self.model = self._load_model(self.name + ".sav")
+    elif self.resume == True:
+      self.model = self._load_model(self.name + ".sav")
+      self.target_model = self._load_model(self.name + ".sav")
+    else:
       self.model = self._build_model()
       self.target_model = self._build_model()
 
-  def remember(self, traj):
+  def remember(self, traj, prob):
+    """remember experice with probability prob"""
     if self._select_actions is not None or self.play == True:
       return
     traj = [(self.reshape(obs_dict), action, reward, self.reshape(next_obs_dict), done)
             for obs_dict, action, reward, next_obs_dict, done in traj]
-    self.memory.add_traj(traj, self.traj_end_pred)
+    self.memory.add_traj(traj, self.traj_end_pred, prob)
 
   def select_actions(self, obs_dict):
     """
@@ -187,14 +196,21 @@ class DQNAgent:
     backup[np.where(backup > 0)] = 0
 
     targets = (self.gamma**steps)*rewards + backup
-    #targets_f = self.target_model.predict_on_batch(states)
-    targets_f = np.ones((len(actions), self.action_size)) * 0.5 * (self.pretrain_low_target + self.pretrain_high_target)
+    targets_f = self.target_model.predict_on_batch(states)
+
+    # clamp incorrect target to zero
+    targets_f[np.where(targets_f > 0)] = 0
+
     targets_f[np.arange(targets_f.shape[0]), actions] = targets
 
     #print(self.name, targets_f[0])
     #print(self.name , " training starts", time.time(), flush = True)
 
-    print(self.name, self.target_model.predict_on_batch(states)[0])
+    print("*"*10, self.name, "*"*10)
+    print(targets[:8])
+    print(targets_f[0])
+    print("*"*30)
+
     self.model.fit(states, targets_f, verbose=False)
 
     #print(self.name, " training ends", time.time(), flush = True)

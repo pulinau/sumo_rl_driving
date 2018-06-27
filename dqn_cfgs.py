@@ -118,17 +118,17 @@ tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.45
 
 def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(5, ))
-  ego_l1 = tf.keras.layers.Dense(16, activation=None)(ego_input)
+  ego_l1 = tf.keras.layers.Dense(64, activation=None)(ego_input)
 
   veh_inputs = [tf.keras.layers.Input(shape=(12,)) for _ in range(NUM_VEH_CONSIDERED)]
-  shared_Dense1 = tf.keras.layers.Dense(16, activation=None)
+  shared_Dense1 = tf.keras.layers.Dense(64, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
-  veh_l1 = [tf.keras.layers.add([ego_l1, x]) for x in veh_l1]
   veh_l1 = [tf.keras.layers.Activation(activation="sigmoid")(x) for x in veh_l1]
   shared_Dense2 = tf.keras.layers.Dense(64, activation=None)
   veh_l2 = [shared_Dense2(x) for x in veh_l1]
 
   l3 = tf.keras.layers.add(veh_l2)
+  l3 = tf.keras.layers.add([ego_l1, l3])
   l3 = tf.keras.layers.Activation(activation="sigmoid")(l3)
   l4 = tf.keras.layers.Dense(64, activation="sigmoid")(l3)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
@@ -164,17 +164,17 @@ tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.45
 
 def build_model_regulation():
   ego_input = tf.keras.layers.Input(shape=(4 + 2*NUM_LANE_CONSIDERED, ))
-  ego_l1 = tf.keras.layers.Dense(16, activation=None)(ego_input)
+  ego_l1 = tf.keras.layers.Dense(64, activation=None)(ego_input)
 
   veh_inputs = [tf.keras.layers.Input(shape=(7,)) for _ in range(NUM_VEH_CONSIDERED)]
-  shared_Dense1 = tf.keras.layers.Dense(16, activation=None)
+  shared_Dense1 = tf.keras.layers.Dense(64, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
-  veh_l1 = [tf.keras.layers.add([ego_l1, x]) for x in veh_l1]
   veh_l1 = [tf.keras.layers.Activation(activation="sigmoid")(x) for x in veh_l1]
   shared_Dense2 = tf.keras.layers.Dense(64, activation=None)
   veh_l2 = [shared_Dense2(x) for x in veh_l1]
 
   l3 = tf.keras.layers.add(veh_l2)
+  l3 = tf.keras.layers.add([ego_l1, l3])
   l3 = tf.keras.layers.Activation(activation="sigmoid")(l3)
   l4 = tf.keras.layers.Dense(64, activation="sigmoid")(l3)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
@@ -433,6 +433,7 @@ action_size = len(ActionLaneChange) * len(ActionAccel)
 
 cfg_validity = DQNCfg(name = "validity",
                       play=False,
+                      resume = False,
                       state_size=2,
                       action_size=action_size,
                       pretrain_low_target=None,
@@ -459,8 +460,15 @@ class lt():
   def __call__(self, b):
     return b < self.a
 
+class returnTrue():
+  def __init__(self):
+    pass
+  def __call__(self, x):
+    return True
+
 cfg_safety = DQNCfg(name = "safety",
                     play = False,
+                    resume = False,
                     state_size = 4 + 10*NUM_VEH_CONSIDERED,
                     action_size = action_size,
                     pretrain_low_target=-10,
@@ -468,12 +476,12 @@ cfg_safety = DQNCfg(name = "safety",
                     gamma = 0.9,
                     gamma_inc = 0.0005,
                     gamma_max = 0.99,
-                    epsilon = 0.2,
+                    epsilon = 0.05,
                     epsilon_dec = 0.0000001,
-                    epsilon_min = 0.1,
-                    threshold = -3,
-                    memory_size = 6400,
-                    traj_end_pred = lt(-0.1),
+                    epsilon_min = 0.01,
+                    threshold = -1,
+                    memory_size = 64000,
+                    traj_end_pred = returnTrue(),
                     replay_batch_size = 64,
                     traj_end_ratio= 0.001,
                     _build_model = build_model_safety,
@@ -482,6 +490,7 @@ cfg_safety = DQNCfg(name = "safety",
 
 cfg_regulation = DQNCfg(name = "regulation",
                         play = False,
+                        resume = False,
                         state_size = 6 + 2*NUM_LANE_CONSIDERED + 16*NUM_VEH_CONSIDERED,
                         action_size = action_size,
                         pretrain_low_target=-10,
@@ -489,11 +498,11 @@ cfg_regulation = DQNCfg(name = "regulation",
                         gamma = 0.9,
                         gamma_inc = 0.0005,
                         gamma_max = 0.99,
-                        epsilon=0.2,
+                        epsilon=0.05,
                         epsilon_dec=0.0000001,
-                        epsilon_min=0.1,
+                        epsilon_min=0.01,
                         threshold = -8,
-                        memory_size = 6400,
+                        memory_size = 64000,
                         traj_end_pred = lt(-0.1),
                         replay_batch_size = 320,
                         traj_end_ratio= 0.2,
@@ -503,6 +512,7 @@ cfg_regulation = DQNCfg(name = "regulation",
 
 cfg_speed_comfort = DQNCfg(name = "speed_comfort",
                            play = False,
+                           resume=False,
                            state_size = 2,
                            action_size = action_size,
                            pretrain_low_target=None,

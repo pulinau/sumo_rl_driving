@@ -44,12 +44,14 @@ class ReplayMemory():
     self.name = name
     self.avg_traj_seg_len = 0
 
-  def add_traj(self, traj, end_pred):
+  def add_traj(self, traj, end_pred, prob):
     """
     :param traj: list of state transitions
     :param end_pred: decide whether the reward is significant enough to be considered
     :return:
     """
+    assert prob >= 0 and prob <= 1, "probability must be between 0 and 1"
+
     self.lock.acquire()
 
     traj_seg = []
@@ -62,7 +64,8 @@ class ReplayMemory():
           self.avg_traj_seg_len = (len(self.end_actions) * self.avg_traj_seg_len + len(traj_seg)) / \
                                   (len(self.end_actions) + 1)
           for j, x in enumerate(traj_seg):
-            self._add(x, j == len(traj_seg)-1)
+            if random.uniform(0, 1) < prob:
+              self._add(x, j == len(traj_seg)-1)
         traj_seg = []
         step = 0
       traj_seg.append(deepcopy((state, action, end_reward, end_state, end_done, step)))
@@ -70,7 +73,8 @@ class ReplayMemory():
     self.avg_traj_seg_len = (len(self.end_actions) * self.avg_traj_seg_len + len(traj_seg)) / \
                             (len(self.end_actions) + 1)
     for j, x in enumerate(traj_seg):
-      self._add(x, j == len(traj_seg)-1)
+      if random.uniform(0, 1) < prob:
+        self._add(x, j == len(traj_seg)-1)
 
     self.lock.release()
 

@@ -32,8 +32,11 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           if random.uniform(0, 1) < 0.02:
             env.agt_ctrl = False
       else:
-        if env.agt_ctrl == False and random.uniform(0, 1) < 0.02:
-          env.agt_ctrl = True
+        if random.uniform(0, 1) < 0.2:
+          if env.agt_ctrl == False:
+            env.agt_ctrl = True
+          else:
+            env.agt_ctrl = False
 
       # select action
       if env.agt_ctrl == False:
@@ -66,19 +69,23 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       obs_dict = next_obs_dict
 
       if env_state == EnvState.DONE:
+        prob = 0.1
         print("Sim ", id, " success, step: ", step)
         break
       if env_state != EnvState.NORMAL:
+        prob = 0.6
         print("Sim ", id, " terminated, step: ", step, action_dict, action_info, reward_list, env_state,
               env.agt_ctrl)
         break
       if step == max_step - 1:
+        prob = 0.1
         print("Sim ", id, " timeout, step: ", step)
         break
 
     for i, traj_q in enumerate(traj_q_list):
-      traj_q.put([deepcopy((obs_dict, action, reward_list[i], next_obs_dict, done))
-                  for obs_dict, action, reward_list, next_obs_dict, done in traj])
+      traj_q.put(([deepcopy((obs_dict, action, reward_list[i], next_obs_dict, done))
+                   for obs_dict, action, reward_list, next_obs_dict, done in traj],
+                  prob))
 
   end_q.put(True)
 
@@ -134,7 +141,8 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
 
     for traj_q in traj_q_list:
       try:
-        agt.remember(traj_q.get(block=False))
+        traj, prob = traj_q.get(block=False)
+        agt.remember(traj, prob)
       except queue.Empty:
         continue
 
@@ -142,7 +150,7 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
     #  print("training ", agt.name, " episode: {}".format(ep))
     agt.replay()
 
-    if ep % 5000 == 5000-1:
+    if ep % 1000 == 1000-1:
       agt.update_target()
       agt.save_model()
 

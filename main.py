@@ -16,12 +16,16 @@ from workers import run_env, run_QAgent
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--play")
+  parser.add_argument("--resume")
   args = parser.parse_args()
 
   env = MultiObjSumoEnv(sumo_cfg)
   max_ep = 50000
   sim_inst = 8
   dqn_cfg_list = [cfg_validity, cfg_safety, cfg_regulation, cfg_speed_comfort]
+  if args.resume:
+    for dqn_cfg in dqn_cfg_list:
+      dqn_cfg.resume = True
   if args.play:
     print("True")
     for dqn_cfg in dqn_cfg_list:
