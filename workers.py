@@ -29,14 +29,15 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         if play:
           env.agt_ctrl = True
         else:
-          if random.uniform(0, 1) < 0.02:
+          if random.uniform(0, 1) < 0.1:
             env.agt_ctrl = False
       else:
-        if random.uniform(0, 1) < 0.2:
-          if env.agt_ctrl == False:
-            env.agt_ctrl = True
-          else:
-            env.agt_ctrl = False
+        if not play:
+          if random.uniform(0, 1) < 0.2:
+            if env.agt_ctrl == False:
+              env.agt_ctrl = True
+            else:
+              env.agt_ctrl = False
 
       # select action
       if env.agt_ctrl == False:
@@ -83,8 +84,8 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         explr_set_list += [explr_set]
         sorted_idx_list += [sorted_idx]
 
-        action, action_info = select_action(dqn_cfg_list[:i + 1], action_set_list, explr_set_list, sorted_idx_list, 1)
-        next_action_list += [action]
+        tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], action_set_list, explr_set_list, sorted_idx_list, 1)
+        next_action_list += [tent_action]
 
       traj.append((obs_dict, action, reward_list, next_obs_dict, next_action_list, env_state != EnvState.NORMAL))
 
@@ -127,18 +128,20 @@ def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list
   for action_set, explr_set, sorted_idx, dqn_cfg in zip(action_set_list, explr_set_list, sorted_idx_list, dqn_cfg_list):
     if len(explr_set) != 0:
       return (random.sample(explr_set, 1)[0], "explr: " + dqn_cfg.name)
-    new_invalid = valid - action_set
+    invalid = valid - action_set
     valid = valid & action_set
 
     if len(valid) < num_action:
-      new_invalid = [(sorted_idx.index(x), x) for x in new_invalid]
-      new_invalid = sorted(new_invalid)[:num_action - len(valid)]
-      new_invalid = set([x[1] for x in new_invalid]) - invalid
-      invalid_list += [(x, "compromise: " + dqn_cfg.name) for x in new_invalid]
+      invalid = [(sorted_idx.index(x), x) for x in invalid]
+      invalid = sorted(invalid)[:num_action - len(valid)]
+      invalid = set([x[1] for x in invalid])
+      invalid = [(x, "compromise: " + dqn_cfg.name) for x in invalid]
       break
+    else:
+      invalid = []
 
   valid = [(x, "exploit") for x in valid]
-  return random.sample(valid + invalid_list, 1)[0]
+  return random.sample(valid + invalid, 1)[0]
 
 def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list):
   agt = DQNAgent(sumo_cfg, dqn_cfg)

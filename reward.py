@@ -15,11 +15,11 @@ def get_reward_list(env):
 def get_reward_safety(env):
   if env.env_state == EnvState.CRASH:
     return -1
-
+  """
   obs_dict = env.obs_dict_hist[-1]
   for i in range(env.NUM_VEH_CONSIDERED):
     if obs_dict["exists_vehicle"][i] == 1:
-      ego_v = np.array([0, obs_dict["ego_speed"][i]])
+      ego_v = np.array([0, obs_dict["ego_speed"]])
       speed = obs_dict["speed"][i]
       angle = obs_dict["relative_heading"][i] + np.pi / 2
       v = np.array([speed * np.cos(angle), speed * np.sin(angle)])
@@ -31,9 +31,9 @@ def get_reward_safety(env):
          obs_dict["veh_relation_peer"][i]:
         pos = obs_dict["relative_position"][i]
         ttc = np.dot(pos, pos) / max(np.dot((ego_v - v), pos), 0.001)
-        if abs(ttc) < 2:
-          return -1
-
+        if ttc < 2 and ttc > 0:
+          return -0.05
+  """
   return 0
 
 def get_reward_regulation(env):
@@ -48,7 +48,7 @@ def get_reward_regulation(env):
       if obs_dict["exists_vehicle"][i] == 1 and \
          obs_dict["has_priority"][i] == 1 and \
          (obs_dict["veh_relation_peer"][i] == 1 or obs_dict["veh_relation_conflict"][i] == 1) and \
-         obs_dict["dist_to_end_of_lane"][i] < 2 and \
+         obs_dict["dist_to_end_of_lane"][i] < 60 and \
          obs_dict["ego_speed"] > 0.2:
         return -1
 

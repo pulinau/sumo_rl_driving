@@ -118,23 +118,25 @@ tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.45
 
 def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(5, ))
-  ego_l1 = tf.keras.layers.Dense(64, activation=None)(ego_input)
+  ego_l1 = tf.keras.layers.Dense(640, activation=None)(ego_input)
 
   veh_inputs = [tf.keras.layers.Input(shape=(12,)) for _ in range(NUM_VEH_CONSIDERED)]
-  shared_Dense1 = tf.keras.layers.Dense(64, activation=None)
+  shared_Dense1 = tf.keras.layers.Dense(640, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
-  veh_l1 = [tf.keras.layers.Activation(activation="sigmoid")(x) for x in veh_l1]
-  shared_Dense2 = tf.keras.layers.Dense(64, activation=None)
+  veh_l1 = [tf.keras.layers.Activation(activation="relu")(x) for x in veh_l1]
+  shared_Dense2 = tf.keras.layers.Dense(640, activation=None)
   veh_l2 = [shared_Dense2(x) for x in veh_l1]
 
   l3 = tf.keras.layers.add(veh_l2)
   l3 = tf.keras.layers.add([ego_l1, l3])
-  l3 = tf.keras.layers.Activation(activation="sigmoid")(l3)
-  l4 = tf.keras.layers.Dense(64, activation="sigmoid")(l3)
-  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
+  l3 = tf.keras.layers.Activation(activation="relu")(l3)
+  l4 = tf.keras.layers.Dense(640, activation="relu")(l3)
+  l5 = tf.keras.layers.Dense(640, activation="relu")(l4)
+  l6 = tf.keras.layers.Dense(640, activation="relu")(l5)
+  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l6)
 
   model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.003)
+  opt = tf.keras.optimizers.RMSprop(lr=0.001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -164,23 +166,25 @@ tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.45
 
 def build_model_regulation():
   ego_input = tf.keras.layers.Input(shape=(4 + 2*NUM_LANE_CONSIDERED, ))
-  ego_l1 = tf.keras.layers.Dense(64, activation=None)(ego_input)
+  ego_l1 = tf.keras.layers.Dense(640, activation=None)(ego_input)
 
   veh_inputs = [tf.keras.layers.Input(shape=(7,)) for _ in range(NUM_VEH_CONSIDERED)]
-  shared_Dense1 = tf.keras.layers.Dense(64, activation=None)
+  shared_Dense1 = tf.keras.layers.Dense(640, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
-  veh_l1 = [tf.keras.layers.Activation(activation="sigmoid")(x) for x in veh_l1]
-  shared_Dense2 = tf.keras.layers.Dense(64, activation=None)
+  veh_l1 = [tf.keras.layers.Activation(activation="relu")(x) for x in veh_l1]
+  shared_Dense2 = tf.keras.layers.Dense(640, activation=None)
   veh_l2 = [shared_Dense2(x) for x in veh_l1]
 
   l3 = tf.keras.layers.add(veh_l2)
   l3 = tf.keras.layers.add([ego_l1, l3])
-  l3 = tf.keras.layers.Activation(activation="sigmoid")(l3)
-  l4 = tf.keras.layers.Dense(64, activation="sigmoid")(l3)
-  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
+  l3 = tf.keras.layers.Activation(activation="relu")(l3)
+  l4 = tf.keras.layers.Dense(640, activation="relu")(l3)
+  l5 = tf.keras.layers.Dense(640, activation="relu")(l4)
+  l6 = tf.keras.layers.Dense(640, activation="relu")(l5)
+  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l6)
 
   model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.003)
+  opt = tf.keras.optimizers.RMSprop(lr=0.001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -475,11 +479,11 @@ cfg_safety = DQNCfg(name = "safety",
                     pretrain_high_target=0,
                     gamma = 0.9,
                     gamma_inc = 0.0005,
-                    gamma_max = 0.99,
-                    epsilon = 0.05,
+                    gamma_max = 0.95,
+                    epsilon = 0.1,
                     epsilon_dec = 0.0000001,
-                    epsilon_min = 0.01,
-                    threshold = -1,
+                    epsilon_min = 0.025,
+                    threshold = -0.5,
                     memory_size = 64000,
                     traj_end_pred = returnTrue(),
                     replay_batch_size = 64,
@@ -497,13 +501,13 @@ cfg_regulation = DQNCfg(name = "regulation",
                         pretrain_high_target=0,
                         gamma = 0.9,
                         gamma_inc = 0.0005,
-                        gamma_max = 0.99,
-                        epsilon=0.05,
+                        gamma_max = 0.95,
+                        epsilon=0.1,
                         epsilon_dec=0.0000001,
-                        epsilon_min=0.01,
-                        threshold = -8,
+                        epsilon_min=0.025,
+                        threshold = -5,
                         memory_size = 64000,
-                        traj_end_pred = lt(-0.1),
+                        traj_end_pred = returnTrue(),
                         replay_batch_size = 320,
                         traj_end_ratio= 0.2,
                         _build_model = build_model_regulation,

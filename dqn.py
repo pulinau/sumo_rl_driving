@@ -102,7 +102,7 @@ class DQNAgent:
                                                 self.traj_end_ratio,
                                                 self.sample_q,
                                                 self.end_replay_q))
-                               for _ in range(4)]
+                               for _ in range(1)]
       [p.start() for p in self.feed_samp_p_list]
 
     if self.play == True:
