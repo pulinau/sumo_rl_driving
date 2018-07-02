@@ -35,6 +35,7 @@ MAX_VEH_SPEED = 55.55
 # --------------------------
 NUM_LANE_CONSIDERED = 3 # number of lanes considered on each side of ego
 NUM_VEH_CONSIDERED = 16
+MAX_TTC_CONSIDERED = 10
 OBSERVATION_RADIUS = 160
 
 # --------------------------
@@ -56,6 +57,7 @@ sumo_cfg = SumoCfg(
                # observation
                NUM_LANE_CONSIDERED,
                NUM_VEH_CONSIDERED,
+               MAX_TTC_CONSIDERED,
                OBSERVATION_RADIUS,
                # reward
                MAX_COMFORT_ACCEL_LEVEL,

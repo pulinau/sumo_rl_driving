@@ -113,7 +113,7 @@ def reshape_safety(obs_dict):
   return [[x] for x in o]
 
 tf_cfg_safety = tf.ConfigProto()
-tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.45
+tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.3
 #tf_cfg_safety = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_safety():
@@ -161,7 +161,7 @@ def reshape_regulation(obs_dict):
   return [[x] for x in o]
 
 tf_cfg_regulation = tf.ConfigProto()
-tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.45
+tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.3
 #tf_cfg_regulation = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_regulation():
@@ -169,6 +169,52 @@ def build_model_regulation():
   ego_l1 = tf.keras.layers.Dense(640, activation=None)(ego_input)
 
   veh_inputs = [tf.keras.layers.Input(shape=(7,)) for _ in range(NUM_VEH_CONSIDERED)]
+  shared_Dense1 = tf.keras.layers.Dense(640, activation=None)
+  veh_l1 = [shared_Dense1(x) for x in veh_inputs]
+  veh_l1 = [tf.keras.layers.Activation(activation="relu")(x) for x in veh_l1]
+  shared_Dense2 = tf.keras.layers.Dense(640, activation=None)
+  veh_l2 = [shared_Dense2(x) for x in veh_l1]
+
+  l3 = tf.keras.layers.add(veh_l2)
+  l3 = tf.keras.layers.add([ego_l1, l3])
+  l3 = tf.keras.layers.Activation(activation="relu")(l3)
+  l4 = tf.keras.layers.Dense(640, activation="relu")(l3)
+  l5 = tf.keras.layers.Dense(640, activation="relu")(l4)
+  l6 = tf.keras.layers.Dense(640, activation="relu")(l5)
+  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l6)
+
+  model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
+  opt = tf.keras.optimizers.RMSprop(lr=0.001)
+  model.compile(loss='logcosh', optimizer=opt)
+  return model
+
+def reshape_ttc(obs_dict):
+  o0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
+                 min(obs_dict["ego_dist_to_end_of_lane"] / OBSERVATION_RADIUS, 1.0),
+                 obs_dict["ego_ttc"] / MAX_TTC_CONSIDERED,
+                 obs_dict["ego_exists_left_lane"],
+                 obs_dict["ego_exists_right_lane"]
+                 ], dtype = np.float32)
+  o1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
+  o1 = np.append(o1, np.array([obs_dict["exists_vehicle"]]), axis=0)
+  o1 = np.append(o1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
+  o1  = np.append(o1, np.minimum(np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
+                                     np.ones((1, NUM_VEH_CONSIDERED))), axis = 0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_left"]]), axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_right"]]), axis=0)
+
+  o = [o0] + [x for x in o1.T]
+  return [[x] for x in o]
+
+tf_cfg_ttc = tf.ConfigProto()
+tf_cfg_ttc.gpu_options.per_process_gpu_memory_fraction = 0.3
+#tf_cfg_regulation = tf.ConfigProto(device_count = {"GPU": 0})
+
+def build_model_ttc():
+  ego_input = tf.keras.layers.Input(shape=(5, ))
+  ego_l1 = tf.keras.layers.Dense(640, activation=None)(ego_input)
+
+  veh_inputs = [tf.keras.layers.Input(shape=(5,)) for _ in range(NUM_VEH_CONSIDERED)]
   shared_Dense1 = tf.keras.layers.Dense(640, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
   veh_l1 = [tf.keras.layers.Activation(activation="relu")(x) for x in veh_l1]
@@ -473,7 +519,7 @@ class returnTrue():
 cfg_safety = DQNCfg(name = "safety",
                     play = False,
                     resume = False,
-                    state_size = 4 + 10*NUM_VEH_CONSIDERED,
+                    state_size = 5 + 12*NUM_VEH_CONSIDERED,
                     action_size = action_size,
                     pretrain_low_target=-10,
                     pretrain_high_target=0,
@@ -495,7 +541,7 @@ cfg_safety = DQNCfg(name = "safety",
 cfg_regulation = DQNCfg(name = "regulation",
                         play = False,
                         resume = False,
-                        state_size = 6 + 2*NUM_LANE_CONSIDERED + 16*NUM_VEH_CONSIDERED,
+                        state_size = 4 + 2*NUM_LANE_CONSIDERED + 7*NUM_VEH_CONSIDERED,
                         action_size = action_size,
                         pretrain_low_target=-10,
                         pretrain_high_target=0,
@@ -513,6 +559,28 @@ cfg_regulation = DQNCfg(name = "regulation",
                         _build_model = build_model_regulation,
                         tf_cfg = tf_cfg_regulation,
                         reshape = reshape_regulation)
+
+cfg_ttc = DQNCfg(name = "ttc",
+                 play = False,
+                 resume = False,
+                 state_size = 5 + 5*NUM_VEH_CONSIDERED,
+                 action_size = action_size,
+                 pretrain_low_target=-10,
+                 pretrain_high_target=0,
+                 gamma = 0.9,
+                 gamma_inc = 0.0005,
+                 gamma_max = 0.95,
+                 epsilon=0.1,
+                 epsilon_dec=0.0000001,
+                 epsilon_min=0.025,
+                 threshold = -5,
+                 memory_size = 64000,
+                 traj_end_pred = returnTrue(),
+                 replay_batch_size = 320,
+                 traj_end_ratio= 0.001,
+                 build_model = build_model_ttc,
+                 tf_cfg = tf_cfg_ttc,
+                 reshape = reshape_ttc)
 
 cfg_speed_comfort = DQNCfg(name = "speed_comfort",
                            play = False,

@@ -12,6 +12,7 @@ def get_observation_space(env):
              "ego_exists_left_lane": spaces.Discrete(2),
              "ego_exists_right_lane": spaces.Discrete(2),
              "ego_correct_lane_gap": spaces.Box(-env.NUM_LANE_CONSIDERED, env.NUM_LANE_CONSIDERED, shape=(1,), dtype=np.int16),
+             "ego_ttc": spaces.Box(-0.01, env.MAX_TTC_CONSIDERED, shape=(1,), dtype=np.float32),
              "exists_vehicle": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "speed": spaces.Box(0, env.MAX_VEH_SPEED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),  # absolute speed
              "dist_to_end_of_lane": spaces.Box(0, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),
@@ -296,7 +297,29 @@ def get_obs_dict(env):
         obs_dict["veh_relation_ahead"][veh_index] = 1 # AHEAD
       else:
         obs_dict["veh_relation_behind"][veh_index] = 1 # BEHIND
-  
+
+  # time to collision (just an estimate)
+  min_ttc = env.MAX_TTC_CONSIDERED
+  for i in range(env.NUM_VEH_CONSIDERED):
+    if obs_dict["exists_vehicle"][i] == 1:
+      ego_v = np.array([0, obs_dict["ego_speed"]])
+      speed = obs_dict["speed"][i]
+      angle = obs_dict["relative_heading"][i] + np.pi / 2
+      v = np.array([speed * np.cos(angle), speed * np.sin(angle)])
+      if obs_dict["veh_relation_ahead"][i] or \
+         obs_dict["veh_relation_behind"][i] or \
+         obs_dict["veh_relation_next"][i] or \
+         obs_dict["veh_relation_prev"][i] or \
+         obs_dict["veh_relation_conflict"][i] or \
+         obs_dict["veh_relation_peer"][i]:
+        pos = obs_dict["relative_position"][i]
+        ttc = np.dot(pos, pos) / max(np.dot((ego_v - v), pos), 0.001)
+        if ttc < -0.01 or ttc > env.MAX_TTC_CONSIDERED:
+          ttc = env.MAX_TTC_CONSIDERED
+        if ttc < min_ttc:
+          min_ttc = ttc
+  obs_dict["ego_ttc"] = min_ttc
+
   pass
   return obs_dict
 

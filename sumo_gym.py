@@ -25,7 +25,8 @@ class SumoCfg():
                MAX_VEH_SPEED, 
                # observation
                NUM_LANE_CONSIDERED, 
-               NUM_VEH_CONSIDERED, 
+               NUM_VEH_CONSIDERED,
+               MAX_TTC_CONSIDERED,
                OBSERVATION_RADIUS, 
                # reward
                MAX_COMFORT_ACCEL_LEVEL, 
@@ -41,6 +42,7 @@ class SumoCfg():
     
     self.NUM_LANE_CONSIDERED = NUM_LANE_CONSIDERED
     self.NUM_VEH_CONSIDERED = NUM_VEH_CONSIDERED
+    self.MAX_TTC_CONSIDERED = MAX_TTC_CONSIDERED
     self.OBSERVATION_RADIUS = OBSERVATION_RADIUS
     
     self.MAX_COMFORT_ACCEL_LEVEL = MAX_COMFORT_ACCEL_LEVEL
