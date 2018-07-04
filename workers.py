@@ -65,7 +65,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
       action = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
       #print(action, action_info)
-
+      print(reward_list)
       # choose tentative next action
       for obs_q in obs_q_list:
         obs_q.put((next_obs_dict, 0))

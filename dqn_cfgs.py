@@ -113,7 +113,7 @@ def reshape_safety(obs_dict):
   return [[x] for x in o]
 
 tf_cfg_safety = tf.ConfigProto()
-tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.3
+tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.25
 #tf_cfg_safety = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_safety():
@@ -161,7 +161,7 @@ def reshape_regulation(obs_dict):
   return [[x] for x in o]
 
 tf_cfg_regulation = tf.ConfigProto()
-tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.3
+tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.25
 #tf_cfg_regulation = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_regulation():
@@ -207,7 +207,7 @@ def reshape_ttc(obs_dict):
   return [[x] for x in o]
 
 tf_cfg_ttc = tf.ConfigProto()
-tf_cfg_ttc.gpu_options.per_process_gpu_memory_fraction = 0.3
+tf_cfg_ttc.gpu_options.per_process_gpu_memory_fraction = 0.25
 #tf_cfg_regulation = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_ttc():
@@ -523,13 +523,13 @@ cfg_safety = DQNCfg(name = "safety",
                     action_size = action_size,
                     pretrain_low_target=-10,
                     pretrain_high_target=0,
-                    gamma = 0.9,
+                    gamma = 0.99,
                     gamma_inc = 0.0005,
-                    gamma_max = 0.95,
+                    gamma_max = 0.99,
                     epsilon = 0.1,
                     epsilon_dec = 0.0000001,
                     epsilon_min = 0.025,
-                    threshold = -0.5,
+                    threshold = -1,
                     memory_size = 64000,
                     traj_end_pred = returnTrue(),
                     replay_batch_size = 64,
@@ -545,7 +545,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         action_size = action_size,
                         pretrain_low_target=-10,
                         pretrain_high_target=0,
-                        gamma = 0.9,
+                        gamma = 0.95,
                         gamma_inc = 0.0005,
                         gamma_max = 0.95,
                         epsilon=0.1,
@@ -569,7 +569,7 @@ cfg_ttc = DQNCfg(name = "ttc",
                  pretrain_high_target=0,
                  gamma = 0.9,
                  gamma_inc = 0.0005,
-                 gamma_max = 0.95,
+                 gamma_max = 0.9,
                  epsilon=0.1,
                  epsilon_dec=0.0000001,
                  epsilon_min=0.025,
@@ -578,7 +578,7 @@ cfg_ttc = DQNCfg(name = "ttc",
                  traj_end_pred = returnTrue(),
                  replay_batch_size = 320,
                  traj_end_ratio= 0.001,
-                 build_model = build_model_ttc,
+                 _build_model = build_model_ttc,
                  tf_cfg = tf_cfg_ttc,
                  reshape = reshape_ttc)
 

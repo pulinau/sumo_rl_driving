@@ -5,7 +5,7 @@ from include import *
 
 def get_reward_list(env):
   if env.env_state == EnvState.DONE:
-    return [0] * 4
+    return [0] * 5
   r_validity = None
   r_safety = 10 * get_reward_safety(env)
   r_regulation = 10 * get_reward_regulation(env)
@@ -31,7 +31,7 @@ def get_reward_regulation(env):
          obs_dict["has_priority"][i] == 1 and \
          (obs_dict["veh_relation_peer"][i] == 1 or obs_dict["veh_relation_conflict"][i] == 1) and \
          obs_dict["dist_to_end_of_lane"][i] < 60 and \
-         obs_dict["ego_speed"] > 0.2:
+         obs_dict["ego_speed"] > 0.4:
         return -1
 
   return 0
@@ -39,7 +39,7 @@ def get_reward_regulation(env):
 def get_reward_ttc(env):
   obs_dict = env.obs_dict_hist[-1]
 
-  if obs_dict["ego_ttc"] < 2:
+  if obs_dict["ego_ttc"] < 3:
     return -1
 
   return 0
