@@ -25,7 +25,27 @@ def select_actions_validity(state):
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
                ]
-      sorted_idx = []
+      sorted_idx = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value]
     if ego_exists_left_lane == 0 and ego_exists_right_lane == 1:
       valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
@@ -42,7 +62,27 @@ def select_actions_validity(state):
                ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
                ]
-      sorted_idx = []
+      sorted_idx = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value]
     if ego_exists_left_lane == 1 and ego_exists_right_lane == 0:
       valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
@@ -59,7 +99,27 @@ def select_actions_validity(state):
                ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
                ]
-      sorted_idx = []
+      sorted_idx = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value]
     if ego_exists_left_lane == 1 and ego_exists_right_lane == 1:
         valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
@@ -83,7 +143,27 @@ def select_actions_validity(state):
                  ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                  ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
                  ]
-        sorted_idx = []
+        sorted_idx = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value]
 
     return (set(valid), set([]), sorted_idx)
 
@@ -119,24 +199,32 @@ tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.25
 def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(5, ))
   ego_l1 = tf.keras.layers.Dense(640, activation=None)(ego_input)
+  ego_l1 = tf.keras.layers.LeakyReLU()(ego_l1)
+  ego_l2 = tf.keras.layers.Dense(640, activation=None)(ego_l1)
 
   veh_inputs = [tf.keras.layers.Input(shape=(12,)) for _ in range(NUM_VEH_CONSIDERED)]
   shared_Dense1 = tf.keras.layers.Dense(640, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
-  veh_l1 = [tf.keras.layers.Activation(activation="relu")(x) for x in veh_l1]
+  veh_l1 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l1]
   shared_Dense2 = tf.keras.layers.Dense(640, activation=None)
   veh_l2 = [shared_Dense2(x) for x in veh_l1]
+  veh_l2 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l2]
+  shared_Dense3 = tf.keras.layers.Dense(640, activation=None)
+  veh_l3 = [shared_Dense3(x) for x in veh_l2]
 
-  l3 = tf.keras.layers.add(veh_l2)
-  l3 = tf.keras.layers.add([ego_l1, l3])
-  l3 = tf.keras.layers.Activation(activation="relu")(l3)
-  l4 = tf.keras.layers.Dense(640, activation="relu")(l3)
-  l5 = tf.keras.layers.Dense(640, activation="relu")(l4)
-  l6 = tf.keras.layers.Dense(640, activation="relu")(l5)
+  l3 = tf.keras.layers.add(veh_l3)
+  l3 = tf.keras.layers.add([ego_l2, l3])
+  l3 = tf.keras.layers.LeakyReLU()(l3)
+  l4 = tf.keras.layers.Dense(640, activation=None)(l3)
+  l4 = tf.keras.layers.LeakyReLU()(l4)
+  l5 = tf.keras.layers.Dense(640, activation=None)(l4)
+  l5 = tf.keras.layers.LeakyReLU()(l5)
+  l6 = tf.keras.layers.Dense(640, activation=None)(l5)
+  l6 = tf.keras.layers.LeakyReLU()(l6)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l6)
 
   model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -167,24 +255,32 @@ tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.25
 def build_model_regulation():
   ego_input = tf.keras.layers.Input(shape=(4 + 2*NUM_LANE_CONSIDERED, ))
   ego_l1 = tf.keras.layers.Dense(640, activation=None)(ego_input)
+  ego_l1 = tf.keras.layers.LeakyReLU()(ego_l1)
+  ego_l2 = tf.keras.layers.Dense(640, activation=None)(ego_l1)
 
   veh_inputs = [tf.keras.layers.Input(shape=(7,)) for _ in range(NUM_VEH_CONSIDERED)]
   shared_Dense1 = tf.keras.layers.Dense(640, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
-  veh_l1 = [tf.keras.layers.Activation(activation="relu")(x) for x in veh_l1]
+  veh_l1 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l1]
   shared_Dense2 = tf.keras.layers.Dense(640, activation=None)
   veh_l2 = [shared_Dense2(x) for x in veh_l1]
+  veh_l2 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l2]
+  shared_Dense3 = tf.keras.layers.Dense(640, activation=None)
+  veh_l3 = [shared_Dense3(x) for x in veh_l2]
 
-  l3 = tf.keras.layers.add(veh_l2)
-  l3 = tf.keras.layers.add([ego_l1, l3])
-  l3 = tf.keras.layers.Activation(activation="relu")(l3)
-  l4 = tf.keras.layers.Dense(640, activation="relu")(l3)
-  l5 = tf.keras.layers.Dense(640, activation="relu")(l4)
-  l6 = tf.keras.layers.Dense(640, activation="relu")(l5)
+  l3 = tf.keras.layers.add(veh_l3)
+  l3 = tf.keras.layers.add([ego_l2, l3])
+  l3 = tf.keras.layers.LeakyReLU()(l3)
+  l4 = tf.keras.layers.Dense(640, activation=None)(l3)
+  l4 = tf.keras.layers.LeakyReLU()(l4)
+  l5 = tf.keras.layers.Dense(640, activation=None)(l4)
+  l5 = tf.keras.layers.LeakyReLU()(l5)
+  l6 = tf.keras.layers.Dense(640, activation=None)(l5)
+  l6 = tf.keras.layers.LeakyReLU()(l6)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l6)
 
   model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -213,24 +309,32 @@ tf_cfg_ttc.gpu_options.per_process_gpu_memory_fraction = 0.25
 def build_model_ttc():
   ego_input = tf.keras.layers.Input(shape=(5, ))
   ego_l1 = tf.keras.layers.Dense(640, activation=None)(ego_input)
+  ego_l1 = tf.keras.layers.LeakyReLU()(ego_l1)
+  ego_l2 = tf.keras.layers.Dense(640, activation=None)(ego_l1)
 
   veh_inputs = [tf.keras.layers.Input(shape=(5,)) for _ in range(NUM_VEH_CONSIDERED)]
   shared_Dense1 = tf.keras.layers.Dense(640, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
-  veh_l1 = [tf.keras.layers.Activation(activation="relu")(x) for x in veh_l1]
+  veh_l1 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l1]
   shared_Dense2 = tf.keras.layers.Dense(640, activation=None)
   veh_l2 = [shared_Dense2(x) for x in veh_l1]
+  veh_l2 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l2]
+  shared_Dense3 = tf.keras.layers.Dense(640, activation=None)
+  veh_l3 = [shared_Dense3(x) for x in veh_l2]
 
-  l3 = tf.keras.layers.add(veh_l2)
-  l3 = tf.keras.layers.add([ego_l1, l3])
-  l3 = tf.keras.layers.Activation(activation="relu")(l3)
-  l4 = tf.keras.layers.Dense(640, activation="relu")(l3)
-  l5 = tf.keras.layers.Dense(640, activation="relu")(l4)
-  l6 = tf.keras.layers.Dense(640, activation="relu")(l5)
+  l3 = tf.keras.layers.add(veh_l3)
+  l3 = tf.keras.layers.add([ego_l2, l3])
+  l3 = tf.keras.layers.LeakyReLU()(l3)
+  l4 = tf.keras.layers.Dense(640, activation=None)(l3)
+  l4 = tf.keras.layers.LeakyReLU()(l4)
+  l5 = tf.keras.layers.Dense(640, activation=None)(l4)
+  l5 = tf.keras.layers.LeakyReLU()(l5)
+  l6 = tf.keras.layers.Dense(640, activation=None)(l5)
+  l6 = tf.keras.layers.LeakyReLU()(l6)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l6)
 
   model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -523,16 +627,16 @@ cfg_safety = DQNCfg(name = "safety",
                     action_size = action_size,
                     pretrain_low_target=-10,
                     pretrain_high_target=0,
-                    gamma = 0.99,
+                    gamma = 0.95,
                     gamma_inc = 0.0005,
-                    gamma_max = 0.99,
-                    epsilon = 0.1,
+                    gamma_max = 0.95,
+                    epsilon = 0.02,
                     epsilon_dec = 0.0000001,
                     epsilon_min = 0.025,
                     threshold = -1,
                     memory_size = 64000,
                     traj_end_pred = returnTrue(),
-                    replay_batch_size = 64,
+                    replay_batch_size = 32,
                     traj_end_ratio= 0.001,
                     _build_model = build_model_safety,
                     tf_cfg = tf_cfg_safety,
@@ -545,16 +649,16 @@ cfg_regulation = DQNCfg(name = "regulation",
                         action_size = action_size,
                         pretrain_low_target=-10,
                         pretrain_high_target=0,
-                        gamma = 0.95,
+                        gamma = 0.99,
                         gamma_inc = 0.0005,
-                        gamma_max = 0.95,
-                        epsilon=0.1,
+                        gamma_max = 0.99,
+                        epsilon=0.02,
                         epsilon_dec=0.0000001,
                         epsilon_min=0.025,
-                        threshold = -5,
+                        threshold = -10,
                         memory_size = 64000,
-                        traj_end_pred = returnTrue(),
-                        replay_batch_size = 320,
+                        traj_end_pred = lt(-0.1),
+                        replay_batch_size = 160,
                         traj_end_ratio= 0.2,
                         _build_model = build_model_regulation,
                         tf_cfg = tf_cfg_regulation,
@@ -573,7 +677,7 @@ cfg_ttc = DQNCfg(name = "ttc",
                  epsilon=0.1,
                  epsilon_dec=0.0000001,
                  epsilon_min=0.025,
-                 threshold = -5,
+                 threshold = -6,
                  memory_size = 64000,
                  traj_end_pred = returnTrue(),
                  replay_batch_size = 320,

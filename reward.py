@@ -11,21 +11,40 @@ def get_reward_list(env):
   r_regulation = 10 * get_reward_regulation(env)
   r_ttc = 10 * get_reward_ttc(env)
   r_speed_comfort = None
-  return [r_validity, r_safety, r_regulation, r_ttc, r_speed_comfort]
+  return [r_validity, r_safety, r_regulation, r_speed_comfort]
 
 def get_reward_safety(env):
   if env.env_state == EnvState.CRASH:
     return -1
+
+  obs_dict = env.obs_dict_hist[-1]
+  if obs_dict["ego_ttc"] < 0.5:
+    return -1
+
+  for i in range(env.NUM_VEH_CONSIDERED):
+    if obs_dict["exists_vehicle"][i] == 1:
+      if (obs_dict["veh_relation_ahead"][i] == 1 or obs_dict["veh_relation_next"][i] == 1):
+        if np.linalg.norm(obs_dict["relative_position"][i]) < 4:
+          return -1
+
+      if (obs_dict["veh_relation_behind"][i] == 1 or obs_dict["veh_relation_prev"][i] == 1):
+        if np.linalg.norm(obs_dict["relative_position"][i]) < 4:
+          return -1
+
+      if obs_dict["in_intersection"][i] == 1:
+        if np.linalg.norm(obs_dict["relative_position"][i]) < 4:
+          return -1
+
   return 0
 
 def get_reward_regulation(env):
   obs_dict = env.obs_dict_hist[-1]
   veh_dict = env.veh_dict_hist[-1]
   
-  if obs_dict["ego_dist_to_end_of_lane"] < 2:
+  if obs_dict["ego_dist_to_end_of_lane"] < 5:
     if obs_dict["ego_correct_lane_gap"] != 0:
       return -1
-    
+
     for i in range(env.NUM_VEH_CONSIDERED):
       if obs_dict["exists_vehicle"][i] == 1 and \
          obs_dict["has_priority"][i] == 1 and \
@@ -39,7 +58,7 @@ def get_reward_regulation(env):
 def get_reward_ttc(env):
   obs_dict = env.obs_dict_hist[-1]
 
-  if obs_dict["ego_ttc"] < 3:
+  if obs_dict["ego_ttc"] < 2:
     return -1
 
   return 0
