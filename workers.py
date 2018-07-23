@@ -28,16 +28,18 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       if step == 0:
         if play:
           env.agt_ctrl = True
+      """
         else:
           if random.uniform(0, 1) < 0.1:
             env.agt_ctrl = False
       else:
         if not play:
-          if random.uniform(0, 1) < 0.2:
+          if random.uniform(0, 1) < 0.5:
             if env.agt_ctrl == False:
               env.agt_ctrl = True
             else:
               env.agt_ctrl = False
+      """
 
       # select action
       if env.agt_ctrl == False:
@@ -47,7 +49,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         action_set_list, explr_set_list, sorted_idx_list = [], [], []
 
         for obs_q in obs_q_list:
-          obs_q.put((obs_dict, None))
+          obs_q.put((deepcopy(obs_dict), None))
 
         for action_q in action_q_list:
           while action_q.empty():
@@ -65,10 +67,9 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
       action = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
       #print(action, action_info)
-      print(reward_list)
       # choose tentative next action
       for obs_q in obs_q_list:
-        obs_q.put((next_obs_dict, 0))
+        obs_q.put((deepcopy(next_obs_dict), 0))
 
       action_set_list, explr_set_list, sorted_idx_list = [], [], []
       # next action list is only the tentative actions for training purpose, not the one actually taken
@@ -84,7 +85,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         explr_set_list += [explr_set]
         sorted_idx_list += [sorted_idx]
 
-        tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], action_set_list, explr_set_list, sorted_idx_list, 1)
+        tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], action_set_list, explr_set_list, sorted_idx_list, 1, greedy=True)
         next_action_list += [tent_action]
 
       if env_state != EnvState.DONE:
@@ -93,16 +94,16 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       obs_dict = next_obs_dict
 
       if env_state == EnvState.DONE:
-        prob = 0.1
+        prob = 1
         print("Sim ", id, " success, step: ", step)
         break
       if env_state != EnvState.NORMAL:
-        prob = 0.6
+        prob = 1
         print("Sim ", id, " terminated, step: ", step, action_dict, action_info, reward_list, env_state,
               env.agt_ctrl)
         break
       if step == max_step - 1:
-        prob = 0.1
+        prob = 1
         print("Sim ", id, " timeout, step: ", step)
         break
 
@@ -113,7 +114,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
 
   end_q.put(True)
 
-def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list, num_action):
+def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list, num_action, greedy=False):
   """
   Select an action based on the action choice of each objective.
   :param dqn_cfg_list:
@@ -140,6 +141,14 @@ def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list
       break
     else:
       invalid = []
+
+  if greedy:
+    if len(valid) == 0:
+      return invalid[0]
+    else:
+      valid = [(sorted_idx.index(x), x) for x in valid]
+      valid = [(sorted(valid)[0][1], "greedy: " + dqn_cfg.name)]
+      return valid[0]
 
   valid = [(x, "exploit") for x in valid]
   return random.sample(valid + invalid, 1)[0]

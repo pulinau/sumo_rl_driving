@@ -135,6 +135,9 @@ class DQNAgent:
     act_values = self.model.predict(self.reshape(obs_dict))[0]
     sorted_idx = np.argsort(act_values)[::-1]
 
+    if self.play == True:
+      print(self.name, act_values)
+
     if epsilon is None:
       epsilon = self.epsilon
     if np.random.rand() <= epsilon:
@@ -195,7 +198,6 @@ class DQNAgent:
     rewards = np.array(rewards)
     not_dones = np.array(not_dones)
     steps = np.array(steps)
-
     backup = (self.gamma**(steps+1)) * not_dones * self.target_model.predict_on_batch(next_states)[np.arange(len(next_actions)), next_actions]
 
     # clamp targets larger than zero to zero
@@ -212,10 +214,10 @@ class DQNAgent:
     #print(self.name, targets_f[0])
     #print(self.name , " training starts", time.time(), flush = True)
 
-    print("*"*10, self.name, "*"*10)
-    print(targets[:8])
-    print(targets_f[0])
-    print("*"*30)
+    #print("*"*10, self.name, "*"*10)
+    #print(targets[:8])
+    #print(targets_f[0])
+    #print("*"*30)
 
     self.model.fit(states, targets_f, verbose=False)
 

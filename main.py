@@ -22,7 +22,7 @@ if __name__ == "__main__":
   env = MultiObjSumoEnv(sumo_cfg)
   max_ep = 50000
   sim_inst = 8
-  dqn_cfg_list = [cfg_validity, cfg_safety, cfg_regulation, cfg_ttc, cfg_speed_comfort]
+  dqn_cfg_list = [cfg_validity, cfg_safety, cfg_regulation, cfg_speed_comfort]
   if args.resume:
     for dqn_cfg in dqn_cfg_list:
       dqn_cfg.resume = True

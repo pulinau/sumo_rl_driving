@@ -7,8 +7,8 @@ from sumo_gym import SumoCfg
 # --------------------------
 #          SUMO
 # --------------------------
-SUMO_BIN = "/home/ken/project/sumo-bin/bin/sumo"
-SUMO_TIME_STEP = 0.1
+SUMO_BIN = "/home/ken/project/sumo-bin/bin/sumo-gui"
+SUMO_TIME_STEP = 0.05
 
 # "--net-file" and "route_file"
 NET_XML_FILE = "/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test.net.xml"
@@ -18,6 +18,7 @@ SUMO_CMD = [SUMO_BIN,
             "--no-warnings", "true",
             "--time-to-teleport", "-1",
             "--collision.action", "warn",
+            "--collision.mingap-factor", "0",
             "--collision.check-junctions", "true",
             "--xml-validation", "never",
             "--step-length", str(SUMO_TIME_STEP),
@@ -33,10 +34,10 @@ MAX_VEH_SPEED = 55.55
 # --------------------------
 #        observation
 # --------------------------
-NUM_LANE_CONSIDERED = 3 # number of lanes considered on each side of ego
-NUM_VEH_CONSIDERED = 16
+NUM_LANE_CONSIDERED = 1 # number of lanes considered on each side of ego
+NUM_VEH_CONSIDERED = 8
 MAX_TTC_CONSIDERED = 10
-OBSERVATION_RADIUS = 160
+OBSERVATION_RADIUS = 60
 
 # --------------------------
 #         reward
