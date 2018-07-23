@@ -125,7 +125,7 @@ class MultiObjSumoEnv(SumoGymEnv):
     assert self.env_state == EnvState.NORMAL, "env.env_state is not EnvState.NORMAL"
     try:
       self.env_state = act(self, self.EGO_VEH_ID, action_dict)
-      if self.env_state != EnvState.NORMAL:
+      if self.env_state == EnvState.DONE:
         obs_dict = deepcopy(self.obs_dict_hist[-1])
         veh_dict = deepcopy(self.veh_dict_hist[-1])
       else:

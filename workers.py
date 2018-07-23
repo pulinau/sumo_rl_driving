@@ -87,7 +87,8 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], action_set_list, explr_set_list, sorted_idx_list, 1)
         next_action_list += [tent_action]
 
-      traj.append((obs_dict, action, reward_list, next_obs_dict, next_action_list, env_state != EnvState.NORMAL))
+      if env_state != EnvState.DONE:
+        traj.append((obs_dict, action, reward_list, next_obs_dict, next_action_list, env_state != EnvState.NORMAL))
 
       obs_dict = next_obs_dict
 

@@ -2,6 +2,7 @@
 __author__ = "Changjian Li"
 
 import heapq
+from copy import deepcopy
 
 from include import *
 
@@ -128,9 +129,13 @@ def get_edge_dict(sumo_net_xml_file):
 def get_obs_dict(env):
   
   veh_dict = get_veh_dict(env)
-  lanelet_dict = env.lanelet_dict
-  edge_dict = env.edge_dict
-  
+  lanelet_dict = deepcopy(env.lanelet_dict)
+  edge_dict = deepcopy(env.edge_dict)
+  if len(env.obs_dict_hist) > 0:
+    old_obs_dict = deepcopy(env.obs_dict_hist[-1])
+  else:
+    old_obs_dict = None
+
   obs_dict = {}
   
   ego_dict = veh_dict[env.EGO_VEH_ID]
@@ -192,6 +197,9 @@ def get_obs_dict(env):
   veh_id_list_ROI = [k for k, v in veh_dict.items() if k!=env.EGO_VEH_ID and in_ROI(ego_dict["position"], v["position"])]
 
   # now deal with the relavant vehicles
+  obs_dict["veh_ids"] = [None] * env.NUM_VEH_CONSIDERED
+  obs_dict["is_new"] = [True] * env.NUM_VEH_CONSIDERED
+  obs_dict["collision"] = [False] * env.NUM_VEH_CONSIDERED
   obs_dict["veh_relation_next"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["veh_relation_prev"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["exists_vehicle"] = [0] * env.NUM_VEH_CONSIDERED
@@ -213,10 +221,33 @@ def get_obs_dict(env):
   for veh_id in veh_id_list_ROI:
     state_dict = veh_dict[veh_id]
     heapq.heappush(veh_heap, (np.linalg.norm(np.array(state_dict["position"]) - np.array(ego_dict["position"])), veh_id))
-  
-  for veh_index in range(min(env.NUM_VEH_CONSIDERED, len(veh_heap))):
+
+  veh_id_list_ROI = []
+  for _ in range(min(env.NUM_VEH_CONSIDERED, len(veh_heap))):
     _, veh_id = heapq.heappop(veh_heap)
+    veh_id_list_ROI += [veh_id]
+
+  if old_obs_dict is None:
+    old_veh_id_list = list(set())
+    new_veh_id_list = list(set(veh_id_list_ROI))
+  else:
+    old_veh_id_list = list(set(veh_id_list_ROI) & set(old_obs_dict["veh_ids"]))
+    new_veh_id_list = list(set(veh_id_list_ROI) - set(old_obs_dict["veh_ids"]))
+
+  new_index = 0
+  for veh_id in old_veh_id_list + new_veh_id_list:
     state_dict = veh_dict[veh_id]
+    if veh_id in old_obs_dict:
+      veh_index = old_obs_dict["veh_ids"].index(veh_id)
+      obs_dict["is_new"][veh_index] = False
+    else:
+      while obs_dict["is_new"][new_index] == False:
+        new_index += 1
+      veh_index = new_index
+      new_index += 1
+
+    if veh_id in env.tc.simulation.getCollidingVehiclesIDList():
+      obs_dict["collision"][veh_index] = True
 
     # NEXT, PREV
     if state_dict["lane_id"] in lanelet_dict[ego_dict["lane_id"]]["next_lane_id_list"]:
