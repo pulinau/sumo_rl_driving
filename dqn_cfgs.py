@@ -188,6 +188,7 @@ def reshape_safety(obs_dict):
   o1  = np.append(o1, np.array([obs_dict["veh_relation_left"]]), axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_right"]]), axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_ahead"]]), axis=0)
+  o1 = np.append(o1, np.array([obs_dict["ttc"]]) / MAX_TTC_CONSIDERED, axis=0)
 
   o = [o0] + [x for x in o1.T]
   return [[x] for x in o]
@@ -199,145 +200,68 @@ tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.25
 def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(5, ))
   ego_l1 = tf.keras.layers.Dense(640, activation=None)(ego_input)
-  ego_l1 = tf.keras.layers.LeakyReLU()(ego_l1)
-  ego_l2 = tf.keras.layers.Dense(640, activation=None)(ego_l1)
 
-  veh_inputs = [tf.keras.layers.Input(shape=(12,)) for _ in range(NUM_VEH_CONSIDERED)]
+  veh_inputs = [tf.keras.layers.Input(shape=(13,)) for _ in range(NUM_VEH_CONSIDERED)]
   shared_Dense1 = tf.keras.layers.Dense(640, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
-  veh_l1 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l1]
-  shared_Dense2 = tf.keras.layers.Dense(640, activation=None)
-  veh_l2 = [shared_Dense2(x) for x in veh_l1]
+
+  veh_l2 = [tf.keras.layers.add([ego_l1, x]) for x in veh_l1]
   veh_l2 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l2]
+
+  shared_Dense2 = tf.keras.layers.Dense(640, activation=None)
+  veh_l3 = [shared_Dense2(x) for x in veh_l2]
+  veh_l3 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l3]
+
   shared_Dense3 = tf.keras.layers.Dense(640, activation=None)
-  veh_l3 = [shared_Dense3(x) for x in veh_l2]
+  veh_l4 = [shared_Dense3(x) for x in veh_l3]
+  veh_l4 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l4]
 
-  l3 = tf.keras.layers.add(veh_l3)
-  l3 = tf.keras.layers.add([ego_l2, l3])
-  l3 = tf.keras.layers.LeakyReLU()(l3)
-  l4 = tf.keras.layers.Dense(640, activation=None)(l3)
-  l4 = tf.keras.layers.LeakyReLU()(l4)
-  l5 = tf.keras.layers.Dense(640, activation=None)(l4)
-  l5 = tf.keras.layers.LeakyReLU()(l5)
-  l6 = tf.keras.layers.Dense(640, activation=None)(l5)
-  l6 = tf.keras.layers.LeakyReLU()(l6)
-  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l6)
+  shared_Dense4 = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation=None)
+  veh_y = [shared_Dense4(x) for x in veh_l4]
+  y = tf.keras.layers.add(veh_y)
 
-  model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
+  model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
   opt = tf.keras.optimizers.RMSprop(lr=0.00001)
   model.compile(loss='logcosh', optimizer=opt)
+
   return model
 
 def reshape_regulation(obs_dict):
   lane_gap_1hot = [0] * (2*NUM_LANE_CONSIDERED + 1)
   lane_gap_1hot[obs_dict["ego_correct_lane_gap"] + NUM_LANE_CONSIDERED] = 1
-  o0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
-                 min(obs_dict["ego_dist_to_end_of_lane"] / OBSERVATION_RADIUS, 1.0),
-                 obs_dict["ego_in_intersection"]
-                 ] + lane_gap_1hot, dtype = np.float32)
-  o1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
-  o1 = np.append(o1, np.array([obs_dict["exists_vehicle"]]), axis=0)
-  o1 = np.append(o1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
-  o1  = np.append(o1, np.minimum(np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
-                                     np.ones((1, NUM_VEH_CONSIDERED))), axis = 0)
-  o1 = np.append(o1, np.array([obs_dict["in_intersection"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["has_priority"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["veh_relation_peer"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["veh_relation_conflict"]]), axis=0)
 
-  o = [o0] + [x for x in o1.T]
-  return [[x] for x in o]
+  has_priority = 1
+  for i in range(env.NUM_VEH_CONSIDERED):
+      if obs_dict["has_priority"] == 1:
+          has_priority = 0
+          break
+
+  o = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
+                 min(obs_dict["ego_dist_to_end_of_lane"] / OBSERVATION_RADIUS, 1.0),
+                 obs_dict["ego_in_intersection"],
+                 has_priority,
+                 ] + lane_gap_1hot, dtype = np.float32)
+
+  return [[o]]
 
 tf_cfg_regulation = tf.ConfigProto()
 tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.25
 #tf_cfg_regulation = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_regulation():
-  ego_input = tf.keras.layers.Input(shape=(4 + 2*NUM_LANE_CONSIDERED, ))
-  ego_l1 = tf.keras.layers.Dense(640, activation=None)(ego_input)
-  ego_l1 = tf.keras.layers.LeakyReLU()(ego_l1)
-  ego_l2 = tf.keras.layers.Dense(640, activation=None)(ego_l1)
-
-  veh_inputs = [tf.keras.layers.Input(shape=(7,)) for _ in range(NUM_VEH_CONSIDERED)]
-  shared_Dense1 = tf.keras.layers.Dense(640, activation=None)
-  veh_l1 = [shared_Dense1(x) for x in veh_inputs]
-  veh_l1 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l1]
-  shared_Dense2 = tf.keras.layers.Dense(640, activation=None)
-  veh_l2 = [shared_Dense2(x) for x in veh_l1]
-  veh_l2 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l2]
-  shared_Dense3 = tf.keras.layers.Dense(640, activation=None)
-  veh_l3 = [shared_Dense3(x) for x in veh_l2]
-
-  l3 = tf.keras.layers.add(veh_l3)
-  l3 = tf.keras.layers.add([ego_l2, l3])
+  x = tf.keras.layers.Input(shape=(5 + 2*NUM_LANE_CONSIDERED, ))
+  l1 = tf.keras.layers.Dense(640, activation=None)(x)
+  l1 = tf.keras.layers.LeakyReLU()(l1)
+  l2 = tf.keras.layers.Dense(640, activation=None)(l1)
+  l2 = tf.keras.layers.LeakyReLU()(l2)
+  l3 = tf.keras.layers.Dense(640, activation=None)(l2)
   l3 = tf.keras.layers.LeakyReLU()(l3)
-  l4 = tf.keras.layers.Dense(640, activation=None)(l3)
-  l4 = tf.keras.layers.LeakyReLU()(l4)
-  l5 = tf.keras.layers.Dense(640, activation=None)(l4)
-  l5 = tf.keras.layers.LeakyReLU()(l5)
-  l6 = tf.keras.layers.Dense(640, activation=None)(l5)
-  l6 = tf.keras.layers.LeakyReLU()(l6)
-  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l6)
+  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
 
-  model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
+  model = tf.keras.models.Model(inputs=[x], outputs=[y, y])
   opt = tf.keras.optimizers.RMSprop(lr=0.00001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
-
-def reshape_ttc(obs_dict):
-  o0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
-                 min(obs_dict["ego_dist_to_end_of_lane"] / OBSERVATION_RADIUS, 1.0),
-                 obs_dict["ego_ttc"] / MAX_TTC_CONSIDERED,
-                 obs_dict["ego_exists_left_lane"],
-                 obs_dict["ego_exists_right_lane"]
-                 ], dtype = np.float32)
-  o1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
-  o1 = np.append(o1, np.array([obs_dict["exists_vehicle"]]), axis=0)
-  o1 = np.append(o1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
-  o1  = np.append(o1, np.minimum(np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
-                                     np.ones((1, NUM_VEH_CONSIDERED))), axis = 0)
-  o1  = np.append(o1, np.array([obs_dict["veh_relation_left"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["veh_relation_right"]]), axis=0)
-
-  o = [o0] + [x for x in o1.T]
-  return [[x] for x in o]
-
-tf_cfg_ttc = tf.ConfigProto()
-tf_cfg_ttc.gpu_options.per_process_gpu_memory_fraction = 0.25
-#tf_cfg_regulation = tf.ConfigProto(device_count = {"GPU": 0})
-
-def build_model_ttc():
-  ego_input = tf.keras.layers.Input(shape=(5, ))
-  ego_l1 = tf.keras.layers.Dense(640, activation=None)(ego_input)
-  ego_l1 = tf.keras.layers.LeakyReLU()(ego_l1)
-  ego_l2 = tf.keras.layers.Dense(640, activation=None)(ego_l1)
-
-  veh_inputs = [tf.keras.layers.Input(shape=(5,)) for _ in range(NUM_VEH_CONSIDERED)]
-  shared_Dense1 = tf.keras.layers.Dense(640, activation=None)
-  veh_l1 = [shared_Dense1(x) for x in veh_inputs]
-  veh_l1 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l1]
-  shared_Dense2 = tf.keras.layers.Dense(640, activation=None)
-  veh_l2 = [shared_Dense2(x) for x in veh_l1]
-  veh_l2 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l2]
-  shared_Dense3 = tf.keras.layers.Dense(640, activation=None)
-  veh_l3 = [shared_Dense3(x) for x in veh_l2]
-
-  l3 = tf.keras.layers.add(veh_l3)
-  l3 = tf.keras.layers.add([ego_l2, l3])
-  l3 = tf.keras.layers.LeakyReLU()(l3)
-  l4 = tf.keras.layers.Dense(640, activation=None)(l3)
-  l4 = tf.keras.layers.LeakyReLU()(l4)
-  l5 = tf.keras.layers.Dense(640, activation=None)(l4)
-  l5 = tf.keras.layers.LeakyReLU()(l5)
-  l6 = tf.keras.layers.Dense(640, activation=None)(l5)
-  l6 = tf.keras.layers.LeakyReLU()(l6)
-  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l6)
-
-  model = tf.keras.models.Model(inputs = [ego_input] + veh_inputs, outputs=y)
-  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
-  model.compile(loss='logcosh', optimizer=opt)
-  return model
-
 
 def reshape_speed_comfort(obs_dict):
   out = np.array([obs_dict["ego_speed"], obs_dict["ego_correct_lane_gap"]], dtype = np.float32)
@@ -663,28 +587,6 @@ cfg_regulation = DQNCfg(name = "regulation",
                         _build_model = build_model_regulation,
                         tf_cfg = tf_cfg_regulation,
                         reshape = reshape_regulation)
-
-cfg_ttc = DQNCfg(name = "ttc",
-                 play = False,
-                 resume = False,
-                 state_size = 5 + 5*NUM_VEH_CONSIDERED,
-                 action_size = action_size,
-                 pretrain_low_target=-10,
-                 pretrain_high_target=0,
-                 gamma = 0.9,
-                 gamma_inc = 0.0005,
-                 gamma_max = 0.9,
-                 epsilon=0.1,
-                 epsilon_dec=0.0000001,
-                 epsilon_min=0.025,
-                 threshold = -6,
-                 memory_size = 64000,
-                 traj_end_pred = returnTrue(),
-                 replay_batch_size = 320,
-                 traj_end_ratio= 0.001,
-                 _build_model = build_model_ttc,
-                 tf_cfg = tf_cfg_ttc,
-                 reshape = reshape_ttc)
 
 cfg_speed_comfort = DQNCfg(name = "speed_comfort",
                            play = False,

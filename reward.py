@@ -2,6 +2,7 @@
 __author__ = "Changjian Li"
 
 from include import *
+import numpy as np
 
 def get_reward_list(env):
   if env.env_state == EnvState.DONE:
@@ -14,28 +15,16 @@ def get_reward_list(env):
   return [r_validity, r_safety, r_regulation, r_speed_comfort]
 
 def get_reward_safety(env):
-  if env.env_state == EnvState.CRASH:
-    return -1
-
+  rewards = []
   obs_dict = env.obs_dict_hist[-1]
-  if obs_dict["ego_ttc"] < 0.5:
-    return -1
 
-  for i in range(env.NUM_VEH_CONSIDERED):
-    if obs_dict["exists_vehicle"][i] == 1:
-      if (obs_dict["veh_relation_ahead"][i] == 1 or obs_dict["veh_relation_next"][i] == 1):
-        if np.linalg.norm(obs_dict["relative_position"][i]) < 4:
-          return -1
+  for i, c in enumerate(obs_dict["collision"]):
+    r = 0
+    if (env.env_state == EnvState.CRASH and c == True):
+      r = -1
+    rewards += [r]
 
-      if (obs_dict["veh_relation_behind"][i] == 1 or obs_dict["veh_relation_prev"][i] == 1):
-        if np.linalg.norm(obs_dict["relative_position"][i]) < 4:
-          return -1
-
-      if obs_dict["in_intersection"][i] == 1:
-        if np.linalg.norm(obs_dict["relative_position"][i]) < 4:
-          return -1
-
-  return 0
+  return np.array(rewards)
 
 def get_reward_regulation(env):
   obs_dict = env.obs_dict_hist[-1]

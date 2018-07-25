@@ -13,7 +13,6 @@ def get_observation_space(env):
              "ego_exists_left_lane": spaces.Discrete(2),
              "ego_exists_right_lane": spaces.Discrete(2),
              "ego_correct_lane_gap": spaces.Box(-env.NUM_LANE_CONSIDERED, env.NUM_LANE_CONSIDERED, shape=(1,), dtype=np.int16),
-             "ego_ttc": spaces.Box(-0.01, env.MAX_TTC_CONSIDERED, shape=(1,), dtype=np.float32),
              "exists_vehicle": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "speed": spaces.Box(0, env.MAX_VEH_SPEED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),  # absolute speed
              "dist_to_end_of_lane": spaces.Box(0, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),
@@ -28,7 +27,8 @@ def get_observation_space(env):
              "veh_relation_left": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "veh_relation_right": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "veh_relation_ahead": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
-             "veh_relation_behind": spaces.MultiBinary(env.NUM_VEH_CONSIDERED)
+             "veh_relation_behind": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "ttc": spaces.Box(0, env.MAX_TTC_CONSIDERED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),
              })
   return observation_space
 
@@ -215,6 +215,7 @@ def get_obs_dict(env):
   obs_dict["veh_relation_right"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["veh_relation_ahead"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["veh_relation_behind"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["ttc"] = [env.MAX_TTC_CONSIDERED] * env.NUM_VEH_CONSIDERED
 
   # sort veh within ROI by distance to ego
   veh_heap = []
@@ -239,15 +240,11 @@ def get_obs_dict(env):
     state_dict = veh_dict[veh_id]
     if veh_id in old_obs_dict:
       veh_index = old_obs_dict["veh_ids"].index(veh_id)
-      obs_dict["is_new"][veh_index] = False
     else:
       while obs_dict["is_new"][new_index] == False:
         new_index += 1
       veh_index = new_index
       new_index += 1
-
-    if veh_id in env.tc.simulation.getCollidingVehiclesIDList():
-      obs_dict["collision"][veh_index] = True
 
     # NEXT, PREV
     if state_dict["lane_id"] in lanelet_dict[ego_dict["lane_id"]]["next_lane_id_list"]:
@@ -260,6 +257,12 @@ def get_obs_dict(env):
        obs_dict["veh_relation_next"][veh_index] == 0 and \
        obs_dict["veh_relation_prev"][veh_index] == 0:
       continue
+
+    if veh_id in old_obs_dict:
+      obs_dict["is_new"][veh_index] = False
+    obs_dict["veh_ids"][veh_index] = veh_id
+    if veh_id in env.tc.simulation.getCollidingVehiclesIDList():
+      obs_dict["collision"][veh_index] = True
 
     obs_dict["exists_vehicle"][veh_index] = 1
     obs_dict["speed"][veh_index] = state_dict["speed"]
@@ -329,25 +332,20 @@ def get_obs_dict(env):
       else:
         obs_dict["veh_relation_behind"][veh_index] = 1 # BEHIND
 
-  # time to collision (just an estimate)
-  min_ttc = env.MAX_TTC_CONSIDERED
-  for i in range(env.NUM_VEH_CONSIDERED):
-    if obs_dict["exists_vehicle"][i] == 1:
-      ego_v = np.array([0, obs_dict["ego_speed"]])
-      speed = obs_dict["speed"][i]
-      angle = obs_dict["relative_heading"][i] + np.pi / 2
-      v = np.array([speed * np.cos(angle), speed * np.sin(angle)])
-      if obs_dict["veh_relation_ahead"][i] or \
-         obs_dict["veh_relation_next"][i] or \
-         obs_dict["veh_relation_conflict"][i] or \
-         obs_dict["veh_relation_peer"][i]:
-        pos = obs_dict["relative_position"][i]
+    # time to collision (just an estimate)
+    ego_v = np.array([0, obs_dict["ego_speed"]])
+    speed = obs_dict["speed"][veh_index]
+    angle = obs_dict["relative_heading"][veh_index] + np.pi / 2
+    v = np.array([speed * np.cos(angle), speed * np.sin(angle)])
+    if obs_dict["veh_relation_ahead"][veh_index] or \
+       obs_dict["veh_relation_next"][veh_index] or \
+       obs_dict["veh_relation_conflict"][veh_index] or \
+       obs_dict["veh_relation_peer"][veh_index]:
+        pos = obs_dict["relative_position"][veh_index]
         ttc = np.dot(pos, pos) / max(np.dot((ego_v - v), pos), 0.001)
         if ttc < -0.01 or ttc > env.MAX_TTC_CONSIDERED:
           ttc = env.MAX_TTC_CONSIDERED
-        if ttc < min_ttc:
-          min_ttc = ttc
-  obs_dict["ego_ttc"] = min_ttc
+    obs_dict["ttc"][veh_index] = ttc
 
   pass
   return obs_dict

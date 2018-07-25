@@ -132,7 +132,7 @@ class DQNAgent:
     if self._select_actions is not None:
       return self._select_actions(self.reshape(obs_dict))
 
-    act_values = self.model.predict(self.reshape(obs_dict))[0]
+    act_values = self.model.predict(self.reshape(obs_dict))[-1][0]
     sorted_idx = np.argsort(act_values)[::-1]
 
     if self.play == True:
@@ -149,37 +149,6 @@ class DQNAgent:
 
     return (action_set, explore_set, list(sorted_idx))
 
-  def pretrain(self, traj_list, ep):
-    if self._select_actions is not None or self.play == True or len(traj_list) == 0:
-      return
-
-    try:
-      self._load_model("pretrain_" + self.name + ".sav")
-    except:
-      self.pretrain_mem = ReplayMemory(end_pred=True)
-      for traj in traj_list:
-        traj = [(self.reshape(obs_dict), action, None, None, done)
-                for obs_dict, action, reward, next_obs_dict, done in traj]
-        self.pretrain_mem.add_traj(traj)
-
-      states = [s[0][0] for s in self.pretrain_mem.traj_mem]
-      actions = [s[0][1] for s in self.pretrain_mem.traj_mem]
-
-      state_idx, correct_actions = loosen_correct_actions(actions)
-
-      temp = []
-      for i in range(len(states[0])):
-        arr = [x[i][0] for x in states]
-        temp += [arr]
-      states = temp
-
-      targets_f = self.pretrain_low_target * np.ones((len(states[0]), self.action_size))
-      targets_f[state_idx, correct_actions] = self.pretrain_high_target
-
-      self.model.fit(states, targets_f, epochs = ep)
-      self.pretrain_mem = None
-      self.save_model(name="pretrain_" + self.name + ".sav")
-
   def replay(self):
     if self._select_actions is not None or self.play == True or self.memory.size() == 0:
       return
@@ -193,31 +162,25 @@ class DQNAgent:
 
     #states, actions, rewards, next_states, not_dones, steps = \
     #  self.memory.sample(self.replay_batch_size, self.traj_end_ratio)
-    actions = np.array(actions)
-    next_actions = np.array(next_actions)
-    rewards = np.array(rewards)
-    not_dones = np.array(not_dones)
-    steps = np.array(steps)
-    backup = (self.gamma**(steps+1)) * not_dones * self.target_model.predict_on_batch(next_states)[np.arange(len(next_actions)), next_actions]
+    actions =  np.array(actions) * np.ones(shape=states.shape[:2])
+    next_actions = np.array(next_actions) * np.ones(shape=states.shape[:2])
+    steps = np.array(steps) * np.ones(shape=states.shape[:2])
+
+    next_q = self.target_model.predict_on_batch(next_states)[:-1]
+    m, n = actions.shape
+    I, J = np.ogrid[:m, :n]
+    backup = next_q[I, J, next_actions]
+    backup = (self.gamma ** (steps + 1)) * not_dones * backup
 
     # clamp targets larger than zero to zero
     backup[np.where(backup > 0)] = 0
 
     targets = (self.gamma**steps)*rewards + backup
-    targets_f = self.target_model.predict_on_batch(states)
+    targets_f = self.model.predict_on_batch(states)
 
     # clamp incorrect target to zero
-    targets_f[np.where(targets_f > 0)] = 0
-
-    targets_f[np.arange(targets_f.shape[0]), actions] = targets
-
-    #print(self.name, targets_f[0])
-    #print(self.name , " training starts", time.time(), flush = True)
-
-    #print("*"*10, self.name, "*"*10)
-    #print(targets[:8])
-    #print(targets_f[0])
-    #print("*"*30)
+    targets_f[:-1][np.where(targets_f > 0)] = 0
+    targets_f[:-1][I, J, actions] = targets
 
     self.model.fit(states, targets_f, verbose=False)
 

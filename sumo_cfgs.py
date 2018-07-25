@@ -18,12 +18,12 @@ SUMO_CMD = [SUMO_BIN,
             "--no-warnings", "true",
             "--time-to-teleport", "-1",
             "--collision.action", "warn",
-            "--collision.mingap-factor", "0",
+            #"--collision.mingap-factor", "0",
             "--collision.check-junctions", "true",
             "--xml-validation", "never",
             "--step-length", str(SUMO_TIME_STEP),
             "-n", NET_XML_FILE,
-#           "--lanechange.duration", "2",
+            #"--lanechange.duration", "2",
             "-r"]
 
 EGO_VEH_ID = "ego"
