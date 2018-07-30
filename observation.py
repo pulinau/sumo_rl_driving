@@ -12,8 +12,13 @@ def get_observation_space(env):
              "ego_in_intersection": spaces.Discrete(2),
              "ego_exists_left_lane": spaces.Discrete(2),
              "ego_exists_right_lane": spaces.Discrete(2),
+             "ego_edge_changed": spaces.Discrete(2),
+             "ego_has_priority": spaces.Discrete(2),
+             "ego_priority_changed": spaces.Discrete(2),
              "ego_correct_lane_gap": spaces.Box(-env.NUM_LANE_CONSIDERED, env.NUM_LANE_CONSIDERED, shape=(1,), dtype=np.int16),
              "exists_vehicle": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "is_new" = spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "collision" = spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "speed": spaces.Box(0, env.MAX_VEH_SPEED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),  # absolute speed
              "dist_to_end_of_lane": spaces.Box(0, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),
              "in_intersection": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
@@ -28,7 +33,7 @@ def get_observation_space(env):
              "veh_relation_right": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "veh_relation_ahead": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "veh_relation_behind": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
-             "ttc": spaces.Box(0, env.MAX_TTC_CONSIDERED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),
+             "ttc": spaces.Box(0, env.MAX_TTC_CONSIDERED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32)
              })
   return observation_space
 
@@ -184,7 +189,13 @@ def get_obs_dict(env):
     obs_dict["ego_correct_lane_gap"] = min(obs_dict["ego_correct_lane_gap"], env.NUM_LANE_CONSIDERED)
   else:
     obs_dict["ego_correct_lane_gap"] = max(obs_dict["ego_correct_lane_gap"], -env.NUM_LANE_CONSIDERED)
-  
+
+  obs_dict["edge_id"] = ego_dict["edge_id"]
+  obs_dict["ego_edge_changed"] = 1
+  if old_obs_dict is not None and old_obs_dict["edge_id"] == obs_dict["edge_id"]:
+    obs_dict["ego_edge_changed"] = 0
+
+
   # vehicles inside region of insterest
   def in_ROI(ego_position, veh_position):
     if ((veh_position[0] > ego_position[0]-env.OBSERVATION_RADIUS) and 
@@ -198,8 +209,8 @@ def get_obs_dict(env):
 
   # now deal with the relavant vehicles
   obs_dict["veh_ids"] = [None] * env.NUM_VEH_CONSIDERED
-  obs_dict["is_new"] = [True] * env.NUM_VEH_CONSIDERED
-  obs_dict["collision"] = [False] * env.NUM_VEH_CONSIDERED
+  obs_dict["is_new"] = [1] * env.NUM_VEH_CONSIDERED
+  obs_dict["collision"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["veh_relation_next"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["veh_relation_prev"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["exists_vehicle"] = [0] * env.NUM_VEH_CONSIDERED
@@ -241,7 +252,7 @@ def get_obs_dict(env):
     if veh_id in old_obs_dict:
       veh_index = old_obs_dict["veh_ids"].index(veh_id)
     else:
-      while obs_dict["is_new"][new_index] == False:
+      while obs_dict["is_new"][new_index] == 0:
         new_index += 1
       veh_index = new_index
       new_index += 1
@@ -259,10 +270,10 @@ def get_obs_dict(env):
       continue
 
     if veh_id in old_obs_dict:
-      obs_dict["is_new"][veh_index] = False
+      obs_dict["is_new"][veh_index] = 0
     obs_dict["veh_ids"][veh_index] = veh_id
     if veh_id in env.tc.simulation.getCollidingVehiclesIDList():
-      obs_dict["collision"][veh_index] = True
+      obs_dict["collision"][veh_index] = 1
 
     obs_dict["exists_vehicle"][veh_index] = 1
     obs_dict["speed"][veh_index] = state_dict["speed"]
@@ -346,6 +357,15 @@ def get_obs_dict(env):
         if ttc < -0.01 or ttc > env.MAX_TTC_CONSIDERED:
           ttc = env.MAX_TTC_CONSIDERED
     obs_dict["ttc"][veh_index] = ttc
+
+  obs_dict["ego_has_priority"] = 1
+  for i in range(env.NUM_VEH_CONSIDERED):
+    if obs_dict["has_priority"][i] == 1:
+      obs_dict["ego_has_priority"] = 0
+
+  obs_dict["ego_priority_changed"] = 1
+  if old_obs_dict is not None and old_obs_dict["ego_has_priority"] == obs_dict["ego_has_priority"]:
+      obs_dict["ego_priority_changed"] = 0
 
   pass
   return obs_dict

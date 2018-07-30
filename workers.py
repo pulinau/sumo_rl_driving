@@ -56,14 +56,13 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
             if not end_q.empty():
               return
           action_set, explr_set, sorted_idx = action_q.get()
-
           action_set_list += [action_set]
           explr_set_list += [explr_set]
           sorted_idx_list += [sorted_idx]
 
         action, action_info = select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list, 3)
 
-      next_obs_dict, reward_list, env_state, action_dict = env.step(
+      next_obs_dict, (reward_list, done_list), env_state, action_dict = env.step(
         {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
       action = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
       #print(action, action_info)
@@ -89,7 +88,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         next_action_list += [tent_action]
 
       if env_state != EnvState.DONE:
-        traj.append((obs_dict, action, reward_list, next_obs_dict, next_action_list, env_state != EnvState.NORMAL))
+        traj.append((obs_dict, action, reward_list, next_obs_dict, next_action_list, done_list))
 
       obs_dict = next_obs_dict
 
@@ -108,8 +107,8 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         break
 
     for i, traj_q in enumerate(traj_q_list):
-      traj_q.put(([deepcopy((obs_dict, action, reward_list[i], next_obs_dict, next_action_list[i], done))
-                   for obs_dict, action, reward_list, next_obs_dict, next_action_list, done in traj],
+      traj_q.put(([deepcopy((obs_dict, action, reward_list[i], next_obs_dict, next_action_list[i], done_list[i]))
+                   for obs_dict, action, reward_list, next_obs_dict, next_action_list, done_list in traj],
                   prob))
 
   end_q.put(True)

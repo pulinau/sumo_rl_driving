@@ -230,16 +230,10 @@ def reshape_regulation(obs_dict):
   lane_gap_1hot = [0] * (2*NUM_LANE_CONSIDERED + 1)
   lane_gap_1hot[obs_dict["ego_correct_lane_gap"] + NUM_LANE_CONSIDERED] = 1
 
-  has_priority = 1
-  for i in range(env.NUM_VEH_CONSIDERED):
-      if obs_dict["has_priority"] == 1:
-          has_priority = 0
-          break
-
   o = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
                  min(obs_dict["ego_dist_to_end_of_lane"] / OBSERVATION_RADIUS, 1.0),
                  obs_dict["ego_in_intersection"],
-                 has_priority,
+                 obs_dict["ego_has_priority"],
                  ] + lane_gap_1hot, dtype = np.float32)
 
   return [[o]]
@@ -532,12 +526,6 @@ cfg_validity = DQNCfg(name = "validity",
                       reshape=reshape_validity,
                       _select_actions=select_actions_validity)
 
-class lt():
-  def __init__(self, a):
-    self.a = a
-  def __call__(self, b):
-    return b < self.a
-
 class returnTrue():
   def __init__(self):
     pass
@@ -581,7 +569,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         epsilon_min=0.025,
                         threshold = -10,
                         memory_size = 64000,
-                        traj_end_pred = lt(-0.1),
+                        traj_end_pred = returnTrue(),
                         replay_batch_size = 160,
                         traj_end_ratio= 0.2,
                         _build_model = build_model_regulation,

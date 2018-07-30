@@ -129,7 +129,7 @@ class MultiObjSumoEnv(SumoGymEnv):
         obs_dict = deepcopy(self.obs_dict_hist[-1])
         veh_dict = deepcopy(self.veh_dict_hist[-1])
       else:
-        obs_dict =  get_obs_dict(self)
+        obs_dict = get_obs_dict(self)
         veh_dict = get_veh_dict(self)
       self.veh_dict_hist.append(veh_dict)
       self.obs_dict_hist.append(obs_dict)

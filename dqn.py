@@ -90,8 +90,6 @@ class DQNAgent:
     else:
       manager = ReplayMemoryManager()
       manager.start()
-      #self.lock = mp.Lock()
-      #self.cv = mp.Condition(self.lock)
       self.memory = manager.ReplayMemory(self.memory_size, self.name)
       self.sample_q = mp.Queue(maxsize=100)
       self.end_replay_q = mp.Queue(maxsize=5)

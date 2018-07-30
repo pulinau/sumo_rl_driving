@@ -5,40 +5,43 @@ from include import *
 import numpy as np
 
 def get_reward_list(env):
-  if env.env_state == EnvState.DONE:
-    return [0] * 5
-  r_validity = None
-  r_safety = get_reward_safety(env)
-  r_regulation = get_reward_regulation(env)
-  r_speed_comfort = None
-  return [r_validity, r_safety, r_regulation, r_speed_comfort]
+  r_validity, d_validity = None, None
+  r_safety, d_safety = get_reward_safety(env)
+  r_regulation, d_regulation = get_reward_regulation(env)
+  r_speed_comfort, d_speed_comfort = None, None
+  return ([r_validity, r_safety, r_regulation, r_speed_comfort], [d_validity, d_safety, d_regulation, d_speed_comfort])
 
 def get_reward_safety(env):
   rewards = []
+  dones = []
   obs_dict = env.obs_dict_hist[-1]
 
   for i, c in enumerate(obs_dict["collision"]):
     r = 0
-    if (env.env_state == EnvState.CRASH and c == True):
+    d = False
+    if (env.env_state == EnvState.CRASH and c == 1):
       r = -1
+    if obs_dict["is_new"][i] == 1 or (env.env_state == EnvState.CRASH and c == 1):
+      d = True
     rewards += [[r]]
+    dones += [[d]]
 
-  return rewards
+  return (rewards, dones)
 
 def get_reward_regulation(env):
   obs_dict = env.obs_dict_hist[-1]
-
   r = 0
-  if obs_dict["ego_dist_to_end_of_lane"] < 5:
+  done = False
+
+  if obs_dict["ego_dist_to_end_of_lane"] < 20:
     if obs_dict["ego_correct_lane_gap"] != 0:
       r = -1
 
-    for i in range(env.NUM_VEH_CONSIDERED):
-      if obs_dict["exists_vehicle"][i] == 1 and \
-         obs_dict["has_priority"][i] == 1 and \
-         (obs_dict["veh_relation_peer"][i] == 1 or obs_dict["veh_relation_conflict"][i] == 1) and \
-         obs_dict["dist_to_end_of_lane"][i] < 60 and \
-         obs_dict["ego_speed"] > 0.4:
-        r = -1
+  if obs_dict["ego_dist_to_end_of_lane"] < 2 and obs_dict["ego_has_priority"] != 1:
+    if obs_dict["ego_speed"] > 0.2:
+      r = -1
 
-  return [[r]]
+  if obs_dict["ego_priority_changed"] == 1 or obs_dict["ego_edge_changed"] == 1:
+    done = True
+
+  return ([[r]], [[done]])
