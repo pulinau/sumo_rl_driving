@@ -10,7 +10,7 @@ import random
 import multiprocessing as mp
 
 from sumo_cfgs import sumo_cfg
-from dqn_cfgs import cfg_validity, cfg_safety, cfg_regulation, cfg_ttc, cfg_speed_comfort
+from dqn_cfgs import cfg_validity, cfg_safety, cfg_regulation, cfg_speed_comfort
 from workers import run_env, run_QAgent
 
 if __name__ == "__main__":

@@ -17,8 +17,8 @@ def get_observation_space(env):
              "ego_priority_changed": spaces.Discrete(2),
              "ego_correct_lane_gap": spaces.Box(-env.NUM_LANE_CONSIDERED, env.NUM_LANE_CONSIDERED, shape=(1,), dtype=np.int16),
              "exists_vehicle": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
-             "is_new" = spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
-             "collision" = spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "is_new": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "collision": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "speed": spaces.Box(0, env.MAX_VEH_SPEED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),  # absolute speed
              "dist_to_end_of_lane": spaces.Box(0, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),
              "in_intersection": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
@@ -249,7 +249,7 @@ def get_obs_dict(env):
   new_index = 0
   for veh_id in old_veh_id_list + new_veh_id_list:
     state_dict = veh_dict[veh_id]
-    if veh_id in old_obs_dict:
+    if veh_id in old_veh_id_list:
       veh_index = old_obs_dict["veh_ids"].index(veh_id)
     else:
       while obs_dict["is_new"][new_index] == 0:
@@ -269,7 +269,7 @@ def get_obs_dict(env):
        obs_dict["veh_relation_prev"][veh_index] == 0:
       continue
 
-    if veh_id in old_obs_dict:
+    if veh_id in old_veh_id_list:
       obs_dict["is_new"][veh_index] = 0
     obs_dict["veh_ids"][veh_index] = veh_id
     if veh_id in env.tc.simulation.getCollidingVehiclesIDList():
@@ -356,6 +356,8 @@ def get_obs_dict(env):
         ttc = np.dot(pos, pos) / max(np.dot((ego_v - v), pos), 0.001)
         if ttc < -0.01 or ttc > env.MAX_TTC_CONSIDERED:
           ttc = env.MAX_TTC_CONSIDERED
+    else:
+      ttc = env.MAX_TTC_CONSIDERED
     obs_dict["ttc"][veh_index] = ttc
 
   obs_dict["ego_has_priority"] = 1

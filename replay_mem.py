@@ -84,14 +84,24 @@ class ReplayMemory():
     state, action, reward, next_state, next_action, done, step = deepcopy(tran)
     not_done = [[not y for y in x] for x in done]
 
+
+    print("*************", self.name)
+    print('actions: ', action)
+    print('next_actions: ', next_action)
+    print('rewards: ', reward)
+    print('not_dones: ', not_done)
+    print('steps: ', step)
+    print('states: ', len(state[0]))
+    print('next_states: ', len(next_state[0]))
+    print("*************")
+
     try:
-      assert len(self.actions) == len(self.rewards) and \
-             len(self.actions) == len(self.next_actions) and \
-             len(self.actions) == len(self.not_dones) and \
+      assert len(self.actions) == len(self.next_actions) and \
              len(self.actions) == len(self.steps) and \
              (len(self.actions) == 0 or len(self.actions) == len(self.states[0])) and \
              (len(self.actions) == 0 or len(self.actions) == len(self.next_states[0])) and \
-             len(self.actions) == len(self.rewards), "must be of equal length"
+             (len(self.actions) == 0 or len(self.actions) == len(self.not_dones[0])) and \
+             (len(self.actions) == 0 or len(self.actions) == len(self.rewards[0])), "must be of equal length"
     except:
       print('actions: ', self.actions)
       print('next_actions: ', self.next_actions)
@@ -99,17 +109,16 @@ class ReplayMemory():
       print('not_dones: ', self.not_dones)
       print('steps: ', self.steps)
       print('states: ', len(self.states[0]))
-      print('next_states: ', len(self.next_states[1]))
+      print('next_states: ', len(self.next_states[0]))
       raise
 
     try:
-      assert len(self.end_actions) == len(self.end_rewards) and \
-             len(self.end_actions) == len(self.end_next_actions) and \
-             len(self.end_actions) == len(self.end_not_dones) and \
+      assert len(self.end_actions) == len(self.end_next_actions) and \
              len(self.end_actions) == len(self.end_steps) and \
              (len(self.end_actions) == 0 or len(self.end_actions) == len(self.end_states[0])) and \
              (len(self.end_actions) == 0 or len(self.end_actions) == len(self.end_next_states[0])) and \
-             len(self.end_actions) == len(self.end_rewards), "must be of equal length"
+             (len(self.end_actions) == 0 or len(self.end_actions) == len(self.end_not_dones[0])) and \
+             (len(self.end_actions) == 0 or len(self.end_actions) == len(self.end_rewards[0])), "must be of equal length"
     except:
       print('end_actions: ', self.end_actions)
       print('end_next_actions: ', self.end_next_actions)
@@ -117,7 +126,7 @@ class ReplayMemory():
       print('end_not_dones: ', self.end_not_dones)
       print('end_steps: ', self.end_steps)
       print('end_states: ', len(self.end_states[0]))
-      print('end_next_states: ', len(self.end_next_states[1]))
+      print('end_next_states: ', len(self.end_next_states[0]))
       raise
 
     if self._size > 2 * self.max_len + 2:

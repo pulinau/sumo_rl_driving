@@ -98,7 +98,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         break
       if env_state != EnvState.NORMAL:
         prob = 1
-        print("Sim ", id, " terminated, step: ", step, action_dict, action_info, reward_list, env_state,
+        print("Sim ", id, " terminated, step: ", step, action_dict, action_info, reward_list, done_list, env_state,
               env.agt_ctrl)
         break
       if step == max_step - 1:
@@ -154,7 +154,6 @@ def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list
 
 def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list):
   agt = DQNAgent(sumo_cfg, dqn_cfg)
-  agt.pretrain(pretrain_traj_list, 1)
 
   ep = 0
   while True:

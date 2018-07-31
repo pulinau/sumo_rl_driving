@@ -160,12 +160,12 @@ class DQNAgent:
 
     #states, actions, rewards, next_states, not_dones, steps = \
     #  self.memory.sample(self.replay_batch_size, self.traj_end_ratio)
-    actions =  np.array(actions) * np.ones(shape=states.shape[:2])
-    next_actions = np.array(next_actions) * np.ones(shape=states.shape[:2])
-    steps = np.array(steps) * np.ones(shape=states.shape[:2])
+    m, n = len(states) - 1, len(states[0])
+    actions =  np.array(actions) * np.ones(shape=(m, n))
+    next_actions = np.array(next_actions) * np.ones(shape=(m, n))
+    steps = np.array(steps) * np.ones(shape=(m, n))
 
-    next_q = self.target_model.predict_on_batch(next_states)[:-1]
-    m, n = actions.shape
+    next_q = np.array(self.target_model.predict_on_batch(next_states)[:-1])
     I, J = np.ogrid[:m, :n]
     backup = next_q[I, J, next_actions]
     backup = (self.gamma ** (steps + 1)) * not_dones * backup
@@ -174,7 +174,7 @@ class DQNAgent:
     backup[np.where(backup > 0)] = 0
 
     targets = (self.gamma**steps)*rewards + backup
-    targets_f = self.model.predict_on_batch(states)
+    targets_f = np.array(self.model.predict_on_batch(states))
 
     # clamp incorrect target to zero
     targets_f[:-1][np.where(targets_f > 0)] = 0
