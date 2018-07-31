@@ -185,6 +185,7 @@ def reshape_safety(obs_dict):
   o1 = np.append(o1, np.array([obs_dict["veh_relation_peer"]]), axis=0)
   o1 = np.append(o1, np.array([obs_dict["veh_relation_conflict"]]), axis=0)
   o1 = np.append(o1, np.array([obs_dict["veh_relation_next"]]), axis=0)
+  o1 = np.append(o1, np.array([obs_dict["veh_relation_prev"]]), axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_left"]]), axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_right"]]), axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_ahead"]]), axis=0)
@@ -201,7 +202,7 @@ def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(5, ))
   ego_l1 = tf.keras.layers.Dense(640, activation=None)(ego_input)
 
-  veh_inputs = [tf.keras.layers.Input(shape=(13,)) for _ in range(NUM_VEH_CONSIDERED)]
+  veh_inputs = [tf.keras.layers.Input(shape=(14,)) for _ in range(NUM_VEH_CONSIDERED)]
   shared_Dense1 = tf.keras.layers.Dense(640, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
 
