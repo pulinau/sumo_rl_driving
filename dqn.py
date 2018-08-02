@@ -158,8 +158,9 @@ class DQNAgent:
       #print(self.name, " empty")
       return
 
-    #states, actions, rewards, next_states, not_dones, steps = \
-    #  self.memory.sample(self.replay_batch_size, self.traj_end_ratio)
+    rewards = np.array(rewards)
+    not_dones = np.array(not_dones)
+
     targets_f = self.model.predict_on_batch(states)
     m, n = len(targets_f)-1, len(targets_f[0])
 
