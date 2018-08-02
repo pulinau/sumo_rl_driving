@@ -29,7 +29,7 @@ SUMO_CMD = [SUMO_BIN,
 EGO_VEH_ID = "ego"
 MAX_VEH_ACCEL = 2.6
 MAX_VEH_DECEL = 4.5
-MAX_VEH_SPEED = 55.55
+MAX_VEH_SPEED = 14
 
 # --------------------------
 #        observation
