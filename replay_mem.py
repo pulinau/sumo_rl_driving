@@ -134,9 +134,9 @@ class ReplayMemory():
         self.states[i] = self.states[i][self.max_len:]
         self.next_states[i] = self.next_states[i][self.max_len:]
       for i in range(len(self.rewards)):
-        self.rewards = self.rewards[i][self.max_len:]
+        self.rewards[i] = self.rewards[i][self.max_len:]
       for i in range(len(self.not_dones)):
-        self.not_dones = self.not_dones[i][self.max_len:]
+        self.not_dones[i] = self.not_dones[i][self.max_len:]
       self.actions = self.actions[self.max_len:]
       self.next_actions = self.next_actions[self.max_len:]
       self.steps = self.steps[self.max_len:]
@@ -174,9 +174,9 @@ class ReplayMemory():
           self.end_states[i] = self.end_states[i][cap:]
           self.end_next_states[i] = self.end_next_states[i][cap:]
         for i in range(len(self.end_rewards)):
-          self.end_rewards = self.end_rewards[i][cap:]
+          self.end_rewards[i] = self.end_rewards[i][cap:]
         for i in range(len(self.end_not_dones)):
-          self.end_not_dones = self.end_not_dones[i][cap:]
+          self.end_not_dones[i] = self.end_not_dones[i][cap:]
         self.end_actions = self.end_actions[cap:]
         self.end_next_actions = self.end_next_actions[cap:]
         self.end_steps = self.end_steps[cap:]
