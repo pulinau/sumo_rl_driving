@@ -84,17 +84,7 @@ class ReplayMemory():
     state, action, reward, next_state, next_action, done, step = deepcopy(tran)
     not_done = [[not y for y in x] for x in done]
 
-
-    print("*************", self.name)
-    print('actions: ', action)
-    print('next_actions: ', next_action)
-    print('rewards: ', reward)
-    print('not_dones: ', not_done)
-    print('steps: ', step)
-    print('states: ', len(state[0]))
-    print('next_states: ', len(next_state[0]))
-    print("*************")
-
+    """
     try:
       assert len(self.actions) == len(self.next_actions) and \
              len(self.actions) == len(self.steps) and \
@@ -128,6 +118,7 @@ class ReplayMemory():
       print('end_states: ', len(self.end_states[0]))
       print('end_next_states: ', len(self.end_next_states[0]))
       raise
+    """
 
     if self._size > 2 * self.max_len + 2:
       for i in range(len(self.states)):

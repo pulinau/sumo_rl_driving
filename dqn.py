@@ -140,12 +140,10 @@ class DQNAgent:
       epsilon = self.epsilon
     if np.random.rand() <= epsilon:
       action_set = set()
-      explore_set = set([np.random.randint(0, self.action_size)])
     else:
       action_set = set(np.where(act_values > self.threshold)[0])
-      explore_set = set()
 
-    return (action_set, explore_set, list(sorted_idx))
+    return (action_set, list(sorted_idx))
 
   def replay(self):
     if self._select_actions is not None or self.play == True or self.memory.size() == 0:

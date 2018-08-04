@@ -46,7 +46,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         action = 0
         action_info = "sumo"
       else:
-        action_set_list, explr_set_list, sorted_idx_list = [], [], []
+        action_set_list,  sorted_idx_list = [], []
 
         for obs_q in obs_q_list:
           obs_q.put((deepcopy(obs_dict), None))
@@ -55,12 +55,16 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           while action_q.empty():
             if not end_q.empty():
               return
-          action_set, explr_set, sorted_idx = action_q.get()
+          (action_set, sorted_idx) = action_q.get()
           action_set_list += [action_set]
-          explr_set_list += [explr_set]
           sorted_idx_list += [sorted_idx]
 
-        action, action_info = select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list, 3)
+        is_explr_list = [False] * len(dqn_cfg_list)
+        i = random.randrange(len(dqn_cfg_list))
+        if not play and random.random() < dqn_cfg_list[i].epsilon:
+          is_explr_list[i] = True
+
+        action, action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, 3)
 
       next_obs_dict, (reward_list, done_list), env_state, action_dict = env.step(
         {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
@@ -70,7 +74,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       for obs_q in obs_q_list:
         obs_q.put((deepcopy(next_obs_dict), 0))
 
-      action_set_list, explr_set_list, sorted_idx_list = [], [], []
+      action_set_list, sorted_idx_list = [], []
       # next action list is only the tentative actions for training purpose, not the one actually taken
       next_action_list = []
 
@@ -78,13 +82,12 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         while action_q.empty():
           if not end_q.empty():
             return
-        action_set, explr_set, sorted_idx = action_q.get()
+        (action_set, sorted_idx) = action_q.get()
 
         action_set_list += [action_set]
-        explr_set_list += [explr_set]
         sorted_idx_list += [sorted_idx]
 
-        tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], action_set_list, explr_set_list, sorted_idx_list, 1, greedy=True)
+        tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], [False]*(i+1), action_set_list, sorted_idx_list, 1, greedy=True)
         next_action_list += [tent_action]
 
       if env_state != EnvState.DONE:
@@ -113,7 +116,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
 
   end_q.put(True)
 
-def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list, num_action, greedy=False):
+def select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, num_action, greedy=False):
   """
   Select an action based on the action choice of each objective.
   :param dqn_cfg_list:
@@ -124,11 +127,11 @@ def select_action(dqn_cfg_list, action_set_list, explr_set_list, sorted_idx_list
   :param num_action: the least num of action that's assumed to exist
   :return: action
   """
-  valid = action_set_list[0]
+  valid = set(range(action_size))
 
-  for action_set, explr_set, sorted_idx, dqn_cfg in zip(action_set_list, explr_set_list, sorted_idx_list, dqn_cfg_list):
-    if len(explr_set) != 0:
-      return (random.sample(explr_set, 1)[0], "explr: " + dqn_cfg.name)
+  for action_set, is_explr, sorted_idx, dqn_cfg in zip(action_set_list, is_explr_list, sorted_idx_list, dqn_cfg_list):
+    if is_explr:
+      return (random.sample(valid, 1)[0], "explr: " + dqn_cfg.name)
     invalid = valid - action_set
     valid = valid & action_set
 

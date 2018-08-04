@@ -165,7 +165,7 @@ def select_actions_validity(state):
                  ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                  ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value]
 
-    return (set(valid), set([]), sorted_idx)
+    return (set(valid), sorted_idx)
 
 def reshape_safety(obs_dict):
   """reshape gym observation to keras neural network input"""
@@ -195,7 +195,7 @@ def reshape_safety(obs_dict):
   return [[x] for x in o]
 
 tf_cfg_safety = tf.ConfigProto()
-tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.25
+tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
 #tf_cfg_safety = tf.ConfigProto(device_count = {"GPU": 0})
 
 def build_model_safety():
@@ -222,7 +222,7 @@ def build_model_safety():
   y = tf.keras.layers.add(veh_y)
 
   model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
-  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.0001)
   model.compile(loss='logcosh', optimizer=opt)
 
   return model
@@ -240,8 +240,7 @@ def reshape_regulation(obs_dict):
   return [[o]]
 
 tf_cfg_regulation = tf.ConfigProto()
-tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.25
-#tf_cfg_regulation = tf.ConfigProto(device_count = {"GPU": 0})
+tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.4
 
 def build_model_regulation():
   x = tf.keras.layers.Input(shape=(5 + 2*NUM_LANE_CONSIDERED, ))
@@ -254,7 +253,7 @@ def build_model_regulation():
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
 
   model = tf.keras.models.Model(inputs=[x], outputs=[y, y])
-  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.0001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -500,7 +499,7 @@ def select_actions_speed_comfort(state):
                      ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                      ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
                      ]
-  return (set(valid), set([]), sorted_idx)
+  return (set(valid), sorted_idx)
 
 action_size = len(ActionLaneChange) * len(ActionAccel)
 
@@ -514,9 +513,9 @@ cfg_validity = DQNCfg(name = "validity",
                       gamma=None,
                       gamma_inc=None,
                       gamma_max=None,
-                      epsilon=None,
-                      epsilon_dec=None,
-                      epsilon_min=None,
+                      epsilon=0,
+                      epsilon_dec=0,
+                      epsilon_min=0,
                       threshold=None,
                       memory_size=None,
                       traj_end_pred=None,
@@ -543,9 +542,9 @@ cfg_safety = DQNCfg(name = "safety",
                     gamma = 0.95,
                     gamma_inc = 0.0005,
                     gamma_max = 0.95,
-                    epsilon = 0.02,
+                    epsilon = 0.1,
                     epsilon_dec = 0.0000001,
-                    epsilon_min = 0.025,
+                    epsilon_min = 0.05,
                     threshold = -1,
                     memory_size = 64000,
                     traj_end_pred = returnTrue(),
@@ -565,10 +564,10 @@ cfg_regulation = DQNCfg(name = "regulation",
                         gamma = 0.99,
                         gamma_inc = 0.0005,
                         gamma_max = 0.99,
-                        epsilon=0.02,
+                        epsilon=0.1,
                         epsilon_dec=0.0000001,
-                        epsilon_min=0.025,
-                        threshold = -10,
+                        epsilon_min=0.05,
+                        threshold = -5,
                         memory_size = 64000,
                         traj_end_pred = returnTrue(),
                         replay_batch_size = 160,
@@ -587,9 +586,9 @@ cfg_speed_comfort = DQNCfg(name = "speed_comfort",
                            gamma = None,
                            gamma_inc = None,
                            gamma_max = None,
-                           epsilon=None,
-                           epsilon_dec=None,
-                           epsilon_min=None,
+                           epsilon=0,
+                           epsilon_dec=0,
+                           epsilon_min=0,
                            threshold = None,
                            memory_size = None,
                            traj_end_pred = None,

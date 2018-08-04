@@ -35,11 +35,11 @@ def get_reward_regulation(env):
 
   if obs_dict["ego_dist_to_end_of_lane"] < 20:
     if obs_dict["ego_correct_lane_gap"] != 0:
-      r = -1
+      r = -0.1
 
   if obs_dict["ego_dist_to_end_of_lane"] < 2 and obs_dict["ego_has_priority"] != 1:
     if obs_dict["ego_speed"] > 0.2:
-      r = -1
+      r = -0.1
 
   if obs_dict["ego_priority_changed"] == 1 or obs_dict["ego_edge_changed"] == 1:
     done = True
