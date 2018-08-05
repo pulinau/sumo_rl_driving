@@ -20,8 +20,8 @@ class DQNCfg():
                resume,
                state_size, 
                action_size,
-               pretrain_low_target,
-               pretrain_high_target,
+               low_target,
+               high_target,
                gamma,
                gamma_inc,
                gamma_max,
@@ -42,8 +42,8 @@ class DQNCfg():
     self.resume = resume
     self.state_size = state_size
     self.action_size = action_size
-    self.pretrain_low_target = pretrain_low_target
-    self.pretrain_high_target = pretrain_high_target
+    self.low_target = low_target
+    self.high_target = high_target
     self.gamma = gamma
     self.gamma_inc = gamma_inc
     self.gamma_max = gamma_max
@@ -180,6 +180,7 @@ class DQNAgent:
       for j in range(n):
         x = targets_f[i][j]
         x[np.where(x > 0)] = 0
+        x[np.where(x < self.low_target)] = self.low_target
         x[actions[i][j]] = targets[i][j]
 
     self.model.fit(states, targets_f, verbose=False)

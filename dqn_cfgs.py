@@ -217,8 +217,16 @@ def build_model_safety():
   veh_l4 = [shared_Dense3(x) for x in veh_l3]
   veh_l4 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l4]
 
-  shared_Dense4 = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation=None)
-  veh_y = [shared_Dense4(x) for x in veh_l4]
+  shared_Dense4 = tf.keras.layers.Dense(640, activation=None)
+  veh_l5 = [shared_Dense4(x) for x in veh_l4]
+  veh_l5 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l5]
+
+  shared_Dense5 = tf.keras.layers.Dense(640, activation=None)
+  veh_l6 = [shared_Dense5(x) for x in veh_l5]
+  veh_l6 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l6]
+
+  shared_Dense6 = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation=None)
+  veh_y = [shared_Dense6(x) for x in veh_l6]
   y = tf.keras.layers.add(veh_y)
 
   model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
@@ -250,7 +258,9 @@ def build_model_regulation():
   l2 = tf.keras.layers.LeakyReLU()(l2)
   l3 = tf.keras.layers.Dense(640, activation=None)(l2)
   l3 = tf.keras.layers.LeakyReLU()(l3)
-  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
+  l4 = tf.keras.layers.Dense(640, activation=None)(l3)
+  l4 = tf.keras.layers.LeakyReLU()(l4)
+  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
 
   model = tf.keras.models.Model(inputs=[x], outputs=[y, y])
   opt = tf.keras.optimizers.RMSprop(lr=0.0001)
@@ -508,8 +518,8 @@ cfg_validity = DQNCfg(name = "validity",
                       resume = False,
                       state_size=2,
                       action_size=action_size,
-                      pretrain_low_target=None,
-                      pretrain_high_target=None,
+                      low_target=None,
+                      high_target=None,
                       gamma=None,
                       gamma_inc=None,
                       gamma_max=None,
@@ -537,11 +547,11 @@ cfg_safety = DQNCfg(name = "safety",
                     resume = False,
                     state_size = 5 + 12*NUM_VEH_CONSIDERED,
                     action_size = action_size,
-                    pretrain_low_target=-10,
-                    pretrain_high_target=0,
+                    low_target=-1,
+                    high_target=0,
                     gamma = 0.95,
                     gamma_inc = 0.0005,
-                    gamma_max = 0.95,
+                    gamma_max = 0.99,
                     epsilon = 0.1,
                     epsilon_dec = 0.0000001,
                     epsilon_min = 0.05,
@@ -559,8 +569,8 @@ cfg_regulation = DQNCfg(name = "regulation",
                         resume = False,
                         state_size = 4 + 2*NUM_LANE_CONSIDERED + 7*NUM_VEH_CONSIDERED,
                         action_size = action_size,
-                        pretrain_low_target=-10,
-                        pretrain_high_target=0,
+                        low_target=-10,
+                        high_target=0,
                         gamma = 0.99,
                         gamma_inc = 0.0005,
                         gamma_max = 0.99,
@@ -581,8 +591,8 @@ cfg_speed_comfort = DQNCfg(name = "speed_comfort",
                            resume=False,
                            state_size = 2,
                            action_size = action_size,
-                           pretrain_low_target=None,
-                           pretrain_high_target=None,
+                           low_target=None,
+                           high_target=None,
                            gamma = None,
                            gamma_inc = None,
                            gamma_max = None,
