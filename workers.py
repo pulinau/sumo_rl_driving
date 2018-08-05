@@ -42,53 +42,70 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       """
 
       # select action
-      if env.agt_ctrl == False:
-        action = 0
-        action_info = "sumo"
+      if step == 0:
+        if env.agt_ctrl == False:
+          action = 0
+          action_info = "sumo"
+        else:
+          action_set_list,  sorted_idx_list = [], []
+
+          for obs_q in obs_q_list:
+            obs_q.put((deepcopy(obs_dict), None))
+
+          for action_q in action_q_list:
+            while action_q.empty():
+              if not end_q.empty():
+                return
+            (action_set, sorted_idx) = action_q.get()
+            action_set_list += [action_set]
+            sorted_idx_list += [sorted_idx]
+
+          is_explr_list = [False] * len(dqn_cfg_list)
+          i = random.randrange(len(dqn_cfg_list))
+          if not play and random.random() < dqn_cfg_list[i].epsilon:
+            is_explr_list[i] = True
+
+          action, action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, 3)
       else:
-        action_set_list,  sorted_idx_list = [], []
+        action = next_action_list[-1]
+        action_info = next_action_info_list[-1]
 
+      next_obs_dict, (reward_list, done_list), env_state, action_dict = env.step(
+        {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
+      action = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
+      #print(action, action_info)
+
+      # choose next action
+      if step % 8 == 0:
         for obs_q in obs_q_list:
-          obs_q.put((deepcopy(obs_dict), None))
+          obs_q.put((deepcopy(next_obs_dict), 0))
 
-        for action_q in action_q_list:
-          while action_q.empty():
-            if not end_q.empty():
-              return
-          (action_set, sorted_idx) = action_q.get()
-          action_set_list += [action_set]
-          sorted_idx_list += [sorted_idx]
+        action_set_list, sorted_idx_list = [], []
+        # tentative actions for each objective
+        next_action_list = []
+        next_action_info_list = []
 
         is_explr_list = [False] * len(dqn_cfg_list)
         i = random.randrange(len(dqn_cfg_list))
         if not play and random.random() < dqn_cfg_list[i].epsilon:
           is_explr_list[i] = True
 
-        action, action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, 3)
+        for i, action_q in enumerate(action_q_list):
+          while action_q.empty():
+            if not end_q.empty():
+              return
+          (action_set, sorted_idx) = action_q.get()
 
-      next_obs_dict, (reward_list, done_list), env_state, action_dict = env.step(
-        {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
-      action = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
-      #print(action, action_info)
-      # choose tentative next action
-      for obs_q in obs_q_list:
-        obs_q.put((deepcopy(next_obs_dict), 0))
+          action_set_list += [action_set]
+          sorted_idx_list += [sorted_idx]
 
-      action_set_list, sorted_idx_list = [], []
-      # next action list is only the tentative actions for training purpose, not the one actually taken
-      next_action_list = []
-
-      for i, action_q in enumerate(action_q_list):
-        while action_q.empty():
-          if not end_q.empty():
-            return
-        (action_set, sorted_idx) = action_q.get()
-
-        action_set_list += [action_set]
-        sorted_idx_list += [sorted_idx]
-
-        tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], [False]*(i+1), action_set_list, sorted_idx_list, 1, greedy=True)
-        next_action_list += [tent_action]
+          tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], is_explr_list[:i + 1], action_set_list, sorted_idx_list, 3)
+          next_action_list += [tent_action]
+          next_action_info_list += [tent_action_info]
+      else:
+        # only do lane change once
+        for i in range(len(next_action_list)):
+          next_action_list[i] %= len(ActionLaneChange)
 
       if env_state != EnvState.DONE:
         traj.append((obs_dict, action, reward_list, next_obs_dict, next_action_list, done_list))
