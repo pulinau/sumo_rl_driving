@@ -120,7 +120,7 @@ class DQNAgent:
             for obs_dict, action, reward, next_obs_dict, next_action, done in traj]
     self.memory.add_traj(traj, self.traj_end_pred, prob)
 
-  def select_actions(self, obs_dict, epsilon=None):
+  def select_actions(self, obs_dict):
     """
     select actions based on Q value
     :param obs_dict:
@@ -136,12 +136,7 @@ class DQNAgent:
     if self.play == True:
       print(self.name, act_values)
 
-    if epsilon is None:
-      epsilon = self.epsilon
-    if np.random.rand() <= epsilon:
-      action_set = set()
-    else:
-      action_set = set(np.where(act_values > self.threshold)[0])
+    action_set = set(np.where(act_values > self.threshold)[0])
 
     return (action_set, list(sorted_idx))
 

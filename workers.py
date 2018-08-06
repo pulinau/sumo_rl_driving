@@ -50,7 +50,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           action_set_list,  sorted_idx_list = [], []
 
           for obs_q in obs_q_list:
-            obs_q.put((deepcopy(obs_dict), None))
+            obs_q.put(deepcopy(obs_dict))
 
           for action_q in action_q_list:
             while action_q.empty():
@@ -78,7 +78,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       # choose next action
       if step % 8 == 0:
         for obs_q in obs_q_list:
-          obs_q.put((deepcopy(next_obs_dict), 0))
+          obs_q.put(deepcopy(next_obs_dict))
 
         action_set_list, sorted_idx_list = [], []
         # tentative actions for each objective
@@ -180,7 +180,7 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
     for obs_q, action_q in zip(obs_q_list, action_q_list):
       try:
         obs_dict, epsilon = obs_q.get(block=False)
-        action_q.put(agt.select_actions(obs_dict, epsilon))
+        action_q.put(agt.select_actions(obs_dict))
       except queue.Empty:
         if not end_q.empty():
           return
