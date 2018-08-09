@@ -67,7 +67,7 @@ def feed_samp(replay_mem, samp_size, traj_end_ratio, samp_q, end_q):
     if replay_mem.size() == 0:
       time.sleep(5)
       continue
-    elif samp_q.qsize() < 100:
+    elif samp_q.qsize() < 16:
       samp_q.put(replay_mem.sample(samp_size, traj_end_ratio))
       #print("replay mem size: ", replay_mem.size())
 
@@ -177,6 +177,8 @@ class DQNAgent:
         x[np.where(x > 0)] = 0
         x[np.where(x < self.low_target)] = self.low_target
         x[actions[i][j]] = targets[i][j]
+
+    print(self.name, targets_f[-1][0])
 
     self.model.fit(states, targets_f, verbose=False)
 

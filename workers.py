@@ -14,6 +14,22 @@ from copy import deepcopy
 
 from sumo_cfgs import sumo_cfg
 
+
+class returnLow():
+  def __init__(self):
+    pass
+
+  def __call__(self, x):
+    return 0.1
+
+
+class decreaseProb():
+  def __init__(self):
+    pass
+
+  def __call__(self, x):
+    return 1 / (1 + np.exp(2 * (x - 20)))
+
 def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_list, play, max_ep, id):
   max_step = 2000
   env = MultiObjSumoEnv(sumo_cfg)
@@ -65,7 +81,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           if not play and random.random() < dqn_cfg_list[i].epsilon:
             is_explr_list[i] = True
 
-          action, action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, 3)
+          action, action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, 5)
       else:
         action = next_action_list[-1]
         action_info = next_action_info_list[-1]
@@ -73,7 +89,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       next_obs_dict, (reward_list, done_list), env_state, action_dict = env.step(
         {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
       action = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
-      #print(action, action_info)
+      print(action, action_info)
 
       # choose next action
       if step % 8 == 0:
@@ -99,13 +115,13 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           action_set_list += [action_set]
           sorted_idx_list += [sorted_idx]
 
-          tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], is_explr_list[:i + 1], action_set_list, sorted_idx_list, 3)
+          tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], is_explr_list[:i + 1], action_set_list, sorted_idx_list, 5)
           next_action_list += [tent_action]
           next_action_info_list += [tent_action_info]
       else:
         # only do lane change once
         for i in range(len(next_action_list)):
-          next_action_list[i] %= len(ActionLaneChange)
+          next_action_list[i] %= len(ActionAccel)
 
       if env_state != EnvState.DONE:
         traj.append((obs_dict, action, reward_list, next_obs_dict, next_action_list, done_list))
@@ -113,16 +129,16 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       obs_dict = next_obs_dict
 
       if env_state == EnvState.DONE:
-        prob = 1
+        prob = returnLow()
         print("Sim ", id, " success, step: ", step)
         break
       if env_state != EnvState.NORMAL:
-        prob = 1
+        prob = decreaseProb()
         print("Sim ", id, " terminated, step: ", step, action_dict, action_info, reward_list, done_list, env_state,
               env.agt_ctrl)
         break
       if step == max_step - 1:
-        prob = 1
+        prob = returnLow()
         print("Sim ", id, " timeout, step: ", step)
         break
 
@@ -179,7 +195,7 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
   while True:
     for obs_q, action_q in zip(obs_q_list, action_q_list):
       try:
-        obs_dict, epsilon = obs_q.get(block=False)
+        obs_dict = obs_q.get(block=False)
         action_q.put(agt.select_actions(obs_dict))
       except queue.Empty:
         if not end_q.empty():

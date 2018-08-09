@@ -230,7 +230,7 @@ def build_model_safety():
   y = tf.keras.layers.add(veh_y)
 
   model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
-  opt = tf.keras.optimizers.RMSprop(lr=0.0001)
+  opt = tf.keras.optimizers.SGD(lr=0.0001)
   model.compile(loss='logcosh', optimizer=opt)
 
   return model
@@ -263,7 +263,7 @@ def build_model_regulation():
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
 
   model = tf.keras.models.Model(inputs=[x], outputs=[y, y])
-  opt = tf.keras.optimizers.RMSprop(lr=0.0001)
+  opt = tf.keras.optimizers.SGD(lr=0.0001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -552,14 +552,14 @@ cfg_safety = DQNCfg(name = "safety",
                     gamma = 0.95,
                     gamma_inc = 0.0005,
                     gamma_max = 0.99,
-                    epsilon = 0.1,
+                    epsilon = 0.4,
                     epsilon_dec = 0.0000001,
-                    epsilon_min = 0.05,
-                    threshold = -1,
+                    epsilon_min = 0.1,
+                    threshold = -0.1,
                     memory_size = 64000,
                     traj_end_pred = returnTrue(),
                     replay_batch_size = 32,
-                    traj_end_ratio= 0.001,
+                    traj_end_ratio= 0.0001,
                     _build_model = build_model_safety,
                     tf_cfg = tf_cfg_safety,
                     reshape = reshape_safety)
@@ -574,14 +574,14 @@ cfg_regulation = DQNCfg(name = "regulation",
                         gamma = 0.99,
                         gamma_inc = 0.0005,
                         gamma_max = 0.99,
-                        epsilon=0.1,
+                        epsilon=0.4,
                         epsilon_dec=0.0000001,
-                        epsilon_min=0.05,
+                        epsilon_min=0.1,
                         threshold = -5,
                         memory_size = 64000,
                         traj_end_pred = returnTrue(),
                         replay_batch_size = 160,
-                        traj_end_ratio= 0.2,
+                        traj_end_ratio= 0.0001,
                         _build_model = build_model_regulation,
                         tf_cfg = tf_cfg_regulation,
                         reshape = reshape_regulation)

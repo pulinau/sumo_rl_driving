@@ -37,7 +37,7 @@ MAX_VEH_SPEED = 14
 NUM_LANE_CONSIDERED = 1 # number of lanes considered on each side of ego
 NUM_VEH_CONSIDERED = 8
 MAX_TTC_CONSIDERED = 10
-OBSERVATION_RADIUS = 60
+OBSERVATION_RADIUS = 80
 
 # --------------------------
 #         reward
