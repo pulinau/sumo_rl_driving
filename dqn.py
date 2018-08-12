@@ -116,8 +116,8 @@ class DQNAgent:
     """remember experice with probability prob"""
     if self._select_actions is not None or self.play == True:
       return
-    traj = [(self.reshape(obs_dict), action, reward, self.reshape(next_obs_dict), next_action, done)
-            for obs_dict, action, reward, next_obs_dict, next_action, done in traj]
+    traj = [(self.reshape(obs_dict), action, reward, self.reshape(next_obs_dict), next_action, done, important)
+            for obs_dict, action, reward, next_obs_dict, next_action, done, important in traj]
     self.memory.add_traj(traj, self.traj_end_pred, prob)
 
   def select_actions(self, obs_dict):
@@ -136,7 +136,7 @@ class DQNAgent:
     if self.play == True:
       print(self.name, act_values)
 
-    action_set = set(np.where(act_values > self.threshold)[0])
+    action_set = set(np.where(act_values > np.max(act_values) + self.threshold)[0])
 
     return (action_set, list(sorted_idx))
 

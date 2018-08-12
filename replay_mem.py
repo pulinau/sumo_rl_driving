@@ -55,7 +55,7 @@ class ReplayMemory():
     self.lock.acquire()
 
     traj_seg = []
-    for i, (state, action, reward, next_state, next_action, done) in enumerate(traj[::-1]):
+    for i, (state, action, reward, next_state, next_action, done, important) in enumerate(traj[::-1]):
       if i == 0 or done or end_pred(reward):
         end_reward, end_state, end_next_action, end_done = deepcopy(reward), deepcopy(next_state), deepcopy(next_action), deepcopy(done)
         #if not done and i == 0:
@@ -63,17 +63,17 @@ class ReplayMemory():
         if len(traj_seg) != 0:
           self.avg_traj_seg_len = (len(self.end_actions) * self.avg_traj_seg_len + len(traj_seg)) / \
                                   (len(self.end_actions) + 1)
-          for j, x in enumerate(traj_seg):
-            if random.uniform(0, 1) < prob(i-(len(traj_seg)-j)):
+          for j, (x, important) in enumerate(traj_seg):
+            if important or random.uniform(0, 1) < prob(i-(len(traj_seg)-j)):
               self._add(x, j == len(traj_seg)-1)
         traj_seg = []
         step = 0
-      traj_seg.append(deepcopy((state, action, end_reward, end_state, end_next_action, end_done, step)))
+      traj_seg.append(deepcopy(((state, action, end_reward, end_state, end_next_action, end_done, step), important)))
       step += 1
     self.avg_traj_seg_len = (len(self.end_actions) * self.avg_traj_seg_len + len(traj_seg)) / \
                             (len(self.end_actions) + 1)
-    for j, x in enumerate(traj_seg):
-      if random.uniform(0, 1) < prob(i-(len(traj_seg)-j)):
+    for j, (x, important) in enumerate(traj_seg):
+      if important or random.uniform(0, 1) < prob(i-(len(traj_seg)-j)):
         self._add(x, j == len(traj_seg)-1)
 
     self.lock.release()
