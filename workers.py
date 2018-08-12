@@ -14,13 +14,12 @@ from copy import deepcopy
 
 from sumo_cfgs import sumo_cfg
 
+class returnX():
+  def __init__(self, x):
+    self.x = x
 
-class returnLow():
-  def __init__(self):
-    pass
-
-  def __call__(self, x):
-    return 0.1
+  def __call__(self, i):
+    return self.x
 
 
 class decreaseProb():
@@ -89,6 +88,8 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       next_obs_dict, (reward_list, done_list), env_state, action_dict = env.step(
         {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
       action = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
+      if env.agt_ctrl == False:
+        action_info = "sumo"
       print(action, action_info)
 
       # choose next action
@@ -129,7 +130,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       obs_dict = next_obs_dict
 
       if env_state == EnvState.DONE:
-        prob = returnLow()
+        prob = decreaseProb()
         print("Sim ", id, " success, step: ", step)
         break
       if env_state != EnvState.NORMAL:
@@ -138,7 +139,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
               env.agt_ctrl)
         break
       if step == max_step - 1:
-        prob = returnLow()
+        prob = returnX(0.1)
         print("Sim ", id, " timeout, step: ", step)
         break
 
@@ -188,7 +189,8 @@ def select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list,
   valid = [(x, "exploit") for x in valid]
   return random.sample(valid + invalid, 1)[0]
 
-def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list):
+def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list, cuda_vis_devs):
+  os.environ['CUDA_VISIBLE_DEVICES'] = cuda_vis_devs
   agt = DQNAgent(sumo_cfg, dqn_cfg)
 
   ep = 0
