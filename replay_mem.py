@@ -64,7 +64,7 @@ class ReplayMemory():
           self.avg_traj_seg_len = (len(self.end_actions) * self.avg_traj_seg_len + len(traj_seg)) / \
                                   (len(self.end_actions) + 1)
           for j, (x, important) in enumerate(traj_seg):
-            if important or random.uniform(0, 1) < prob(i):
+            if important or random.uniform(0, 1) < prob(i-(len(traj_seg)-j)):
               self._add(x, j == len(traj_seg)-1)
         traj_seg = []
         step = 0
@@ -73,7 +73,7 @@ class ReplayMemory():
     self.avg_traj_seg_len = (len(self.end_actions) * self.avg_traj_seg_len + len(traj_seg)) / \
                             (len(self.end_actions) + 1)
     for j, (x, important) in enumerate(traj_seg):
-      if important or random.uniform(0, 1) < prob(i):
+      if important or random.uniform(0, 1) < prob(i-(len(traj_seg)-j)):
         self._add(x, j == len(traj_seg)-1)
 
     self.lock.release()
