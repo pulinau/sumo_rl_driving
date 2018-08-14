@@ -178,11 +178,10 @@ class DQNAgent:
         x[np.where(x < self.low_target)] = self.low_target
         x[actions[i][j]] = targets[i][j]
 
-    print(self.name, targets_f[-1][0])
+    #print(self.name, targets_f[-1][0])
 
-    self.model.fit(states, targets_f, verbose=False)
+    self.model.fit(states, targets_f, epochs=1)
 
-    #print(self.name, " training ends", time.time(), flush = True)
 
     if self.gamma < self.gamma_max:
       self.gamma += self.gamma_inc

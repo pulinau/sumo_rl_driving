@@ -169,27 +169,31 @@ def select_actions_validity(state):
 
 def reshape_safety(obs_dict):
   """reshape gym observation to keras neural network input"""
-  o0 = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
-                 min(obs_dict["ego_dist_to_end_of_lane"]/OBSERVATION_RADIUS, 1.0),
-                 obs_dict["ego_in_intersection"],
-                 obs_dict["ego_exists_left_lane"],
-                 obs_dict["ego_exists_right_lane"]
+  o0 = np.array([np.sqrt(obs_dict["ego_speed"]/MAX_VEH_SPEED) - 0.5,
+                 np.sqrt(min(obs_dict["ego_dist_to_end_of_lane"]/OBSERVATION_RADIUS, 1.0)) - 0.5,
+                 obs_dict["ego_in_intersection"] - 0.5,
+                 obs_dict["ego_exists_left_lane"] - 0.5,
+                 obs_dict["ego_exists_right_lane"] - 0.5
                  ], dtype = np.float32)
   o1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
-  o1  = np.append(o1, np.array([obs_dict["exists_vehicle"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["speed"]])/MAX_VEH_SPEED, axis=0)
-  o1  = np.append(o1, np.minimum(np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
-                                 np.ones((1, NUM_VEH_CONSIDERED))), axis = 0)
-  o1 = np.append(o1, np.array(obs_dict["relative_position"]).T / OBSERVATION_RADIUS, axis=0)
-  o1  = np.append(o1, np.array([obs_dict["relative_heading"]])/np.pi, axis=0)
-  o1 = np.append(o1, np.array([obs_dict["veh_relation_peer"]]), axis=0)
-  o1 = np.append(o1, np.array([obs_dict["veh_relation_conflict"]]), axis=0)
-  o1 = np.append(o1, np.array([obs_dict["veh_relation_next"]]), axis=0)
-  o1 = np.append(o1, np.array([obs_dict["veh_relation_prev"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["veh_relation_left"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["veh_relation_right"]]), axis=0)
-  o1  = np.append(o1, np.array([obs_dict["veh_relation_ahead"]]), axis=0)
-  o1 = np.append(o1, np.array([obs_dict["ttc"]]) / MAX_TTC_CONSIDERED, axis=0)
+  o1  = np.append(o1, np.array([obs_dict["exists_vehicle"]]) - 0.5, axis=0)
+  rel_speed = np.array([obs_dict["relative_speed"]]) / MAX_VEH_SPEED
+  rel_speed = np.sqrt(np.minimum(np.abs(rel_speed), np.ones((1, NUM_VEH_CONSIDERED))*0.5)) * np.sign(rel_speed)
+  o1  = np.append(o1, rel_speed , axis=0)
+  o1  = np.append(o1, np.sqrt(np.minimum(np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
+                              np.ones((1, NUM_VEH_CONSIDERED)))) - 0.5, axis = 0)
+  rel_pos = np.array(obs_dict["relative_position"]).T / 2 * OBSERVATION_RADIUS
+  rel_pos = np.sqrt(np.abs(rel_pos)) * np.sign(rel_pos)
+  o1 = np.append(o1, rel_pos, axis=0)
+  o1  = np.append(o1, np.array([obs_dict["relative_heading"]])/2*np.pi, axis=0)
+  o1 = np.append(o1, np.array([obs_dict["veh_relation_peer"]]) - 0.5, axis=0)
+  o1 = np.append(o1, np.array([obs_dict["veh_relation_conflict"]]) - 0.5, axis=0)
+  o1 = np.append(o1, np.array([obs_dict["veh_relation_next"]]) - 0.5, axis=0)
+  o1 = np.append(o1, np.array([obs_dict["veh_relation_prev"]]) - 0.5, axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_left"]]) - 0.5, axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_right"]]) - 0.5, axis=0)
+  o1  = np.append(o1, np.array([obs_dict["veh_relation_ahead"]]) - 0.5, axis=0)
+  o1 = np.append(o1, np.array([obs_dict["ttc"]]) / MAX_TTC_CONSIDERED - 0.5, axis=0)
 
   o = [o0] + [x for x in o1.T]
   return [[x] for x in o]
@@ -207,23 +211,23 @@ def build_model_safety():
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
 
   veh_l2 = [tf.keras.layers.add([ego_l1, x]) for x in veh_l1]
-  veh_l2 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l2]
+  veh_l2 = [tf.keras.layers.Activation('tanh')(x) for x in veh_l2]
 
   shared_Dense2 = tf.keras.layers.Dense(640, activation=None)
   veh_l3 = [shared_Dense2(x) for x in veh_l2]
-  veh_l3 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l3]
+  veh_l3 = [tf.keras.layers.Activation('tanh')(x) for x in veh_l3]
 
   shared_Dense3 = tf.keras.layers.Dense(640, activation=None)
   veh_l4 = [shared_Dense3(x) for x in veh_l3]
-  veh_l4 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l4]
+  veh_l4 = [tf.keras.layers.Activation('tanh')(x) for x in veh_l4]
 
   shared_Dense4 = tf.keras.layers.Dense(640, activation=None)
   veh_l5 = [shared_Dense4(x) for x in veh_l4]
-  veh_l5 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l5]
+  veh_l5 = [tf.keras.layers.Activation('tanh')(x) for x in veh_l5]
 
   shared_Dense5 = tf.keras.layers.Dense(640, activation=None)
   veh_l6 = [shared_Dense5(x) for x in veh_l5]
-  veh_l6 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l6]
+  veh_l6 = [tf.keras.layers.Activation('tanh')(x) for x in veh_l6]
 
   shared_Dense6 = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation=None)
   veh_y = [shared_Dense6(x) for x in veh_l6]
@@ -236,14 +240,14 @@ def build_model_safety():
   return model
 
 def reshape_regulation(obs_dict):
-  lane_gap_1hot = [0] * (2*NUM_LANE_CONSIDERED + 1)
-  lane_gap_1hot[obs_dict["ego_correct_lane_gap"] + NUM_LANE_CONSIDERED] = 1
+  lane_gap_1hot = [-0.5] * (2*NUM_LANE_CONSIDERED + 1)
+  lane_gap_1hot[obs_dict["ego_correct_lane_gap"] + NUM_LANE_CONSIDERED] = 0.5
 
-  o = np.array([obs_dict["ego_speed"]/MAX_VEH_SPEED,
-                 min(obs_dict["ego_dist_to_end_of_lane"] / OBSERVATION_RADIUS, 1.0),
-                 obs_dict["ego_in_intersection"],
-                 obs_dict["ego_has_priority"],
-                 ] + lane_gap_1hot, dtype = np.float32)
+  o = np.array([np.sqrt(obs_dict["ego_speed"]/MAX_VEH_SPEED) - 0.5,
+                np.sqrt(min(obs_dict["ego_dist_to_end_of_lane"] / OBSERVATION_RADIUS, 1.0)) - 0.5,
+                obs_dict["ego_in_intersection"] - 0.5,
+                obs_dict["ego_has_priority"] - 0.5,
+                ] + lane_gap_1hot, dtype = np.float32)
 
   return [[o]]
 
@@ -253,13 +257,13 @@ tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.4
 def build_model_regulation():
   x = tf.keras.layers.Input(shape=(5 + 2*NUM_LANE_CONSIDERED, ))
   l1 = tf.keras.layers.Dense(640, activation=None)(x)
-  l1 = tf.keras.layers.LeakyReLU()(l1)
+  l1 = tf.keras.layers.Activation('tanh')(l1)
   l2 = tf.keras.layers.Dense(640, activation=None)(l1)
-  l2 = tf.keras.layers.LeakyReLU()(l2)
+  l2 = tf.keras.layers.Activation('tanh')(l2)
   l3 = tf.keras.layers.Dense(640, activation=None)(l2)
-  l3 = tf.keras.layers.LeakyReLU()(l3)
+  l3 = tf.keras.layers.Activation('tanh')(l3)
   l4 = tf.keras.layers.Dense(640, activation=None)(l3)
-  l4 = tf.keras.layers.LeakyReLU()(l4)
+  l4 = tf.keras.layers.Activation('tanh')(l4)
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
 
   model = tf.keras.models.Model(inputs=[x], outputs=[y, y])

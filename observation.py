@@ -19,7 +19,7 @@ def get_observation_space(env):
              "exists_vehicle": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "is_new": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "collision": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
-             "speed": spaces.Box(0, env.MAX_VEH_SPEED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),  # absolute speed
+             "relative_speed": spaces.Box(-2* env.MAX_VEH_SPEED, 2* env.MAX_VEH_SPEED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),  # relative speed projected onto ego speed
              "dist_to_end_of_lane": spaces.Box(0, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),
              "in_intersection": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "relative_position": spaces.Box(-env.OBSERVATION_RADIUS, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED, 2), dtype=np.float32), 
@@ -215,6 +215,7 @@ def get_obs_dict(env):
   obs_dict["veh_relation_prev"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["exists_vehicle"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["speed"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["relative_speed"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["dist_to_end_of_lane"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["in_intersection"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["relative_position"] = [[-env.OBSERVATION_RADIUS, -env.OBSERVATION_RADIUS]] * env.NUM_VEH_CONSIDERED
@@ -296,7 +297,9 @@ def get_obs_dict(env):
     elif relative_heading < -np.pi:
       relative_heading += 2*np.pi
     obs_dict["relative_heading"][veh_index] = relative_heading
-    
+
+    obs_dict["relative_speed"][veh_index] = state_dict["speed"] * np.cos(obs_dict["relative_heading"][veh_index]) - ego_dict["speed"]
+
     # vehicle has priority over ego if the vehicle is
     # approaching/in the same intersection and it's inside a lane of higher priority
     # note that intersections (internal edges) are assigned the highest priority 
