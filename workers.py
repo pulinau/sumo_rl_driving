@@ -11,6 +11,7 @@ import random
 import multiprocessing as mp
 import queue
 from copy import deepcopy
+import os
 
 from sumo_cfgs import sumo_cfg
 
@@ -20,7 +21,7 @@ class returnX():
 
   def __call__(self, i):
     return self.x
-
+from collections import deque
 
 class decreaseProb():
   def __init__(self):
