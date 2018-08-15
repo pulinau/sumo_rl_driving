@@ -85,8 +85,8 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
 
           action, action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, 3)
       else:
-        action = next_action_list[-1]
-        action_info = next_action_info_list[-1]
+        action = next_action
+        action_info = next_action_info
         important = next_important
 
       next_obs_dict, (reward_list, done_list), env_state, action_dict = env.step(
@@ -103,15 +103,11 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
 
         action_set_list, sorted_idx_list = [], []
         # tentative actions for each objective
-        next_action_list = []
-        next_action_info_list = []
+        tent_action_list = []
+        tent_action_info_list = []
 
         is_explr_list = [False] * len(dqn_cfg_list)
         i = random.randrange(len(dqn_cfg_list))
-        next_important = False
-        if not play and random.random() < dqn_cfg_list[i].epsilon:
-          is_explr_list[i] = True
-          next_important = True
 
         for i, action_q in enumerate(action_q_list):
           while action_q.empty():
@@ -123,15 +119,23 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           sorted_idx_list += [sorted_idx]
 
           tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], is_explr_list[:i + 1], action_set_list, sorted_idx_list, 3)
-          next_action_list += [tent_action]
-          next_action_info_list += [tent_action_info]
+          tent_action_list += [tent_action]
+          tent_action_info_list += [tent_action_info]
+
+        next_important = False
+        if not play and random.random() < dqn_cfg_list[i].epsilon:
+          is_explr_list[i] = True
+          next_important = True
+        next_action, next_action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, 3)
       else:
         # only do lane change once
-        for i in range(len(next_action_list)):
-          next_action_list[i] %= len(ActionAccel)
+        for i in range(len(tent_action_list)):
+          tent_action_list[i] %= len(ActionAccel)
+
+        next_action %= len(ActionAccel)
 
       if env_state != EnvState.DONE:
-        traj.append((obs_dict, action, reward_list, next_obs_dict, next_action_list, done_list, important))
+        traj.append((obs_dict, action, reward_list, next_obs_dict, tent_action_list, done_list, important))
 
       obs_dict = next_obs_dict
 
@@ -150,8 +154,8 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         break
 
     for i, traj_q in enumerate(traj_q_list):
-      traj_q.put(([deepcopy((obs_dict, action, reward_list[i], next_obs_dict, next_action_list[i], done_list[i], important))
-                   for obs_dict, action, reward_list, next_obs_dict, next_action_list, done_list, important in traj],
+      traj_q.put(([deepcopy((obs_dict, action, reward_list[i], next_obs_dict, tent_action_list[i], done_list[i], important))
+                   for obs_dict, action, reward_list, next_obs_dict, tent_action_list, done_list, important in traj],
                   prob))
 
   end_q.put(True)
