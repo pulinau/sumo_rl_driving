@@ -106,9 +106,6 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         tent_action_list = []
         tent_action_info_list = []
 
-        is_explr_list = [False] * len(dqn_cfg_list)
-        i = random.randrange(len(dqn_cfg_list))
-
         for i, action_q in enumerate(action_q_list):
           while action_q.empty():
             if not end_q.empty():
@@ -118,11 +115,13 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           action_set_list += [action_set]
           sorted_idx_list += [sorted_idx]
 
-          tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], is_explr_list[:i + 1], action_set_list, sorted_idx_list, 3)
+          tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], [False] * (i+1), action_set_list, sorted_idx_list, 3)
           tent_action_list += [tent_action]
           tent_action_info_list += [tent_action_info]
 
+        is_explr_list = [False] * len(dqn_cfg_list)
         next_important = False
+        i = random.randrange(len(dqn_cfg_list))
         if not play and random.random() < dqn_cfg_list[i].epsilon:
           is_explr_list[i] = True
           next_important = True
