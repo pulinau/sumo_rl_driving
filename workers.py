@@ -28,7 +28,7 @@ class decreaseProb():
     pass
 
   def __call__(self, x):
-    return 1 / (1 + np.exp(2 * (x - 20)))
+    return 1 / (1 + np.exp((x - 20)))
 
 def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_list, play, max_ep, id):
   max_step = 2000
@@ -149,7 +149,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
               env.agt_ctrl)
         break
       if step == max_step - 1:
-        prob = returnX(0.1)
+        prob = returnX(0.5)
         print("Sim ", id, " timeout, step: ", step)
         break
 

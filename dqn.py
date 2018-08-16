@@ -186,18 +186,17 @@ class DQNAgent:
     loss = self.model.fit(states, targets_f, epochs=1)
 
     self.loss_hist.append(loss.history["loss"])
-    if loss.history["loss"] > 10 * np.median(self.loss_hist):
-      for i in range(10):
-        targets_f = self.model.predict_on_batch(states)
-        # clamp incorrect target to zero
-        for i in range(m):
-          for j in range(n):
-            x = targets_f[i][j]
-            x[np.where(x > 0)] = 0
-            x[np.where(x < self.low_target)] = self.low_target
-            x[actions[i][j]] = targets[i][j]
-        print("supplementary training:")
-        self.model.fit(states, targets_f, epochs=1)
+    while loss.history["loss"] > 10 * np.median(self.loss_hist):
+      targets_f = self.model.predict_on_batch(states)
+      # clamp incorrect target to zero
+      for i in range(m):
+        for j in range(n):
+          x = targets_f[i][j]
+          x[np.where(x > 0)] = 0
+          x[np.where(x < self.low_target)] = self.low_target
+          x[actions[i][j]] = targets[i][j]
+      print("supplementary training:", np.median(self.loss_hist))
+      self.model.fit(states, targets_f, epochs=1)
 
 
     if self.gamma < self.gamma_max:
