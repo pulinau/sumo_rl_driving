@@ -195,8 +195,8 @@ class DQNAgent:
           x[np.where(x > 0)] = 0
           x[np.where(x < self.low_target)] = self.low_target
           x[actions[i][j]] = targets[i][j]
-      print("supplementary training:", np.median(self.loss_hist))
-      self.model.fit(states, targets_f, epochs=1)
+      print(self.name, "supplementary training:", np.median(self.loss_hist))
+      loss = self.model.fit(states, targets_f, epochs=1)
 
 
     if self.gamma < self.gamma_max:
