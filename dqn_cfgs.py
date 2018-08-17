@@ -405,9 +405,9 @@ def select_actions_speed_comfort(state):
                      ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
                      ]
     else:
-      valid = [ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+      valid = [ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value]
+                ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value]
       sorted_idx  = [ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
                      ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
