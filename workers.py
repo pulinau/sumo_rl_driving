@@ -115,7 +115,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           action_set_list += [action_set]
           sorted_idx_list += [sorted_idx]
 
-          tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], [False] * (i+1), action_set_list, sorted_idx_list, 2)
+          tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], [False] * (i+1), action_set_list, sorted_idx_list, 3)
           tent_action_list += [tent_action]
           tent_action_info_list += [tent_action_info]
 
@@ -125,7 +125,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         if not play and random.random() < dqn_cfg_list[i].epsilon:
           is_explr_list[i] = True
           next_important = True
-        next_action, next_action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, 2)
+        next_action, next_action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, 3)
       else:
         # only do lane change once
         for i in range(len(tent_action_list)):
@@ -195,7 +195,7 @@ def select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list,
       valid = [(sorted(valid)[0][1], "greedy: " + dqn_cfg.name)]
       return valid[0]
 
-  valid = [(x, "exploit" + dqn_cfg.name) for x in valid]
+  valid = [(x, "exploit: " + dqn_cfg.name) for x in valid]
   return random.sample(valid + invalid, 1)[0]
 
 def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list, cuda_vis_devs):

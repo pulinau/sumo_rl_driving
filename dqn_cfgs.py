@@ -188,8 +188,6 @@ def reshape_safety(obs_dict):
   o1  = np.append(o1, np.array([obs_dict["relative_heading"]])/2*np.pi, axis=0)
   o1 = np.append(o1, np.array([obs_dict["veh_relation_peer"]]) - 0.5, axis=0)
   o1 = np.append(o1, np.array([obs_dict["veh_relation_conflict"]]) - 0.5, axis=0)
-  o1 = np.append(o1, np.array([obs_dict["veh_relation_next"]]) - 0.5, axis=0)
-  o1 = np.append(o1, np.array([obs_dict["veh_relation_prev"]]) - 0.5, axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_left"]]) - 0.5, axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_right"]]) - 0.5, axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_ahead"]]) - 0.5, axis=0)
@@ -206,7 +204,7 @@ def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(5, ))
   ego_l1 = tf.keras.layers.Dense(640, activation=None)(ego_input)
 
-  veh_inputs = [tf.keras.layers.Input(shape=(14,)) for _ in range(NUM_VEH_CONSIDERED)]
+  veh_inputs = [tf.keras.layers.Input(shape=(12,)) for _ in range(NUM_VEH_CONSIDERED)]
   shared_Dense1 = tf.keras.layers.Dense(640, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
 
@@ -234,7 +232,7 @@ def build_model_safety():
   y = tf.keras.layers.add(veh_y)
 
   model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
-  opt = tf.keras.optimizers.SGD(lr=0.001)
+  opt = tf.keras.optimizers.SGD(lr=0.01)
   model.compile(loss='logcosh', optimizer=opt)
 
   return model
@@ -267,7 +265,7 @@ def build_model_regulation():
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
 
   model = tf.keras.models.Model(inputs=[x], outputs=[y, y])
-  opt = tf.keras.optimizers.SGD(lr=0.001)
+  opt = tf.keras.optimizers.SGD(lr=0.01)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 

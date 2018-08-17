@@ -178,7 +178,7 @@ def get_obs_dict(env):
     for y in lane_id_list_ego_edge:
       if internal_lane_id_between_lanes(y, x, lanelet_dict) != None:
         lane_gap = lanelet_dict[y]["lane_index"] - ego_dict["lane_index"]
-        if min_lane_gap is None or abs(lane_gap) < min_lane_gap:
+        if min_lane_gap is None or abs(lane_gap) < abs(min_lane_gap):
           min_lane_gap = lane_gap
   if min_lane_gap == None:
     obs_dict["ego_correct_lane_gap"] = 0
@@ -190,19 +190,14 @@ def get_obs_dict(env):
   else:
     obs_dict["ego_correct_lane_gap"] = max(obs_dict["ego_correct_lane_gap"], -env.NUM_LANE_CONSIDERED)
 
-  obs_dict["edge_id"] = ego_dict["edge_id"]
+  obs_dict["ego_edge_id"] = ego_dict["edge_id"]
   obs_dict["ego_edge_changed"] = 1
-  if old_obs_dict is not None and old_obs_dict["edge_id"] == obs_dict["edge_id"]:
+  if old_obs_dict is not None and old_obs_dict["ego_edge_id"] == obs_dict["ego_edge_id"]:
     obs_dict["ego_edge_changed"] = 0
-
 
   # vehicles inside region of insterest
   def in_ROI(ego_position, veh_position):
-    if ((veh_position[0] > ego_position[0]-env.OBSERVATION_RADIUS) and 
-        (veh_position[1] > ego_position[1]-env.OBSERVATION_RADIUS) and 
-        (veh_position[0] < ego_position[0]+env.OBSERVATION_RADIUS) and 
-        (veh_position[1] < ego_position[1]+env.OBSERVATION_RADIUS)
-        ):
+    if (np.linalg.norm([veh_position[0]-ego_position[0], veh_position[1]-ego_position[1]]) < env.OBSERVATION_RADIUS):
       return True
     return False
   veh_id_list_ROI = [k for k, v in veh_dict.items() if k!=env.EGO_VEH_ID and in_ROI(ego_dict["position"], v["position"])]
@@ -340,11 +335,12 @@ def get_obs_dict(env):
       obs_dict["veh_relation_right"][veh_index] = 1 # RIGHT
     
     # AHEAD, BEHIND
-    if state_dict["lane_id"] == ego_dict["lane_id"]:
-      if state_dict["lane_position"] > ego_dict["lane_position"]:
-        obs_dict["veh_relation_ahead"][veh_index] = 1 # AHEAD
-      else:
-        obs_dict["veh_relation_behind"][veh_index] = 1 # BEHIND
+    if (state_dict["lane_id"] == ego_dict["lane_id"] and state_dict["lane_position"] > ego_dict["lane_position"]
+        ) or (state_dict["lane_id"] in lanelet_dict[ego_dict["lane_id"]]["next_lane_id_list"]):
+      obs_dict["veh_relation_ahead"][veh_index] = 1  # AHEAD
+    if (state_dict["lane_id"] == ego_dict["lane_id"] and state_dict["lane_position"] <= ego_dict["lane_position"]
+        ) or (ego_dict["lane_id"] in lanelet_dict[state_dict["lane_id"]]["next_lane_id_list"]):
+      obs_dict["veh_relation_behind"][veh_index] = 1  # BEHIND
 
     # time to collision (just an estimate)
     ego_v = np.array([0, obs_dict["ego_speed"]])
