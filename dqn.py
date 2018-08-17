@@ -139,7 +139,7 @@ class DQNAgent:
     if self.play == True:
       print(self.name, act_values)
 
-    action_set = set(np.where(act_values > np.max(act_values) + self.threshold)[0])
+    action_set = set(np.where(act_values >= np.max(act_values) + self.threshold)[0])
 
     return (action_set, list(sorted_idx))
 
