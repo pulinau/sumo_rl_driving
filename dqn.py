@@ -183,10 +183,14 @@ class DQNAgent:
 
     #print(self.name, targets_f[-1][0])
 
-    loss = self.model.fit(states, targets_f, epochs=1)
+    loss = self.model.train_on_batch(states, targets_f)
+    if self.name == "safety":
+      print(loss[0])
 
-    self.loss_hist.append(loss.history["loss"])
-    while loss.history["loss"] > 10 * np.median(self.loss_hist):
+    self.loss_hist.append(loss[0])
+    ep = 0
+    while loss[0] > 10 * np.median(self.loss_hist) and ep < 100:
+      ep += 1
       targets_f = self.model.predict_on_batch(states)
       # clamp incorrect target to zero
       for i in range(m):
@@ -196,7 +200,7 @@ class DQNAgent:
           x[np.where(x < self.low_target)] = self.low_target
           x[actions[i][j]] = targets[i][j]
       print(self.name, "supplementary training:", np.median(self.loss_hist))
-      loss = self.model.fit(states, targets_f, epochs=1)
+      loss = self.model.train_on_batch(states, targets_f)
 
 
     if self.gamma < self.gamma_max:

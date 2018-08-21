@@ -57,7 +57,7 @@ def act(env, veh_id, action_dict):
     return EnvState.DONE
       
   # if car is controlled by RL agent
-  if env.agt_ctrl == True:
+  if env.agt_ctrl == True and action_dict is not None:
 
     # An illegal action is considered as causing a collision
     if is_illegal_action(env, veh_id, action_dict):

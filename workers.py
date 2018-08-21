@@ -24,11 +24,11 @@ class returnX():
 from collections import deque
 
 class decreaseProb():
-  def __init__(self):
-    pass
+  def __init__(self, alpha):
+    self.alpha = alpha
 
   def __call__(self, x):
-    return 1 / (1 + np.exp((x - 20)))
+    return 1 / (1 + np.exp(self.alpha * (x - 20)))
 
 def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_list, play, max_ep, id):
   max_step = 2000
@@ -36,7 +36,11 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
 
   for ep in range(max_ep):
     print("env id: {}".format(id), "episode: {}/{}".format(ep, max_ep))
-    obs_dict = env.reset()
+    if play:
+      init_step = 0
+    else:
+      init_step = random.randrange(80)
+    obs_dict = env.reset(init_step)
     traj = []
 
     for step in range(max_step):
@@ -94,7 +98,6 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       action = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
       if env.agt_ctrl == False:
         action_info = "sumo"
-      print(action, action_info)
 
       # choose next action
       if step % 8 == 0:
@@ -139,11 +142,11 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       obs_dict = next_obs_dict
 
       if env_state == EnvState.DONE:
-        prob = decreaseProb()
+        prob = returnX(1)
         print("Sim ", id, " success, step: ", step)
         break
       if env_state != EnvState.NORMAL:
-        prob = decreaseProb()
+        prob = decreaseProb(0.5)
         print("Sim ", id, " terminated, step: ", step, action_dict, action_info, reward_list, done_list, env_state,
               env.agt_ctrl)
         break

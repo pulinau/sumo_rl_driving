@@ -93,7 +93,7 @@ class SumoGymEnv(gym.Env):
     info = None
     return obs, reward, done, info
 
-  def reset(self):
+  def reset(self, init_step):
     self.action_dict_hist.clear()
     self.veh_dict_hist.clear()
     self.obs_dict_hist.clear()
@@ -106,8 +106,14 @@ class SumoGymEnv(gym.Env):
       self.tc.simulationStep()
       self.veh_dict_hist.append(get_veh_dict(self))
       self.obs_dict_hist.append(get_obs_dict(self))
-      self.agt_ctrl = True
+      self.agt_ctrl = False
       self.env_state = EnvState.NORMAL
+      for i in range(init_step):
+        if self.env_state == EnvState.NORMAL:
+          self.step()
+      if self.env_state != EnvState.NORMAL:
+        return self.reset(i-1)
+      self.agt_ctrl = True
       return get_obs_dict(self)
     except (traci.FatalTraCIError, traci.TraCIException):
       self.env_state = EnvState.ERROR
@@ -121,7 +127,7 @@ class SumoGymEnv(gym.Env):
       raise
     
 class MultiObjSumoEnv(SumoGymEnv):
-  def step(self, action_dict):
+  def step(self, action_dict=None):
     assert self.env_state == EnvState.NORMAL, "env.env_state is not EnvState.NORMAL"
     try:
       self.env_state = act(self, self.EGO_VEH_ID, action_dict)

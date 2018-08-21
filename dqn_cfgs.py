@@ -219,20 +219,12 @@ def build_model_safety():
   veh_l4 = [shared_Dense3(x) for x in veh_l3]
   veh_l4 = [tf.keras.layers.Activation('tanh')(x) for x in veh_l4]
 
-  shared_Dense4 = tf.keras.layers.Dense(640, activation=None)
-  veh_l5 = [shared_Dense4(x) for x in veh_l4]
-  veh_l5 = [tf.keras.layers.Activation('tanh')(x) for x in veh_l5]
-
-  shared_Dense5 = tf.keras.layers.Dense(640, activation=None)
-  veh_l6 = [shared_Dense5(x) for x in veh_l5]
-  veh_l6 = [tf.keras.layers.Activation('tanh')(x) for x in veh_l6]
-
-  shared_Dense6 = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation=None)
-  veh_y = [shared_Dense6(x) for x in veh_l6]
+  shared_Dense4 = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation=None)
+  veh_y = [shared_Dense4(x) for x in veh_l4]
   y = tf.keras.layers.add(veh_y)
 
   model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
-  opt = tf.keras.optimizers.SGD(lr=0.01)
+  opt = tf.keras.optimizers.SGD(lr=0.001)
   model.compile(loss='logcosh', optimizer=opt)
 
   return model
@@ -260,12 +252,10 @@ def build_model_regulation():
   l2 = tf.keras.layers.Activation('tanh')(l2)
   l3 = tf.keras.layers.Dense(640, activation=None)(l2)
   l3 = tf.keras.layers.Activation('tanh')(l3)
-  l4 = tf.keras.layers.Dense(640, activation=None)(l3)
-  l4 = tf.keras.layers.Activation('tanh')(l4)
-  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l4)
+  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
 
   model = tf.keras.models.Model(inputs=[x], outputs=[y, y])
-  opt = tf.keras.optimizers.SGD(lr=0.01)
+  opt = tf.keras.optimizers.SGD(lr=0.001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -560,7 +550,7 @@ cfg_safety = DQNCfg(name = "safety",
                     threshold = -0.05,
                     memory_size = 64000,
                     traj_end_pred = returnTrue(),
-                    replay_batch_size = 32,
+                    replay_batch_size = 320,
                     traj_end_ratio= 0.0001,
                     _build_model = build_model_safety,
                     tf_cfg = tf_cfg_safety,
@@ -582,7 +572,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         threshold = -5,
                         memory_size = 64000,
                         traj_end_pred = returnTrue(),
-                        replay_batch_size = 160,
+                        replay_batch_size = 1600,
                         traj_end_ratio= 0.0001,
                         _build_model = build_model_regulation,
                         tf_cfg = tf_cfg_regulation,
