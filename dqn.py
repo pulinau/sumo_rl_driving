@@ -144,7 +144,7 @@ class DQNAgent:
     return (action_set, list(sorted_idx))
 
   def replay(self):
-    if self._select_actions is not None or self.play == True or self.memory.size() <  0.1 * self.memory_size:
+    if self._select_actions is not None or self.play == True:
       return
 
     try:

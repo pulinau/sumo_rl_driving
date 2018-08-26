@@ -233,13 +233,10 @@ def build_model_safety():
   shared_Dense6 = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation=None)
   veh_y = [shared_Dense6(x) for x in veh_l6]
 
-  veh_y = [tf.keras.layers.Lambda(lambda x: -1.0 * x)(x) for x in veh_y]
-  y = tf.keras.layers.Maximum()(veh_y)
-  veh_y = [tf.keras.layers.Lambda(lambda x: -1.0 * x)(x) for x in veh_y]
-  y = tf.keras.layers.Lambda(lambda x: -1.0 * x)(y)
+  y = tf.keras.layers.Minimum()(veh_y)
 
   model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
-  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.000001)
   model.compile(loss='logcosh', optimizer=opt)
 
   return model
