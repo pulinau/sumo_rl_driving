@@ -137,14 +137,14 @@ class DQNAgent:
     sorted_idx = np.argsort(act_values)[::-1]
 
     if self.play == True:
-      print(self.name, act_values)
+      print(act_values)
 
     action_set = set(np.where(act_values >= np.max(act_values) + self.threshold)[0])
 
     return (action_set, list(sorted_idx))
 
   def replay(self):
-    if self._select_actions is not None or self.play == True or self.memory.size() == 0:
+    if self._select_actions is not None or self.play == True or self.memory.size() <  0.1 * self.memory_size:
       return
 
     try:
@@ -189,7 +189,7 @@ class DQNAgent:
 
     self.loss_hist.append(loss[0])
     ep = 0
-    while loss[0] > 10 * np.median(self.loss_hist) and ep < 100:
+    while loss[0] > np.median(self.loss_hist) and ep < 100:
       ep += 1
       targets_f = self.model.predict_on_batch(states)
       # clamp incorrect target to zero
@@ -199,8 +199,9 @@ class DQNAgent:
           x[np.where(x > 0)] = 0
           x[np.where(x < self.low_target)] = self.low_target
           x[actions[i][j]] = targets[i][j]
-      print(self.name, "supplementary training:", np.median(self.loss_hist))
       loss = self.model.train_on_batch(states, targets_f)
+      if self.name == "safety":
+        print(self.name, "supplementary training:", np.median(self.loss_hist), loss[0])
 
 
     if self.gamma < self.gamma_max:

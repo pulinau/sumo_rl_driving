@@ -56,7 +56,7 @@ class ReplayMemory():
 
     traj_seg = []
     for i, (state, action, reward, next_state, next_action, done, important) in enumerate(traj[::-1]):
-      if i == 0 or done or end_pred(reward):
+      if i == 0 or end_pred(reward):
         end_reward, end_state, end_next_action, end_done = deepcopy(reward), deepcopy(next_state), deepcopy(next_action), deepcopy(done)
         #if not done and i == 0:
         #  end_done = True

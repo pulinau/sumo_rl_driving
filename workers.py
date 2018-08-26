@@ -31,7 +31,7 @@ class decreaseProb():
     return 1 / (1 + np.exp(self.alpha * (x - 20)))
 
 def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_list, play, max_ep, id):
-  max_step = 2000
+  max_step = 1500
   env = MultiObjSumoEnv(sumo_cfg)
 
   for ep in range(max_ep):
@@ -39,7 +39,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
     if play:
       init_step = 0
     else:
-      init_step = random.randrange(80)
+      init_step = random.randrange(160)
     obs_dict = env.reset(init_step)
     traj = []
 
@@ -228,7 +228,7 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
     #  print("training ", agt.name, " episode: {}".format(ep))
     agt.replay()
 
-    if ep % 1000 == 1000-1:
+    if ep % 100 == 100-1:
       agt.update_target()
       agt.save_model()
 

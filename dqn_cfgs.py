@@ -177,6 +177,9 @@ def reshape_safety(obs_dict):
                  ], dtype = np.float32)
   o1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
   o1  = np.append(o1, np.array([obs_dict["exists_vehicle"]]) - 0.5, axis=0)
+  o1 = np.append(o1, np.array([obs_dict["brake_signal"]]) - 0.5, axis=0)
+  o1 = np.append(o1, np.array([obs_dict["left_signal"]]) - 0.5, axis=0)
+  o1 = np.append(o1, np.array([obs_dict["right_signal"]]) - 0.5, axis=0)
   rel_speed = np.array([obs_dict["relative_speed"]]) / MAX_VEH_SPEED
   rel_speed = np.sqrt(np.minimum(np.abs(rel_speed), np.ones((1, NUM_VEH_CONSIDERED))*0.5)) * np.sign(rel_speed)
   o1  = np.append(o1, rel_speed , axis=0)
@@ -204,27 +207,39 @@ def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(5, ))
   ego_l1 = tf.keras.layers.Dense(640, activation=None)(ego_input)
 
-  veh_inputs = [tf.keras.layers.Input(shape=(12,)) for _ in range(NUM_VEH_CONSIDERED)]
+  veh_inputs = [tf.keras.layers.Input(shape=(15,)) for _ in range(NUM_VEH_CONSIDERED)]
   shared_Dense1 = tf.keras.layers.Dense(640, activation=None)
   veh_l1 = [shared_Dense1(x) for x in veh_inputs]
 
   veh_l2 = [tf.keras.layers.add([ego_l1, x]) for x in veh_l1]
-  veh_l2 = [tf.keras.layers.Activation('tanh')(x) for x in veh_l2]
+  veh_l2 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l2]
 
   shared_Dense2 = tf.keras.layers.Dense(640, activation=None)
   veh_l3 = [shared_Dense2(x) for x in veh_l2]
-  veh_l3 = [tf.keras.layers.Activation('tanh')(x) for x in veh_l3]
+  veh_l3 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l3]
 
   shared_Dense3 = tf.keras.layers.Dense(640, activation=None)
   veh_l4 = [shared_Dense3(x) for x in veh_l3]
-  veh_l4 = [tf.keras.layers.Activation('tanh')(x) for x in veh_l4]
+  veh_l4 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l4]
 
-  shared_Dense4 = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation=None)
-  veh_y = [shared_Dense4(x) for x in veh_l4]
-  y = tf.keras.layers.add(veh_y)
+  shared_Dense4 = tf.keras.layers.Dense(640, activation=None)
+  veh_l5 = [shared_Dense4(x) for x in veh_l4]
+  veh_l5 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l5]
+
+  shared_Dense5 = tf.keras.layers.Dense(640, activation=None)
+  veh_l6 = [shared_Dense5(x) for x in veh_l5]
+  veh_l6 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l6]
+
+  shared_Dense6 = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation=None)
+  veh_y = [shared_Dense6(x) for x in veh_l6]
+
+  veh_y = [tf.keras.layers.Lambda(lambda x: -1.0 * x)(x) for x in veh_y]
+  y = tf.keras.layers.Maximum()(veh_y)
+  veh_y = [tf.keras.layers.Lambda(lambda x: -1.0 * x)(x) for x in veh_y]
+  y = tf.keras.layers.Lambda(lambda x: -1.0 * x)(y)
 
   model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
-  opt = tf.keras.optimizers.SGD(lr=0.001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
   model.compile(loss='logcosh', optimizer=opt)
 
   return model
@@ -255,7 +270,7 @@ def build_model_regulation():
   y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
 
   model = tf.keras.models.Model(inputs=[x], outputs=[y, y])
-  opt = tf.keras.optimizers.SGD(lr=0.001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -550,7 +565,7 @@ cfg_safety = DQNCfg(name = "safety",
                     threshold = -0.05,
                     memory_size = 64000,
                     traj_end_pred = returnTrue(),
-                    replay_batch_size = 320,
+                    replay_batch_size = 3200,
                     traj_end_ratio= 0.0001,
                     _build_model = build_model_safety,
                     tf_cfg = tf_cfg_safety,
@@ -569,10 +584,10 @@ cfg_regulation = DQNCfg(name = "regulation",
                         epsilon=0.8,
                         epsilon_dec=0.0000001,
                         epsilon_min=0.6,
-                        threshold = -5,
+                        threshold = -0.5,
                         memory_size = 64000,
                         traj_end_pred = returnTrue(),
-                        replay_batch_size = 1600,
+                        replay_batch_size = 16000,
                         traj_end_ratio= 0.0001,
                         _build_model = build_model_regulation,
                         tf_cfg = tf_cfg_regulation,

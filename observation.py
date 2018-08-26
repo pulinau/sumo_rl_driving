@@ -21,6 +21,9 @@ def get_observation_space(env):
              "collision": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "relative_speed": spaces.Box(-2* env.MAX_VEH_SPEED, 2* env.MAX_VEH_SPEED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),  # relative speed projected onto ego speed
              "dist_to_end_of_lane": spaces.Box(0, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),
+             "right_signal": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "left_signal": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "brake_signal": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "in_intersection": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "relative_position": spaces.Box(-env.OBSERVATION_RADIUS, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED, 2), dtype=np.float32), 
              "relative_heading": spaces.Box(-np.pi, np.pi, (env.NUM_VEH_CONSIDERED,), dtype=np.float32), # anti-clockwise
@@ -55,6 +58,10 @@ def get_veh_dict(env):
     veh_dict[veh_id]["lane_length"] = env.tc.lane.getLength(veh_dict[veh_id]["lane_id"]) 
     veh_dict[veh_id]["lane_position"] = env.tc.vehicle.getLanePosition(veh_id) # position in the lane
     veh_dict[veh_id]["route"] = env.tc.vehicle.getRoute(veh_id)
+    signals = env.tc.vehicle.getSignals(veh_id) + 16 # force binary representation to have more than 5 bit
+    veh_dict[veh_id]["right_signal"] = int(bin(signals)[-1]) # 1 if signal is on, 0 otherwise
+    veh_dict[veh_id]["left_signal"] = int(bin(signals)[-2])
+    veh_dict[veh_id]["brake_signal"] = int(bin(signals)[-4])
     
     route = veh_dict[veh_id]["route"] # route is an edge id list of the vehicle's route
     if len(route) > env.tc.vehicle.getRouteIndex(veh_id) + 1: 
@@ -212,6 +219,9 @@ def get_obs_dict(env):
   obs_dict["speed"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["relative_speed"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["dist_to_end_of_lane"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["right_signal"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["left_signal"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["brake_signal"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["in_intersection"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["relative_position"] = [[-env.OBSERVATION_RADIUS, -env.OBSERVATION_RADIUS]] * env.NUM_VEH_CONSIDERED
   obs_dict["relative_heading"] = [0] * env.NUM_VEH_CONSIDERED
@@ -274,7 +284,11 @@ def get_obs_dict(env):
     obs_dict["exists_vehicle"][veh_index] = 1
     obs_dict["speed"][veh_index] = state_dict["speed"]
     obs_dict["dist_to_end_of_lane"][veh_index] = min(state_dict["lane_length"] - state_dict["lane_position"], env.OBSERVATION_RADIUS)
-    
+
+    obs_dict["right_signal"][veh_index] = state_dict["right_signal"]
+    obs_dict["left_signal"][veh_index] = state_dict["left_signal"]
+    obs_dict["brake_signal"][veh_index] = state_dict["brake_signal"]
+
     if state_dict["edge_id"][0] == ':':
       obs_dict["in_intersection"][veh_index] = 1
     
@@ -308,16 +322,22 @@ def get_obs_dict(env):
       lane_id_list_veh_next_normal_edge = edge_dict[state_dict["next_normal_edge_id"]]["lane_id_list"]
     else:
       lane_id_list_veh_next_normal_edge = []
-    # PEER if vehicle share the same next lane, since we only have edge (not lane) information within the route, we need to
-    # search inside the next edge to see if there're any lanes whose previous lane belongs to the current edge of veh
-    if state_dict["next_normal_edge_id"] == ego_dict["next_normal_edge_id"] and ego_dict["next_normal_edge_id"] != None:
+    # PEER if vehicles merges into the same lane from different lanes, since we only have edge (not lane) information
+    # within the route, we need to search inside the next edge to see if there're any lanes whose previous lane
+    # belongs to the current edge of veh
+    if state_dict["edge_id"] != ego_dict["edge_id"] and \
+       state_dict["next_normal_edge_id"] == ego_dict["next_normal_edge_id"] and \
+       ego_dict["next_normal_edge_id"] != None:
       for x in lane_id_list_ego_next_normal_edge:
         for y in lane_id_list_veh_edge:
           if internal_lane_id_between_lanes(y, x, lanelet_dict) != None:
             obs_dict["veh_relation_peer"][veh_index] = 1 # PEER
     
     # CONFLICT if approaching/in the same intersection as the ego lane, and its route conflict that of the ego route
-    if edge_dict[ego_dict["edge_id"]]["to_node_id"] == edge_dict[state_dict["edge_id"]]["to_node_id"]:
+    if state_dict["edge_id"] != ego_dict["edge_id"] and \
+       state_dict["next_normal_edge_id"] != ego_dict["next_normal_edge_id"] and \
+       ego_dict["next_normal_edge_id"] != None and \
+       edge_dict[ego_dict["edge_id"]]["to_node_id"] == edge_dict[state_dict["edge_id"]]["to_node_id"]:
       for u in lane_id_list_veh_next_normal_edge:
         for v in lane_id_list_veh_edge:
           lane_id0 = internal_lane_id_between_lanes(v, u, lanelet_dict)
