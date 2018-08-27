@@ -203,7 +203,6 @@ class DQNAgent:
       if self.name == "safety":
         print(self.name, "supplementary training:", np.median(self.loss_hist), loss[0])
 
-
     if self.gamma < self.gamma_max:
       self.gamma += self.gamma_inc
     if self.epsilon > self.epsilon_min:

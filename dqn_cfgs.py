@@ -205,38 +205,28 @@ tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
 
 def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(5, ))
-  ego_l1 = tf.keras.layers.Dense(640, activation=None)(ego_input)
+  ego_l1 = tf.keras.layers.Dense(128, activation=None)(ego_input)
 
   veh_inputs = [tf.keras.layers.Input(shape=(15,)) for _ in range(NUM_VEH_CONSIDERED)]
-  shared_Dense1 = tf.keras.layers.Dense(640, activation=None)
-  veh_l1 = [shared_Dense1(x) for x in veh_inputs]
+  shared_Dense1 = tf.keras.layers.Dense(128, activation=None)
+  veh_l = [shared_Dense1(x) for x in veh_inputs]
 
-  veh_l2 = [tf.keras.layers.add([ego_l1, x]) for x in veh_l1]
-  veh_l2 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l2]
+  veh_l = [tf.keras.layers.add([ego_l1, x]) for x in veh_l]
+  veh_l = [tf.keras.layers.LeakyReLU()(x) for x in veh_l]
 
-  shared_Dense2 = tf.keras.layers.Dense(640, activation=None)
-  veh_l3 = [shared_Dense2(x) for x in veh_l2]
-  veh_l3 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l3]
+  n_layers = 16
+  Dense_list = [tf.keras.layers.Dense(128, activation=None) for _ in range(n_layers)]
+  for i in range(n_layers):
+    veh_l = [Dense_list[i](x) for x in veh_l]
+    veh_l = [tf.keras.layers.LeakyReLU()(x) for x in veh_l]
 
-  shared_Dense3 = tf.keras.layers.Dense(640, activation=None)
-  veh_l4 = [shared_Dense3(x) for x in veh_l3]
-  veh_l4 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l4]
+  shared_Dense2 = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation=None)
+  veh_y = [shared_Dense2(x) for x in veh_l]
 
-  shared_Dense4 = tf.keras.layers.Dense(640, activation=None)
-  veh_l5 = [shared_Dense4(x) for x in veh_l4]
-  veh_l5 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l5]
-
-  shared_Dense5 = tf.keras.layers.Dense(640, activation=None)
-  veh_l6 = [shared_Dense5(x) for x in veh_l5]
-  veh_l6 = [tf.keras.layers.LeakyReLU()(x) for x in veh_l6]
-
-  shared_Dense6 = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation=None)
-  veh_y = [shared_Dense6(x) for x in veh_l6]
-
-  y = tf.keras.layers.Minimum()(veh_y)
+  y = tf.keras.layers.minimum(veh_y)
 
   model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
-  opt = tf.keras.optimizers.RMSprop(lr=0.000001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
   model.compile(loss='logcosh', optimizer=opt)
 
   return model
