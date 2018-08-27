@@ -62,18 +62,22 @@ class DQNCfg():
     self._select_actions = _select_actions
 
 def feed_samp(replay_mem, samp_size, traj_end_ratio, samp_q, end_q):
-  while True:
-    if not end_q.empty():
-      return
-    if replay_mem.size() == 0:
-      time.sleep(5)
-      continue
-    elif samp_q.qsize() < 16:
-      samp_q.put(replay_mem.sample(samp_size, traj_end_ratio))
-      #print("replay mem size: ", replay_mem.size())
+  try:
+    while True:
+      if not end_q.empty():
+        return
+      if replay_mem.size() == 0:
+        time.sleep(5)
+        continue
+      elif samp_q.qsize() < 80:
+        samp_q.put(replay_mem.sample(samp_size, traj_end_ratio))
+        # print("replay mem size: ", replay_mem.size())
+  except:
+    end_q.put(True)
+    raise
 
 class DQNAgent:
-  def __init__(self, sumo_cfg, dqn_cfg):
+  def __init__(self, sumo_cfg, dqn_cfg, end_q):
     _attrs = class_vars(dqn_cfg)
     for _attr in _attrs:
       setattr(self, _attr, getattr(dqn_cfg, _attr))
@@ -93,15 +97,14 @@ class DQNAgent:
       manager.start()
       self.memory = manager.ReplayMemory(self.memory_size, self.name)
       self.sample_q = mp.Queue(maxsize=100)
-      self.end_replay_q = mp.Queue(maxsize=5)
       self.feed_samp_p_list = [mp.Process(target=feed_samp,
                                           name='feed_samp ' + self.name,
                                           args=(self.memory,
                                                 self.replay_batch_size,
                                                 self.traj_end_ratio,
                                                 self.sample_q,
-                                                self.end_replay_q))
-                               for _ in range(1)]
+                                                end_q))
+                               for _ in range(4)]
       [p.start() for p in self.feed_samp_p_list]
 
       self.loss_hist = deque(maxlen=10)
@@ -189,7 +192,7 @@ class DQNAgent:
 
     self.loss_hist.append(loss[0])
     ep = 0
-    while loss[0] > np.median(self.loss_hist) and ep < 100:
+    while loss[0] > 1.2 * np.median(self.loss_hist) and ep < 10:
       ep += 1
       targets_f = self.model.predict_on_batch(states)
       # clamp incorrect target to zero

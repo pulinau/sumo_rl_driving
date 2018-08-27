@@ -31,136 +31,147 @@ class decreaseProb():
     return 1 / (1 + np.exp(self.alpha * (x - 20)))
 
 def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_list, play, max_ep, id):
-  max_step = 1500
-  env = MultiObjSumoEnv(sumo_cfg)
+  try:
+    max_step = 1500
+    env = MultiObjSumoEnv(sumo_cfg)
 
-  for ep in range(max_ep):
-    print("env id: {}".format(id), "episode: {}/{}".format(ep, max_ep))
-    if play:
-      init_step = 0
-    else:
-      init_step = random.randrange(160)
-    obs_dict = env.reset(init_step)
-    traj = []
-
-    for step in range(max_step):
-
-      if step == 0:
-        if play:
-          env.agt_ctrl = True
-      """
-        else:
-          if random.uniform(0, 1) < 0.1:
-            env.agt_ctrl = False
+    for ep in range(max_ep):
+      print("env id: {}".format(id), "episode: {}/{}".format(ep, max_ep))
+      if play:
+        init_step = 0
       else:
-        if not play:
-          if random.uniform(0, 1) < 0.5:
-            if env.agt_ctrl == False:
-              env.agt_ctrl = True
-            else:
+        init_step = random.randrange(160)
+      obs_dict = env.reset(init_step)
+      traj = []
+
+      for step in range(max_step):
+
+        if step == 0:
+          if play:
+            env.agt_ctrl = True
+        """
+          else:
+            if random.uniform(0, 1) < 0.1:
               env.agt_ctrl = False
-      """
-
-      # select action
-      if step == 0:
-        if env.agt_ctrl == False:
-          action = 0
-          action_info = "sumo"
         else:
-          action_set_list,  sorted_idx_list = [], []
+          if not play:
+            if random.uniform(0, 1) < 0.5:
+              if env.agt_ctrl == False:
+                env.agt_ctrl = True
+              else:
+                env.agt_ctrl = False
+        """
 
+        # select action
+        if step == 0:
+          if env.agt_ctrl == False:
+            action = 0
+            action_info = "sumo"
+          else:
+            action_set_list, sorted_idx_list = [], []
+
+            for obs_q in obs_q_list:
+              obs_q.put(deepcopy(obs_dict))
+
+            for action_q in action_q_list:
+              while action_q.empty():
+                if not end_q.empty():
+                  return
+              (action_set, sorted_idx) = action_q.get()
+              action_set_list += [action_set]
+              sorted_idx_list += [sorted_idx]
+
+            is_explr_list = [False] * len(dqn_cfg_list)
+            i = random.randrange(len(dqn_cfg_list))
+            important = False
+            if not play and random.random() < dqn_cfg_list[i].epsilon:
+              is_explr_list[i] = True
+              important = True
+
+            action, action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, 3)
+        else:
+          action = next_action
+          action_info = next_action_info
+          important = next_important
+
+        next_obs_dict, (reward_list, done_list), env_state, action_dict = env.step(
+          {"lane_change": ActionLaneChange(action // len(ActionAccel)),
+           "accel_level": ActionAccel(action % len(ActionAccel))})
+        action = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
+        if env.agt_ctrl == False:
+          action_info = "sumo"
+
+        # choose next action
+        if step % 8 == 0:
           for obs_q in obs_q_list:
-            obs_q.put(deepcopy(obs_dict))
+            obs_q.put(deepcopy(next_obs_dict))
 
-          for action_q in action_q_list:
+          action_set_list, sorted_idx_list = [], []
+          # tentative actions for each objective
+          tent_action_list = []
+          tent_action_info_list = []
+
+          for i, action_q in enumerate(action_q_list):
             while action_q.empty():
               if not end_q.empty():
                 return
             (action_set, sorted_idx) = action_q.get()
+
             action_set_list += [action_set]
             sorted_idx_list += [sorted_idx]
 
+            tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], [False] * (i + 1), action_set_list,
+                                                          sorted_idx_list, 3)
+            tent_action_list += [tent_action]
+            tent_action_info_list += [tent_action_info]
+
           is_explr_list = [False] * len(dqn_cfg_list)
+          next_important = False
           i = random.randrange(len(dqn_cfg_list))
-          important = False
           if not play and random.random() < dqn_cfg_list[i].epsilon:
             is_explr_list[i] = True
-            important = True
+            next_important = True
+          next_action, next_action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list,
+                                                        3)
+        else:
+          # only do lane change once
+          for i in range(len(tent_action_list)):
+            tent_action_list[i] %= len(ActionAccel)
 
-          action, action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, 3)
-      else:
-        action = next_action
-        action_info = next_action_info
-        important = next_important
+          next_action %= len(ActionAccel)
 
-      next_obs_dict, (reward_list, done_list), env_state, action_dict = env.step(
-        {"lane_change": ActionLaneChange(action // len(ActionAccel)), "accel_level": ActionAccel(action % len(ActionAccel))})
-      action = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
-      if env.agt_ctrl == False:
-        action_info = "sumo"
+        if env_state != EnvState.DONE:
+          traj.append((obs_dict, action, reward_list, next_obs_dict, tent_action_list, done_list, important))
 
-      # choose next action
-      if step % 8 == 0:
-        for obs_q in obs_q_list:
-          obs_q.put(deepcopy(next_obs_dict))
+        obs_dict = next_obs_dict
 
-        action_set_list, sorted_idx_list = [], []
-        # tentative actions for each objective
-        tent_action_list = []
-        tent_action_info_list = []
+        if env_state == EnvState.DONE:
+          prob = returnX(0.2)
+          print("Sim ", id, " success, step: ", step)
+          break
+        if env_state != EnvState.NORMAL:
+          prob = decreaseProb(0.5)
+          print("Sim ", id, " terminated, step: ", step, action_dict, action_info, reward_list, done_list, env_state,
+                env.agt_ctrl)
+          break
+        if step == max_step - 1:
+          prob = returnX(0.2)
+          print("Sim ", id, " timeout, step: ", step)
+          break
 
-        for i, action_q in enumerate(action_q_list):
-          while action_q.empty():
-            if not end_q.empty():
-              return
-          (action_set, sorted_idx) = action_q.get()
+      for i, traj_q in enumerate(traj_q_list):
+        traj_q.put(
+          ([deepcopy((obs_dict, action, reward_list[i], next_obs_dict, tent_action_list[i], done_list[i], important))
+            for obs_dict, action, reward_list, next_obs_dict, tent_action_list, done_list, important in traj],
+           prob))
 
-          action_set_list += [action_set]
-          sorted_idx_list += [sorted_idx]
+    end_q.put(True)
 
-          tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], [False] * (i+1), action_set_list, sorted_idx_list, 3)
-          tent_action_list += [tent_action]
-          tent_action_info_list += [tent_action_info]
+  except:
+    end_q.put(True)
+    raise
 
-        is_explr_list = [False] * len(dqn_cfg_list)
-        next_important = False
-        i = random.randrange(len(dqn_cfg_list))
-        if not play and random.random() < dqn_cfg_list[i].epsilon:
-          is_explr_list[i] = True
-          next_important = True
-        next_action, next_action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, 3)
-      else:
-        # only do lane change once
-        for i in range(len(tent_action_list)):
-          tent_action_list[i] %= len(ActionAccel)
 
-        next_action %= len(ActionAccel)
-
-      if env_state != EnvState.DONE:
-        traj.append((obs_dict, action, reward_list, next_obs_dict, tent_action_list, done_list, important))
-
-      obs_dict = next_obs_dict
-
-      if env_state == EnvState.DONE:
-        prob = returnX(1)
-        print("Sim ", id, " success, step: ", step)
-        break
-      if env_state != EnvState.NORMAL:
-        prob = decreaseProb(0.5)
-        print("Sim ", id, " terminated, step: ", step, action_dict, action_info, reward_list, done_list, env_state,
-              env.agt_ctrl)
-        break
-      if step == max_step - 1:
-        prob = returnX(0.5)
-        print("Sim ", id, " timeout, step: ", step)
-        break
-
-    for i, traj_q in enumerate(traj_q_list):
-      traj_q.put(([deepcopy((obs_dict, action, reward_list[i], next_obs_dict, tent_action_list[i], done_list[i], important))
-                   for obs_dict, action, reward_list, next_obs_dict, tent_action_list, done_list, important in traj],
-                  prob))
-
-  end_q.put(True)
 
 def select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, num_action, greedy=False):
   """
@@ -202,34 +213,39 @@ def select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list,
   return random.sample(valid + invalid, 1)[0]
 
 def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list, cuda_vis_devs):
-  os.environ['CUDA_VISIBLE_DEVICES'] = cuda_vis_devs
-  agt = DQNAgent(sumo_cfg, dqn_cfg)
+  try:
+    os.environ['CUDA_VISIBLE_DEVICES'] = cuda_vis_devs
+    agt = DQNAgent(sumo_cfg, dqn_cfg, end_q)
 
-  ep = 0
-  while True:
-    for obs_q, action_q in zip(obs_q_list, action_q_list):
-      try:
-        obs_dict = obs_q.get(block=False)
-        action_q.put(agt.select_actions(obs_dict))
-      except queue.Empty:
-        if not end_q.empty():
-          return
-        else:
+    ep = 0
+    while True:
+      for obs_q, action_q in zip(obs_q_list, action_q_list):
+        try:
+          obs_dict = obs_q.get(block=False)
+          action_q.put(agt.select_actions(obs_dict))
+        except queue.Empty:
+          if not end_q.empty():
+            return
+          else:
+            continue
+
+      for traj_q in traj_q_list:
+        try:
+          traj, prob = traj_q.get(block=False)
+          agt.remember(traj, prob)
+        except queue.Empty:
           continue
 
-    for traj_q in traj_q_list:
-      try:
-        traj, prob = traj_q.get(block=False)
-        agt.remember(traj, prob)
-      except queue.Empty:
-        continue
+      # if agt.name == 'regulation' or agt.name == 'safety':
+      #  print("training ", agt.name, " episode: {}".format(ep))
+      agt.replay()
 
-    #if agt.name == 'regulation' or agt.name == 'safety':
-    #  print("training ", agt.name, " episode: {}".format(ep))
-    agt.replay()
+      if ep % 5000 == 5000 - 1:
+        agt.update_target()
+        agt.save_model()
 
-    if ep % 100 == 100-1:
-      agt.update_target()
-      agt.save_model()
+      ep += 1
 
-    ep += 1
+  except:
+    end_q.put(True)
+    raise

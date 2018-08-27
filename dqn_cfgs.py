@@ -214,7 +214,7 @@ def build_model_safety():
   veh_l = [tf.keras.layers.add([ego_l1, x]) for x in veh_l]
   veh_l = [tf.keras.layers.LeakyReLU()(x) for x in veh_l]
 
-  n_layers = 16
+  n_layers = 32
   Dense_list = [tf.keras.layers.Dense(128, activation=None) for _ in range(n_layers)]
   for i in range(n_layers):
     veh_l = [Dense_list[i](x) for x in veh_l]
@@ -552,7 +552,7 @@ cfg_safety = DQNCfg(name = "safety",
                     threshold = -0.05,
                     memory_size = 64000,
                     traj_end_pred = returnTrue(),
-                    replay_batch_size = 3200,
+                    replay_batch_size = 32,
                     traj_end_ratio= 0.0001,
                     _build_model = build_model_safety,
                     tf_cfg = tf_cfg_safety,
@@ -574,7 +574,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         threshold = -0.5,
                         memory_size = 64000,
                         traj_end_pred = returnTrue(),
-                        replay_batch_size = 16000,
+                        replay_batch_size = 160,
                         traj_end_ratio= 0.0001,
                         _build_model = build_model_regulation,
                         tf_cfg = tf_cfg_regulation,
