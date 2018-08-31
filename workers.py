@@ -94,15 +94,25 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           action_info = next_action_info
           important = next_important
 
+        if action == 7:
+          action_full = 10
+        if action == 8:
+          action_full = 17
         next_obs_dict, (reward_list, done_list), env_state, action_dict = env.step(
-          {"lane_change": ActionLaneChange(action // len(ActionAccel)),
-           "accel_level": ActionAccel(action % len(ActionAccel))})
-        action = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
+          {"lane_change": ActionLaneChange(action_full // len(ActionAccel)),
+           "accel_level": ActionAccel(action_full % len(ActionAccel))})
+        action_full = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
+        if action_full >= len(ActionAccel) and  action_full < 2 * len(ActionAccel):
+          action = 7
+        if action_full >= 2 * len(ActionAccel):
+          action = 8
+
+
         if env.agt_ctrl == False:
           action_info = "sumo"
 
         # choose next action
-        if step % 8 == 0:
+        if step % 8 == 0 or action >= len(ActionAccel):
           for obs_q in obs_q_list:
             obs_q.put(deepcopy(next_obs_dict))
 
@@ -133,12 +143,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
             next_important = True
           next_action, next_action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list,
                                                         3)
-        else:
-          # only do lane change once
-          for i in range(len(tent_action_list)):
-            tent_action_list[i] %= len(ActionAccel)
 
-          next_action %= len(ActionAccel)
 
         if env_state != EnvState.DONE:
           traj.append((obs_dict, action, reward_list, next_obs_dict, tent_action_list, done_list, important))
@@ -184,7 +189,7 @@ def select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list,
   :param num_action: the least num of action that's assumed to exist
   :return: action
   """
-  valid = set(range(action_size))
+  valid = set(range(reduced_action_size))
 
   for action_set, is_explr, sorted_idx, dqn_cfg in zip(action_set_list, is_explr_list, sorted_idx_list, dqn_cfg_list):
     if is_explr:
