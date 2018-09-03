@@ -19,16 +19,17 @@ class returnX():
   def __init__(self, x):
     self.x = x
 
-  def __call__(self, i):
+  def __call__(self, *args, **kwargs):
     return self.x
 from collections import deque
 
 class decreaseProb():
-  def __init__(self, alpha):
+  def __init__(self, alpha, beta):
     self.alpha = alpha
+    self.beta = beta
 
   def __call__(self, x):
-    return 1 / (1 + np.exp(self.alpha * (x - 20)))
+    return 1 / (1 + np.exp(self.alpha * (x - beta)))
 
 def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_list, play, max_ep, id):
   try:
@@ -88,7 +89,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
               is_explr_list[i] = True
               important = True
 
-            action, action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, 3)
+            action, action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, 1)
         else:
           action = next_action
           action_info = next_action_info
@@ -133,7 +134,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
             sorted_idx_list += [sorted_idx]
 
             tent_action, tent_action_info = select_action(dqn_cfg_list[:i + 1], [False] * (i + 1), action_set_list,
-                                                          sorted_idx_list, 3)
+                                                          sorted_idx_list, 1)
             tent_action_list += [tent_action]
             tent_action_info_list += [tent_action_info]
 
@@ -144,7 +145,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
             is_explr_list[i] = True
             next_important = True
           next_action, next_action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list,
-                                                        3)
+                                                        1)
 
 
         if env_state != EnvState.DONE:
@@ -153,16 +154,16 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         obs_dict = next_obs_dict
 
         if env_state == EnvState.DONE:
-          prob = returnX(0.2)
+          prob = returnX(1)
           print("Sim ", id, " success, step: ", step)
           break
         if env_state != EnvState.NORMAL:
-          prob = decreaseProb(0.5)
+          prob = returnX(1)
           print("Sim ", id, " terminated, step: ", step, action_dict, action_info, reward_list, done_list, env_state,
                 env.agt_ctrl)
           break
         if step == max_step - 1:
-          prob = returnX(0.2)
+          prob = returnX(1)
           print("Sim ", id, " timeout, step: ", step)
           break
 
