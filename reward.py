@@ -19,7 +19,7 @@ def get_reward_safety(env):
   for i, c in enumerate(obs_dict["collision"]):
     r = 0
     d = False
-    if (env.env_state == EnvState.CRASH and c == 1):
+    if obs_dict["ttc"][i] < 2 or (env.env_state == EnvState.CRASH and c == 1):
       r = -1
     if obs_dict["is_new"][i] == 1 or (env.env_state == EnvState.CRASH and c == 1):
       d = True

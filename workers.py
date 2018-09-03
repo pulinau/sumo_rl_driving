@@ -96,8 +96,10 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
 
         if action == 7:
           action_full = 10
-        if action == 8:
+        elif action == 8:
           action_full = 17
+        else:
+          action_full = action
         next_obs_dict, (reward_list, done_list), env_state, action_dict = env.step(
           {"lane_change": ActionLaneChange(action_full // len(ActionAccel)),
            "accel_level": ActionAccel(action_full % len(ActionAccel))})

@@ -26,26 +26,13 @@ def select_actions_validity(state):
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
                ]
       sorted_idx = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                 ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value]
+                    ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+                    ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
+                    ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
+                    ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
+                    ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
+                    ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
+                    7, 8]
     if ego_exists_left_lane == 0 and ego_exists_right_lane == 1:
       valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
@@ -54,14 +41,7 @@ def select_actions_validity(state):
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-               ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-               ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-               ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-               ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-               ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-               ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-               ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
-               ]
+               8]
       sorted_idx = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
@@ -69,20 +49,7 @@ def select_actions_validity(state):
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value]
+                 8, 7]
     if ego_exists_left_lane == 1 and ego_exists_right_lane == 0:
       valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
@@ -91,14 +58,7 @@ def select_actions_validity(state):
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-               ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-               ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-               ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-               ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-               ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-               ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-               ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-               ]
+               7]
       sorted_idx = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
@@ -106,20 +66,7 @@ def select_actions_validity(state):
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value]
+                 7, 8]
     if ego_exists_left_lane == 1 and ego_exists_right_lane == 1:
         valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
@@ -128,21 +75,7 @@ def select_actions_validity(state):
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
-                 ]
+                 7, 8]
         sorted_idx = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
@@ -150,20 +83,7 @@ def select_actions_validity(state):
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                  ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                 ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                 ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value]
+                 7, 8]
 
     return (set(valid), sorted_idx)
 
@@ -212,21 +132,21 @@ def build_model_safety():
   veh_l = [shared_Dense1(x) for x in veh_inputs]
 
   veh_l = [tf.keras.layers.add([ego_l1, x]) for x in veh_l]
-  veh_l = [tf.keras.layers.LeakyReLU()(x) for x in veh_l]
+  veh_l = [tf.keras.layers.Activation("tanh")(x) for x in veh_l]
 
-  n_layers = 32
+  n_layers = 2
   Dense_list = [tf.keras.layers.Dense(128, activation=None) for _ in range(n_layers)]
   for i in range(n_layers):
     veh_l = [Dense_list[i](x) for x in veh_l]
-    veh_l = [tf.keras.layers.LeakyReLU()(x) for x in veh_l]
+    veh_l = [tf.keras.layers.Activation("tanh")(x) for x in veh_l]
 
-  shared_Dense2 = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation=None)
+  shared_Dense2 = tf.keras.layers.Dense(reduced_action_size, activation=None)
   veh_y = [shared_Dense2(x) for x in veh_l]
 
   y = tf.keras.layers.minimum(veh_y)
 
   model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
-  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.0001)
   model.compile(loss='logcosh', optimizer=opt)
 
   return model
@@ -254,7 +174,7 @@ def build_model_regulation():
   l2 = tf.keras.layers.Activation('tanh')(l2)
   l3 = tf.keras.layers.Dense(640, activation=None)(l2)
   l3 = tf.keras.layers.Activation('tanh')(l3)
-  y = tf.keras.layers.Dense(len(ActionLaneChange) * len(ActionAccel), activation='linear')(l3)
+  y = tf.keras.layers.Dense(reduced_action_size, activation='linear')(l3)
 
   model = tf.keras.models.Model(inputs=[x], outputs=[y, y])
   opt = tf.keras.optimizers.RMSprop(lr=0.00001)
@@ -278,70 +198,32 @@ def select_actions_speed_comfort(state):
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
-                     ]
+                     7, 8]
     elif ego_correct_lane_gap > 0:
-      valid = [ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+      valid = [7,
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value]
-      sorted_idx  = [ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+      sorted_idx  = [7,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
+                     8
                      ]
     else:
-      valid = [ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value]
-      sorted_idx  = [ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+      valid = [8,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value]
+      sorted_idx  = [8,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
+                     7
                      ]
   elif ego_speed > MAX_VEH_SPEED + 1.4:
     if ego_correct_lane_gap == 0:
@@ -353,78 +235,39 @@ def select_actions_speed_comfort(state):
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value
+                     7, 8
                      ]
     elif ego_correct_lane_gap > 0:
-      valid = [ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value]
-      sorted_idx  = [ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+      valid = [7,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value]
+      sorted_idx  = [7,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
+                     8
                      ]
     else:
-      valid = [ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value]
-      sorted_idx  = [ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
+      valid = [8,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value]
+      sorted_idx  = [8,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
+                     7
                      ]
   else:
     if ego_correct_lane_gap == 0:
       valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value]
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value]
       sorted_idx  = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
@@ -432,86 +275,42 @@ def select_actions_speed_comfort(state):
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
-                     ]
+                     7, 8]
     elif ego_correct_lane_gap > 0:
-      valid = [ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value]
-      sorted_idx  = [ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+      valid = [7,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value]
+      sorted_idx  = [7,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
-                     ]
+                     8]
     elif ego_correct_lane_gap < 0:
-      valid = [ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value]
-      sorted_idx  = [ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+      valid = [8,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value]
+      sorted_idx  = [8,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.NOOP.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.RIGHT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.NOOP.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MINDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MEDDECEL.value,
-                     ActionLaneChange.LEFT.value * len(ActionAccel) + ActionAccel.MAXDECEL.value
-                     ]
+                     7]
   return (set(valid), sorted_idx)
-
-action_size = len(ActionLaneChange) * len(ActionAccel)
 
 cfg_validity = DQNCfg(name = "validity",
                       play=False,
                       resume = False,
                       state_size=2,
-                      action_size=action_size,
+                      action_size=reduced_action_size,
                       low_target=None,
                       high_target=None,
                       gamma=None,
@@ -540,7 +339,7 @@ cfg_safety = DQNCfg(name = "safety",
                     play = False,
                     resume = False,
                     state_size = 5 + 12*NUM_VEH_CONSIDERED,
-                    action_size = action_size,
+                    action_size = reduced_action_size,
                     low_target=-1,
                     high_target=0,
                     gamma = 0.9,
@@ -550,9 +349,9 @@ cfg_safety = DQNCfg(name = "safety",
                     epsilon_dec = 0.0000001,
                     epsilon_min = 0.6,
                     threshold = -0.05,
-                    memory_size = 64000,
+                    memory_size = 3200,
                     traj_end_pred = returnTrue(),
-                    replay_batch_size = 32,
+                    replay_batch_size = 320,
                     traj_end_ratio= 0.0001,
                     _build_model = build_model_safety,
                     tf_cfg = tf_cfg_safety,
@@ -562,7 +361,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         play = False,
                         resume = False,
                         state_size = 4 + 2*NUM_LANE_CONSIDERED + 7*NUM_VEH_CONSIDERED,
-                        action_size = action_size,
+                        action_size = reduced_action_size,
                         low_target=-10,
                         high_target=0,
                         gamma = 0.90,
@@ -584,7 +383,7 @@ cfg_speed_comfort = DQNCfg(name = "speed_comfort",
                            play = False,
                            resume=False,
                            state_size = 2,
-                           action_size = action_size,
+                           action_size = reduced_action_size,
                            low_target=None,
                            high_target=None,
                            gamma = None,
