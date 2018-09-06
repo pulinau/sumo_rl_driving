@@ -89,6 +89,7 @@ def select_actions_validity(state):
 
 def reshape_safety(obs_dict):
   """reshape gym observation to keras neural network input"""
+  # sqrt is used to strech the input to emphasize the near zero part
   o0 = np.array([np.sqrt(obs_dict["ego_speed"]/MAX_VEH_SPEED) - 0.5,
                  np.sqrt(min(obs_dict["ego_dist_to_end_of_lane"]/OBSERVATION_RADIUS, 1.0)) - 0.5,
                  obs_dict["ego_in_intersection"] - 0.5,
@@ -100,8 +101,8 @@ def reshape_safety(obs_dict):
   o1 = np.append(o1, np.array([obs_dict["brake_signal"]]) - 0.5, axis=0)
   o1 = np.append(o1, np.array([obs_dict["left_signal"]]) - 0.5, axis=0)
   o1 = np.append(o1, np.array([obs_dict["right_signal"]]) - 0.5, axis=0)
-  rel_speed = np.array([obs_dict["relative_speed"]]) / MAX_VEH_SPEED
-  rel_speed = np.sqrt(np.minimum(np.abs(rel_speed), np.ones((1, NUM_VEH_CONSIDERED))*0.5)) * np.sign(rel_speed)
+  rel_speed = np.array([obs_dict["relative_speed"]]) / MAX_VEH_SPEED + 0.5
+  rel_speed = np.minimum(np.sqrt(np.abs(rel_speed)), np.ones((1, NUM_VEH_CONSIDERED))*0.5) * np.sign(rel_speed)
   o1  = np.append(o1, rel_speed , axis=0)
   o1  = np.append(o1, np.sqrt(np.minimum(np.array([obs_dict["dist_to_end_of_lane"]])/OBSERVATION_RADIUS,
                               np.ones((1, NUM_VEH_CONSIDERED)))) - 0.5, axis = 0)
