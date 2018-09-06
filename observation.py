@@ -19,7 +19,7 @@ def get_observation_space(env):
              "exists_vehicle": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "is_new": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "collision": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
-             "relative_speed": spaces.Box(-2* env.MAX_VEH_SPEED, 2* env.MAX_VEH_SPEED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),  # relative speed projected onto ego speed
+             "relative_speed": spaces.Box(-2* env.MAX_VEH_SPEED, env.MAX_VEH_SPEED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),  # relative speed projected onto ego speed, not symmetric
              "dist_to_end_of_lane": spaces.Box(0, env.OBSERVATION_RADIUS, (env.NUM_VEH_CONSIDERED,), dtype=np.float32),
              "right_signal": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "left_signal": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
