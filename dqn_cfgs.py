@@ -132,13 +132,13 @@ def build_model_safety():
   veh_l = [shared_Dense1(x) for x in veh_inputs]
 
   veh_l = [tf.keras.layers.add([ego_l1, x]) for x in veh_l]
-  veh_l = [tf.keras.layers.Activation("tanh")(x) for x in veh_l]
+  veh_l = [tf.keras.layers.Activation("sigmoid")(x) for x in veh_l]
 
-  n_layers = 2
+  n_layers = 3
   Dense_list = [tf.keras.layers.Dense(128, activation=None) for _ in range(n_layers)]
   for i in range(n_layers):
     veh_l = [Dense_list[i](x) for x in veh_l]
-    veh_l = [tf.keras.layers.Activation("tanh")(x) for x in veh_l]
+    veh_l = [tf.keras.layers.Activation("sigmoid")(x) for x in veh_l]
 
   shared_Dense2 = tf.keras.layers.Dense(reduced_action_size, activation=None)
   veh_y = [shared_Dense2(x) for x in veh_l]
@@ -344,7 +344,7 @@ cfg_safety = DQNCfg(name = "safety",
                     high_target=0,
                     gamma = 0.9,
                     gamma_inc = 0.00000001,
-                    gamma_max = 0.95,
+                    gamma_max = 0.9,
                     epsilon = 0.8,
                     epsilon_dec = 0.0000001,
                     epsilon_min = 0.6,

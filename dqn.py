@@ -173,9 +173,9 @@ class DQNAgent:
 
     # clamp targets larger than zero to zero
     backup[np.where(backup > 0)] = 0
-    backup[np.where(backup < self.low_target)] = self.low_target
 
     targets = (self.gamma**steps)*rewards + backup
+    targets[np.where(targets < self.low_target)] = self.low_target
 
     # clamp incorrect target to zero
     for i in range(m):
@@ -193,7 +193,7 @@ class DQNAgent:
 
     self.loss_hist.append(loss[0])
     ep = 0
-    while loss[0] > 1 * np.median(self.loss_hist) and ep < 60:
+    while loss[0] > 10 * np.median(self.loss_hist) and ep < 60:
       ep += 1
       targets_f = self.model.predict_on_batch(states)
       # clamp incorrect target to zero
