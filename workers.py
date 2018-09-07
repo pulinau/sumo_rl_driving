@@ -40,8 +40,13 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       print("env id: {}".format(id), "episode: {}/{}".format(ep, max_ep))
       if play:
         init_step = 0
+        model_index = None
       else:
         init_step = random.randrange(160)
+        model_index_list = [None] * len(dqn_cfg_list)
+        for i in range(len(dqn_cfg_list)):
+          if dqn_cfg_list[i].model_rst_prob_list is not None:
+            model_index_list[i] = random.randrange(len(dqn_cfg_list[i].model_rst_prob_list))
       obs_dict = env.reset(init_step)
       traj = []
 
@@ -71,8 +76,8 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           else:
             action_set_list, sorted_idx_list = [], []
 
-            for obs_q in obs_q_list:
-              obs_q.put(deepcopy(obs_dict))
+            for obs_q, model_index in zip(obs_q_list, model_index_list):
+              obs_q.put(deepcopy(obs_dict), model_index)
 
             for action_q in action_q_list:
               while action_q.empty():
@@ -114,13 +119,13 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         if env.agt_ctrl == False:
           action_info = "sumo"
 
-        # choose next action
         if step % 8 == 0 or action >= len(ActionAccel):
+
+          # choose tentative actions for each objective
           for obs_q in obs_q_list:
-            obs_q.put(deepcopy(next_obs_dict))
+            obs_q.put(deepcopy(next_obs_dict), None)
 
           action_set_list, sorted_idx_list = [], []
-          # tentative actions for each objective
           tent_action_list = []
           tent_action_info_list = []
 
@@ -138,6 +143,20 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
             tent_action_list += [tent_action]
             tent_action_info_list += [tent_action_info]
 
+          # choose next action using model[model_index]
+          action_set_list, sorted_idx_list = [], []
+
+          for obs_q, model_index in zip(obs_q_list, model_index_list):
+            obs_q.put(deepcopy(obs_dict), model_index)
+
+          for action_q in action_q_list:
+            while action_q.empty():
+              if not end_q.empty():
+                return
+            (action_set, sorted_idx) = action_q.get()
+            action_set_list += [action_set]
+            sorted_idx_list += [sorted_idx]
+
           is_explr_list = [False] * len(dqn_cfg_list)
           next_important = False
           i = random.randrange(len(dqn_cfg_list))
@@ -147,6 +166,13 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           next_action, next_action_info = select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list,
                                                         1)
 
+        else:
+          if next_action >= len(ActionAccel):
+            next_action_ = 3
+
+          for i in range(len(tent_action_list)):
+            if tent_action_list[i] >= len(ActionAccel):
+              tent_action_list[i] = 3
 
         if env_state != EnvState.DONE:
           traj.append((obs_dict, action, reward_list, next_obs_dict, tent_action_list, done_list, important))
@@ -229,8 +255,8 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
     while True:
       for obs_q, action_q in zip(obs_q_list, action_q_list):
         try:
-          obs_dict = obs_q.get(block=False)
-          action_q.put(agt.select_actions(obs_dict))
+          obs_dict, model_index = obs_q.get(block=False)
+          action_q.put(agt.select_actions(obs_dict, model_index=model_index))
         except queue.Empty:
           if not end_q.empty():
             return
