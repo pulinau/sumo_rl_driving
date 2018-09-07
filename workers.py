@@ -77,7 +77,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
             action_set_list, sorted_idx_list = [], []
 
             for obs_q, model_index in zip(obs_q_list, model_index_list):
-              obs_q.put(deepcopy(obs_dict), model_index)
+              obs_q.put((deepcopy(obs_dict), model_index))
 
             for action_q in action_q_list:
               while action_q.empty():
@@ -123,7 +123,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
 
           # choose tentative actions for each objective
           for obs_q in obs_q_list:
-            obs_q.put(deepcopy(next_obs_dict), None)
+            obs_q.put((deepcopy(next_obs_dict), None))
 
           action_set_list, sorted_idx_list = [], []
           tent_action_list = []
@@ -147,7 +147,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           action_set_list, sorted_idx_list = [], []
 
           for obs_q, model_index in zip(obs_q_list, model_index_list):
-            obs_q.put(deepcopy(obs_dict), model_index)
+            obs_q.put((deepcopy(obs_dict), model_index))
 
           for action_q in action_q_list:
             while action_q.empty():

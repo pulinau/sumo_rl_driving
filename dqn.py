@@ -161,7 +161,7 @@ class DQNAgent:
     if self._select_actions is not None or self.play == True:
       return
 
-    for model, target_model, lost_hist in zip(self.model_list + [self.model],
+    for model, target_model, loss_hist in zip(self.model_list + [self.model],
                                               self.target_model_list + [self.target_model],
                                               self.loss_hist_list + [self.loss_hist]):
 
@@ -208,7 +208,7 @@ class DQNAgent:
 
       loss_hist.append(loss[0])
       ep = 0
-      while loss[0] > 1 * np.median(loss_hist) and ep < 60:
+      while loss[0] > 2 * np.median(loss_hist) and ep < 60:
         ep += 1
         targets_f = model.predict_on_batch(states)
         # clamp incorrect target to zero
