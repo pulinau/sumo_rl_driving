@@ -35,6 +35,7 @@ class DQNCfg():
                replay_batch_size,
                traj_end_ratio,
                _build_model,
+               model_rst_prob_list,
                tf_cfg,
                reshape,
                _select_actions = None):
@@ -57,6 +58,7 @@ class DQNCfg():
     self.replay_batch_size = replay_batch_size
     self.traj_end_ratio = traj_end_ratio # ratio states where bootstrap happens in the sample
     self._build_model = _build_model
+    self.model_rst_prob_list = model_rst_prob_list
     self.tf_cfg = tf_cfg
     self.reshape = reshape
     self._select_actions = _select_actions
@@ -91,7 +93,6 @@ class DQNAgent:
     tf.keras.backend.set_session(tf.Session(config=self.tf_cfg))
     if self.play == True:
       self.epsilon = 0
-      self.model = self._load_model(self.name + ".sav")
     else:
       manager = ReplayMemoryManager()
       manager.start()
@@ -106,6 +107,11 @@ class DQNAgent:
                                                 end_q))
                                for _ in range(4)]
       [p.start() for p in self.feed_samp_p_list]
+
+      # half trained model to keep exploration steady
+      self.model_list = [self._build_model() for _ in range(len(self.model_rst_prob_list))]
+      self.target_model_list = [self._build_model() for _ in range(len(self.model_rst_prob_list))]
+      self.loss_hist_list = [deque(maxlen=10) for _ in range(len(self.model_rst_prob_list))]
 
       self.loss_hist = deque(maxlen=10)
 
@@ -126,7 +132,7 @@ class DQNAgent:
             for obs_dict, action, reward, next_obs_dict, next_action, done, important in traj]
     self.memory.add_traj(traj, self.traj_end_pred, prob)
 
-  def select_actions(self, obs_dict):
+  def select_actions(self, obs_dict, model_index=None):
     """
     select actions based on Q value
     :param obs_dict:
@@ -136,7 +142,12 @@ class DQNAgent:
     if self._select_actions is not None:
       return self._select_actions(self.reshape(obs_dict))
 
-    act_values = self.model.predict(self.reshape(obs_dict))[-1][0]
+    if model_index is None:
+      model = self.model
+    else:
+      model = self.model_list[model_index]
+
+    act_values = model.predict(self.reshape(obs_dict))[-1][0]
     sorted_idx = np.argsort(act_values)[::-1]
 
     if self.play == True:
@@ -150,52 +161,37 @@ class DQNAgent:
     if self._select_actions is not None or self.play == True:
       return
 
-    try:
-      states, actions, rewards, next_states, next_actions, not_dones, steps = self.sample_q.get(block=False)
-    except queue.Empty:
-      #print("replay qsize: ", self.sample_q.qsize())
-      #print(self.name, " empty")
-      return
+    for model, target_model, lost_hist in zip(self.model_list + [self.model],
+                                              self.target_model_list + [self.target_model],
+                                              self.loss_hist_list + [self.loss_hist]):
 
-    rewards = np.array(rewards)
-    not_dones = np.array(not_dones)
+      try:
+        states, actions, rewards, next_states, next_actions, not_dones, steps = self.sample_q.get(block=False)
+      except queue.Empty:
+        # print("replay qsize: ", self.sample_q.qsize())
+        # print(self.name, " empty")
+        return
 
-    targets_f = self.model.predict_on_batch(states)
-    m, n = len(targets_f)-1, len(targets_f[0])
+      rewards = np.array(rewards)
+      not_dones = np.array(not_dones)
 
-    actions =  np.array(actions, dtype=np.int) * np.ones(shape=(m, n), dtype=np.int)
-    next_actions = np.array(next_actions, dtype=np.int) * np.ones(shape=(m, n), dtype=np.int)
-    steps = np.array(steps, dtype=np.int) * np.ones(shape=(m, n), dtype=np.int)
+      targets_f = model.predict_on_batch(states)
+      m, n = len(targets_f) - 1, len(targets_f[0])
 
-    next_q = self.target_model.predict_on_batch(next_states)[:-1]
-    backup = np.array([[next_q[i][j][next_actions[i][j]] for j in range(n)] for i in range(m)])
-    backup = (self.gamma ** (steps + 1)) * not_dones * backup
+      actions = np.array(actions, dtype=np.int) * np.ones(shape=(m, n), dtype=np.int)
+      next_actions = np.array(next_actions, dtype=np.int) * np.ones(shape=(m, n), dtype=np.int)
+      steps = np.array(steps, dtype=np.int) * np.ones(shape=(m, n), dtype=np.int)
 
-    # clamp targets larger than zero to zero
-    backup[np.where(backup > 0)] = 0
+      next_q = target_model.predict_on_batch(next_states)[:-1]
+      backup = np.array([[next_q[i][j][next_actions[i][j]] for j in range(n)] for i in range(m)])
+      backup = (self.gamma ** (steps + 1)) * not_dones * backup
 
-    targets = (self.gamma**steps)*rewards + backup
-    targets[np.where(targets < self.low_target)] = self.low_target
+      # clamp targets larger than zero to zero
+      backup[np.where(backup > 0)] = 0
+      backup[np.where(backup < self.low_target)] = self.low_target
 
-    # clamp incorrect target to zero
-    for i in range(m):
-      for j in range(n):
-        x = targets_f[i][j]
-        x[np.where(x > 0)] = 0
-        x[np.where(x < self.low_target)] = self.low_target
-        x[actions[i][j]] = targets[i][j]
+      targets = (self.gamma ** steps) * rewards + backup
 
-    #print(self.name, targets_f[-1][0])
-
-    loss = self.model.train_on_batch(states, targets_f)
-    if self.name == "safety":
-      print(loss[0])
-
-    self.loss_hist.append(loss[0])
-    ep = 0
-    while loss[0] > 10 * np.median(self.loss_hist) and ep < 60:
-      ep += 1
-      targets_f = self.model.predict_on_batch(states)
       # clamp incorrect target to zero
       for i in range(m):
         for j in range(n):
@@ -203,10 +199,30 @@ class DQNAgent:
           x[np.where(x > 0)] = 0
           x[np.where(x < self.low_target)] = self.low_target
           x[actions[i][j]] = targets[i][j]
-      loss = self.model.train_on_batch(states, targets_f)
-      if self.name == "safety":
-        print(self.name, "supplementary training:", np.median(self.loss_hist), loss[0])
 
+      # print(self.name, targets_f[-1][0])
+
+      loss = model.train_on_batch(states, targets_f)
+      if self.name == "safety":
+        print(loss[0])
+
+      loss_hist.append(loss[0])
+      ep = 0
+      while loss[0] > 1 * np.median(loss_hist) and ep < 60:
+        ep += 1
+        targets_f = model.predict_on_batch(states)
+        # clamp incorrect target to zero
+        for i in range(m):
+          for j in range(n):
+            x = targets_f[i][j]
+            x[np.where(x > 0)] = 0
+            x[np.where(x < self.low_target)] = self.low_target
+            x[actions[i][j]] = targets[i][j]
+        loss = model.train_on_batch(states, targets_f)
+        if self.name == "safety":
+          print(self.name, "supplementary training:", np.median(loss_hist), loss[0])
+
+    self.reset_models()
     if self.gamma < self.gamma_max:
       self.gamma += self.gamma_inc
     if self.epsilon > self.epsilon_min:
@@ -215,7 +231,19 @@ class DQNAgent:
   def update_target(self):
     if self._select_actions is not None or self.play == True:
       return
-    self.target_model.set_weights(self.model.get_weights())
+    for model, target_model in zip(self.model_list + [self.model],
+                                   self.target_model_list + [self.target_model]):
+      target_model.set_weights(model.get_weights())
+
+  def reset_models(self):
+    """
+    reset exploration models
+    :return: None
+    """
+    for i in range(len(self.model_list)):
+      if random.random() < self.model_rst_prob_list[i]:
+        self.model_list[i] = self._build_model()
+        self.target_model_list[i] = self._build_model()
 
   def _load_model(self, filename):
     return tf.keras.models.load_model(filename, custom_objects={"tf": tf, "NUM_VEH_CONSIDERED": self.sumo_cfg.NUM_VEH_CONSIDERED})

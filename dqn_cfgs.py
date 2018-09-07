@@ -326,6 +326,7 @@ cfg_validity = DQNCfg(name = "validity",
                       replay_batch_size=None,
                       traj_end_ratio= None,
                       _build_model=None,
+                      model_rst_prob_list = None,
                       tf_cfg=None,
                       reshape=reshape_validity,
                       _select_actions=select_actions_validity)
@@ -355,6 +356,7 @@ cfg_safety = DQNCfg(name = "safety",
                     replay_batch_size = 320,
                     traj_end_ratio= 0.0001,
                     _build_model = build_model_safety,
+                    model_rst_prob_list = [1/1000, 1/10000, 1/100000, 1/1000000],
                     tf_cfg = tf_cfg_safety,
                     reshape = reshape_safety)
 
@@ -377,6 +379,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         replay_batch_size = 160,
                         traj_end_ratio= 0.0001,
                         _build_model = build_model_regulation,
+                        model_rst_prob_list = [1/1000, 1/10000, 1/10000],
                         tf_cfg = tf_cfg_regulation,
                         reshape = reshape_regulation)
 
@@ -399,6 +402,7 @@ cfg_speed_comfort = DQNCfg(name = "speed_comfort",
                            replay_batch_size = None,
                            traj_end_ratio= None,
                            _build_model = None,
+                           model_rst_prob_list = None,
                            tf_cfg = None,
                            reshape = reshape_speed_comfort,
                            _select_actions=select_actions_speed_comfort)
