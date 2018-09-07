@@ -147,7 +147,7 @@ def build_model_safety():
   y = tf.keras.layers.minimum(veh_y)
 
   model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
-  opt = tf.keras.optimizers.RMSprop(lr=0.0001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
   model.compile(loss='logcosh', optimizer=opt)
 
   return model
