@@ -161,16 +161,16 @@ class DQNAgent:
     if self._select_actions is not None or self.play == True:
       return
 
+    try:
+      states, actions, rewards, next_states, next_actions, not_dones, steps = self.sample_q.get(block=False)
+    except queue.Empty:
+      # print("replay qsize: ", self.sample_q.qsize())
+      # print(self.name, " empty")
+      return
+
     for model, target_model, loss_hist in zip(self.model_list + [self.model],
                                               self.target_model_list + [self.target_model],
                                               self.loss_hist_list + [self.loss_hist]):
-
-      try:
-        states, actions, rewards, next_states, next_actions, not_dones, steps = self.sample_q.get(block=False)
-      except queue.Empty:
-        # print("replay qsize: ", self.sample_q.qsize())
-        # print(self.name, " empty")
-        return
 
       rewards = np.array(rewards)
       not_dones = np.array(not_dones)
