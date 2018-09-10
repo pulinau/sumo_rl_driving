@@ -7,7 +7,7 @@ from sumo_gym import SumoCfg
 # --------------------------
 #          SUMO
 # --------------------------
-SUMO_BIN = "/home/ken/project/sumo-bin/bin/sumo"
+SUMO_BIN = "/home/ken/project/sumo-bin/bin/sumo-gui"
 SUMO_TIME_STEP = 0.1
 
 # "--net-file" and "route_file"
@@ -18,7 +18,7 @@ SUMO_CMD = [SUMO_BIN,
             "--no-warnings", "true",
             "--time-to-teleport", "-1",
             "--collision.action", "warn",
-            #"--collision.mingap-factor", "0",
+            "--collision.mingap-factor", "0",
             "--collision.check-junctions", "true",
             "--xml-validation", "never",
             "--step-length", str(SUMO_TIME_STEP),

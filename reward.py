@@ -22,8 +22,9 @@ def get_reward_safety(env):
   for i, c in enumerate(obs_dict["collision"]):
     r = 0
     d = False
-    if (old_obs_dict is not None and old_obs_dict["ttc"][i] > obs_dict["ttc"][i] + 0.0001 and obs_dict["ttc"][i] < 3) \
-        or (env.env_state == EnvState.CRASH and c == 1):
+    if (old_obs_dict is not None and old_obs_dict["ttc"][i] > obs_dict["ttc"][i] + 0.000001 and
+        (obs_dict["ttc"][i] < 2 or np.linalg.norm(obs_dict["relative_position"][i]) < 4)
+        ) or (env.env_state == EnvState.CRASH and c == 1):
       r = -1
     if obs_dict["is_new"][i] == 1 or r == -1:
       d = True
@@ -33,17 +34,20 @@ def get_reward_safety(env):
   return (rewards, dones)
 
 def get_reward_regulation(env):
-  obs_dict = env.obs_dict_hist[-1]
   r = 0
   done = False
 
-  if obs_dict["ego_dist_to_end_of_lane"] < 60:
+  obs_dict = env.obs_dict_hist[-1]
+  if len(env.obs_dict_hist) > 1:
+    old_obs_dict = env.obs_dict_hist[-2]
+
+  if obs_dict["ego_dist_to_end_of_lane"] < 100:
     if obs_dict["ego_correct_lane_gap"] != 0:
       r = -0.1
 
-  if obs_dict["ego_dist_to_end_of_lane"] < 2 and obs_dict["ego_has_priority"] != 1:
-    if obs_dict["ego_speed"] > 0.2:
-      r = -0.1
+  if obs_dict["ego_dist_to_end_of_lane"] < 2 and obs_dict["ego_has_priority"] != 1 and \
+     obs_dict["ego_dist_to_end_of_lane"] > obs_dict["ego_dist_to_end_of_lane"] + 0.000001:
+      r = -1
 
   if obs_dict["ego_priority_changed"] == 1 or obs_dict["ego_edge_changed"] == 1:
     done = True

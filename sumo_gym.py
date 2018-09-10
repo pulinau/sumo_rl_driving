@@ -131,6 +131,13 @@ class MultiObjSumoEnv(SumoGymEnv):
     assert self.env_state == EnvState.NORMAL, "env.env_state is not EnvState.NORMAL"
     try:
       self.env_state = act(self, self.EGO_VEH_ID, action_dict)
+
+      # if ego reaches the end of an incorrect (turning) lane, simulation is considered as DONE
+      if self.env_state == EnvState.NORMAL and \
+         self.obs_dict_hist[-1]["ego_dist_to_end_of_lane"] < 0.01 and \
+         self.obs_dict_hist[-1]["ego_correct_lane_gap"] != 0:
+        self.env_state = EnvState.DONE
+
       if self.env_state == EnvState.DONE:
         obs_dict = deepcopy(self.obs_dict_hist[-1])
         veh_dict = deepcopy(self.veh_dict_hist[-1])
