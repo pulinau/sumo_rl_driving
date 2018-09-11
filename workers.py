@@ -121,7 +121,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         if env.agt_ctrl == False:
           action_info = "sumo"
 
-        if step % 8 == 0 or action >= len(ActionAccel):
+        if step % 1 == 0 or action >= len(ActionAccel):
 
           # choose tentative actions for each objective
           for obs_q in obs_q_list:
@@ -268,7 +268,7 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
       #  print("training ", agt.name, " episode: {}".format(ep))
       agt.replay()
 
-      if ep % 5000 == 5000 - 1:
+      if ep % 500 == 500 - 1:
         agt.update_target()
         agt.save_model()
 

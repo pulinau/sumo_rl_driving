@@ -133,13 +133,13 @@ def build_model_safety():
   veh_l = [shared_Dense1(x) for x in veh_inputs]
 
   veh_l = [tf.keras.layers.add([ego_l1, x]) for x in veh_l]
-  veh_l = [tf.keras.layers.Activation("sigmoid")(x) for x in veh_l]
+  veh_l = [tf.keras.layers.LeakyReLU()(x) for x in veh_l]
 
-  n_layers = 3
+  n_layers = 8
   Dense_list = [tf.keras.layers.Dense(128, activation=None) for _ in range(n_layers)]
   for i in range(n_layers):
     veh_l = [Dense_list[i](x) for x in veh_l]
-    veh_l = [tf.keras.layers.Activation("sigmoid")(x) for x in veh_l]
+    veh_l = [tf.keras.layers.LeakyReLU()(x) for x in veh_l]
 
   shared_Dense2 = tf.keras.layers.Dense(reduced_action_size, activation=None)
   veh_y = [shared_Dense2(x) for x in veh_l]
@@ -147,7 +147,7 @@ def build_model_safety():
   y = tf.keras.layers.minimum(veh_y)
 
   model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
-  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.001)
   model.compile(loss='logcosh', optimizer=opt)
 
   return model
@@ -347,16 +347,16 @@ cfg_safety = DQNCfg(name = "safety",
                     gamma = 0.9,
                     gamma_inc = 0.00000001,
                     gamma_max = 0.9,
-                    epsilon = 0.8,
-                    epsilon_dec = 0.0000001,
-                    epsilon_min = 0.6,
+                    epsilon = 0.2,
+                    epsilon_dec = 0.00001,
+                    epsilon_min = 0.2,
                     threshold = -0.05,
                     memory_size = 3200,
                     traj_end_pred = returnTrue(),
                     replay_batch_size = 320,
                     traj_end_ratio= 0.0001,
                     _build_model = build_model_safety,
-                    model_rst_prob_list = [1/1000, 1/10000, 1/100000, 1/1000000],
+                    model_rst_prob_list = [1/5000, 1/20000, 1/100000, 1/1000000],
                     tf_cfg = tf_cfg_safety,
                     reshape = reshape_safety)
 
@@ -365,21 +365,21 @@ cfg_regulation = DQNCfg(name = "regulation",
                         resume = False,
                         state_size = 4 + 2*NUM_LANE_CONSIDERED + 7*NUM_VEH_CONSIDERED,
                         action_size = reduced_action_size,
-                        low_target=-10,
+                        low_target=-1,
                         high_target=0,
                         gamma = 0.90,
                         gamma_inc = 0.00000001,
                         gamma_max = 0.95,
-                        epsilon=0.8,
+                        epsilon=0.2,
                         epsilon_dec=0.0000001,
-                        epsilon_min=0.6,
+                        epsilon_min=0.2,
                         threshold = -0.5,
                         memory_size = 64000,
                         traj_end_pred = returnTrue(),
                         replay_batch_size = 160,
                         traj_end_ratio= 0.0001,
                         _build_model = build_model_regulation,
-                        model_rst_prob_list = [1/1000, 1/10000, 1/10000],
+                        model_rst_prob_list = [1/5000, 1/10000, 1/10000],
                         tf_cfg = tf_cfg_regulation,
                         reshape = reshape_regulation)
 

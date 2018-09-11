@@ -18,13 +18,15 @@ def get_reward_safety(env):
   old_obs_dict = None
   if len(env.obs_dict_hist) > 1:
     old_obs_dict = env.obs_dict_hist[-2]
+  action_dict = env.action_dict_hist[-1]
 
   for i, c in enumerate(obs_dict["collision"]):
     r = 0
     d = False
     if (old_obs_dict is not None and old_obs_dict["ttc"][i] > obs_dict["ttc"][i] + 0.000001 and
-        (obs_dict["ttc"][i] < 2 or np.linalg.norm(obs_dict["relative_position"][i]) < 4)
-        ) or (env.env_state == EnvState.CRASH and c == 1):
+        (obs_dict["ttc"][i] < 4 or np.linalg.norm(obs_dict["relative_position"][i]) < 6)
+        ) or (env.env_state == EnvState.CRASH and c == 1
+        ) or (action_dict["lane_change"] != ActionAccel.NOOP and obs_dict["ttc"][i] < 4):
       r = -1
     if obs_dict["is_new"][i] == 1 or r == -1:
       d = True

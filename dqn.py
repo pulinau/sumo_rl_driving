@@ -150,7 +150,7 @@ class DQNAgent:
     act_values = model.predict(self.reshape(obs_dict))[-1][0]
     sorted_idx = np.argsort(act_values)[::-1]
 
-    if self.play == True:
+    if self.play == True and self.name == "safety":
       print(act_values)
 
     action_set = set(np.where(act_values >= np.max(act_values) + self.threshold)[0])
@@ -208,7 +208,7 @@ class DQNAgent:
 
       loss_hist.append(loss[0])
       ep = 0
-      while loss[0] > 2 * np.median(loss_hist) and ep < 60:
+      while loss[0] > 1 * np.median(loss_hist) and ep < 10:
         ep += 1
         targets_f = model.predict_on_batch(states)
         # clamp incorrect target to zero
