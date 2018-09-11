@@ -168,10 +168,9 @@ class DQNAgent:
       # print(self.name, " empty")
       return
 
-    for model, target_model, loss_hist in zip(self.model_list + [self.model],
-                                              self.target_model_list + [self.target_model],
-                                              self.loss_hist_list + [self.loss_hist]):
-
+    for model_index, (model, target_model, loss_hist) in enumerate(zip(self.model_list + [self.model],
+                                                                       self.target_model_list + [self.target_model],
+                                                                       self.loss_hist_list + [self.loss_hist])):
       rewards = np.array(rewards)
       not_dones = np.array(not_dones)
 
@@ -204,11 +203,14 @@ class DQNAgent:
 
       loss = model.train_on_batch(states, targets_f)
       if self.name == "safety":
-        print(loss[0])
+        print("model ", model_index, " ", loss[0])
 
       loss_hist.append(loss[0])
+
       ep = 0
-      while loss[0] > 1 * np.median(loss_hist) and ep < 10:
+      factor = 2
+      max_train_ep = loss[0]/np.median(loss_hist) - factor
+      while loss[0] > factor * np.median(loss_hist) and ep < 100 * max_train_ep and model_index == len(self.model_list):
         ep += 1
         targets_f = model.predict_on_batch(states)
         # clamp incorrect target to zero
@@ -220,7 +222,7 @@ class DQNAgent:
             x[actions[i][j]] = targets[i][j]
         loss = model.train_on_batch(states, targets_f)
         if self.name == "safety":
-          print(self.name, "supplementary training:", np.median(loss_hist), loss[0])
+          print("model ", model_index, " ", self.name, " supplementary training:", np.median(loss_hist), loss[0])
 
     self.reset_models()
     if self.gamma < self.gamma_max:

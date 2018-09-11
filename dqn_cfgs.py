@@ -147,7 +147,7 @@ def build_model_safety():
   y = tf.keras.layers.minimum(veh_y)
 
   model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
-  opt = tf.keras.optimizers.RMSprop(lr=0.001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.0001)
   model.compile(loss='logcosh', optimizer=opt)
 
   return model
@@ -353,7 +353,7 @@ cfg_safety = DQNCfg(name = "safety",
                     threshold = -0.05,
                     memory_size = 3200,
                     traj_end_pred = returnTrue(),
-                    replay_batch_size = 320,
+                    replay_batch_size = 32,
                     traj_end_ratio= 0.0001,
                     _build_model = build_model_safety,
                     model_rst_prob_list = [1/5000, 1/20000, 1/100000, 1/1000000],
