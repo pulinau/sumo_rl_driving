@@ -38,6 +38,7 @@ def get_reward_regulation(env):
   done = False
 
   obs_dict = env.obs_dict_hist[-1]
+  old_obs_dict = None
   if len(env.obs_dict_hist) > 1:
     old_obs_dict = env.obs_dict_hist[-2]
 
@@ -45,8 +46,10 @@ def get_reward_regulation(env):
     if obs_dict["ego_correct_lane_gap"] != 0:
       r = -0.1
 
-  if obs_dict["ego_dist_to_end_of_lane"] < 2 and obs_dict["ego_has_priority"] != 1 and \
-     obs_dict["ego_dist_to_end_of_lane"] > obs_dict["ego_dist_to_end_of_lane"] + 0.000001:
+  if obs_dict["ego_dist_to_end_of_lane"] < 3 and \
+     obs_dict["ego_has_priority"] != 1 and \
+     obs_dict["ego_in_intersection"] != 1 and \
+     old_obs_dict["ego_dist_to_end_of_lane"] > obs_dict["ego_dist_to_end_of_lane"] + 0.01:
       r = -1
 
   if obs_dict["ego_priority_changed"] == 1 or obs_dict["ego_edge_changed"] == 1:

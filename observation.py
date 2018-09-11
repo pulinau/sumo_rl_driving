@@ -92,12 +92,10 @@ def get_lanelet_dict(sumo_net_xml_file):
       lanelet_dict[lane_id]["to_node_id"] = edge.getToNode().getID()
       lanelet_dict[lane_id]["edge_id"] = edge.getID()
       lanelet_dict[lane_id]["lane_index"] = lane_index
-      
-      if lane_id[0] == ':':
-        lanelet_dict[lane_id]["edge_priority"] = np.float("inf")
-      else:
-        lanelet_dict[lane_id]["edge_priority"] = edge.getPriority()        
-      
+
+      if lane_id[0] != ':':
+        lanelet_dict[lane_id]["edge_priority"] = edge.getPriority()
+
       lanelet_dict[lane_id]["next_normal_lane_id_list"] = [conn.getToLane().getID() for conn in lane.getOutgoing()]
       if lane_id[0] == ':':
         lanelet_dict[lane_id]["next_lane_id_list"] = [conn.getToLane().getID() for conn in lane.getOutgoing()]
@@ -117,7 +115,17 @@ def get_lanelet_dict(sumo_net_xml_file):
       else:
         lanelet_dict[lane_id]["right_lane_id"] = edge.getLanes()[lane_index-1].getID()
     # "left" and "right" connections for opposite direction lane are not added
-  
+
+  # edge priority of internal lane inherits that of the previous lane
+  for edge in edges:
+    for lane in edge.getLanes():
+      lane_id = lane.getID()
+      if lane_id[0] == ':':
+        if len(lanelet_dict[lane_id]["prev_normal_lane_id_list"]) == 0:
+          lanelet_dict[lane_id]["edge_priority"] = None
+        else:
+          lanelet_dict[lane_id]["edge_priority"] = lanelet_dict[lanelet_dict[lane_id]["prev_normal_lane_id_list"][0]]["edge_priority"]
+
   return lanelet_dict
   
 def get_edge_dict(sumo_net_xml_file):
@@ -130,12 +138,7 @@ def get_edge_dict(sumo_net_xml_file):
     edge_dict[edge_id]["lane_id_list"] = [lane.getID() for lane in edge.getLanes()]
     edge_dict[edge_id]["from_node_id"] = edge.getFromNode().getID()
     edge_dict[edge_id]["to_node_id"] = edge.getToNode().getID()
-    # intersection has the highest priority
-    if edge_id[0] == ':':
-      edge_dict[edge_id]["priority"] = np.float("inf")
-    else:
-      edge_dict[edge_id]["priority"] = edge.getPriority()
-    
+
   return edge_dict
 
 def get_obs_dict(env):
@@ -308,13 +311,6 @@ def get_obs_dict(env):
     obs_dict["relative_heading"][veh_index] = relative_heading
 
     obs_dict["relative_speed"][veh_index] = state_dict["speed"] * np.cos(obs_dict["relative_heading"][veh_index]) - ego_dict["speed"]
-
-    # vehicle has priority over ego if the vehicle is
-    # approaching/in the same intersection and it's inside a lane of higher priority
-    # note that intersections (internal edges) are assigned the highest priority 
-    if edge_dict[state_dict["edge_id"]]["to_node_id"] == edge_dict[ego_dict["edge_id"]]["to_node_id"] and \
-       edge_dict[state_dict["edge_id"]]["priority"] > edge_dict[ego_dict["edge_id"]]["priority"]:
-      obs_dict["has_priority"][veh_index] = 1
     
     # check if the each of the possible relationship holds for the vehicle
     lane_id_list_veh_edge = edge_dict[state_dict["edge_id"]]["lane_id_list"]
@@ -362,15 +358,31 @@ def get_obs_dict(env):
         ) or (ego_dict["lane_id"] in lanelet_dict[state_dict["lane_id"]]["next_lane_id_list"]):
       obs_dict["veh_relation_behind"][veh_index] = 1  # BEHIND
 
+    # vehicle has priority over ego if the vehicle is
+    # approaching/in the same intersection and it's inside a lane of higher priority
+    # if a vehicle has a speed of less than 0.1, it's considered not the first vehicle at the intersection
+    if (obs_dict["veh_relation_conflict"] == 1 or obs_dict["veh_relation_peer"] == 1) and \
+       edge_dict[state_dict["edge_id"]]["to_node_id"] == edge_dict[ego_dict["edge_id"]]["to_node_id"] and \
+       state_dict["speed"] < 0.1:
+      if edge_dict[state_dict["edge_id"]]["priority"] > edge_dict[ego_dict["edge_id"]]["priority"]:
+        obs_dict["has_priority"][veh_index] = 1
+      elif edge_dict[state_dict["edge_id"]]["priority"] == edge_dict[ego_dict["edge_id"]]["priority"]:
+        if state_dict["right_signal"] == 0 and state_dict["left_signal"] == 0 and \
+           (ego_dict["right_signal"] != 0 or ego_dict["left_signal"] != 0):
+          obs_dict["has_priority"][veh_index] = 1
+        if state_dict["right_signal"] != 0 and ego_dict["left_signal"] != 0:
+          obs_dict["has_priority"][veh_index] = 1
+
+
     # time to collision (just an estimate)
     ego_v = np.array([0, obs_dict["ego_speed"]])
     speed = obs_dict["speed"][veh_index]
     angle = obs_dict["relative_heading"][veh_index] + np.pi / 2
     v = np.array([speed * np.cos(angle), speed * np.sin(angle)])
-    if obs_dict["veh_relation_ahead"][veh_index] or \
-       obs_dict["veh_relation_next"][veh_index] or \
-       obs_dict["veh_relation_conflict"][veh_index] or \
-       obs_dict["veh_relation_peer"][veh_index]:
+    if obs_dict["veh_relation_ahead"][veh_index] == 1 or \
+       obs_dict["veh_relation_next"][veh_index] == 1 or \
+       obs_dict["veh_relation_conflict"][veh_index] == 1 or \
+       obs_dict["veh_relation_peer"][veh_index] == 1:
         pos = obs_dict["relative_position"][veh_index]
         ttc = np.dot(pos, pos) / max(np.dot((ego_v - v), pos), 0.001)
         if ttc < -0.01 or ttc > env.MAX_TTC_CONSIDERED:

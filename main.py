@@ -14,41 +14,41 @@ from dqn_cfgs import cfg_validity, cfg_safety, cfg_regulation, cfg_speed_comfort
 from workers import run_env, run_QAgent
 
 if __name__ == "__main__":
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--play")
+  parser.add_argument("--resume")
+  args = parser.parse_args()
+
+  env = MultiObjSumoEnv(sumo_cfg)
+  max_ep = 50000
+  sim_inst = 10
+  dqn_cfg_list = [cfg_validity, cfg_safety, cfg_regulation, cfg_speed_comfort]
+  if args.resume:
+    for dqn_cfg in dqn_cfg_list:
+      dqn_cfg.resume = True
+  if args.play:
+    print("True")
+    for dqn_cfg in dqn_cfg_list:
+      dqn_cfg.play = True
+    max_ep = 10
+    sim_inst = 1
+  """
+  if args.play != True:
+    with open("examples.npz", "rb") as file:
+      npzfile = np.load(file)
+      mem = npzfile[npzfile.files[0]]
+      pretrain_traj_list = [[(obs_dict, action, None, None, True)] for traj in mem for obs_dict, action in traj]
+      mem = None
+      npzfile = None
+  """
+  pretrain_traj_list = []
+
+  obs_queues = [[mp.Queue(maxsize=5) for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
+  action_queues = [[mp.Queue(maxsize=5) for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
+  traj_queues = [[mp.Queue(maxsize=5) for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
+  end_q = mp.Queue(maxsize=5)  # if end_q is not empty, then all process must stop
+
   try:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--play")
-    parser.add_argument("--resume")
-    args = parser.parse_args()
-
-    env = MultiObjSumoEnv(sumo_cfg)
-    max_ep = 50000
-    sim_inst = 10
-    dqn_cfg_list = [cfg_validity, cfg_safety, cfg_regulation, cfg_speed_comfort]
-    if args.resume:
-      for dqn_cfg in dqn_cfg_list:
-        dqn_cfg.resume = True
-    if args.play:
-      print("True")
-      for dqn_cfg in dqn_cfg_list:
-        dqn_cfg.play = True
-      max_ep = 10
-      sim_inst = 1
-    """
-    if args.play != True:
-      with open("examples.npz", "rb") as file:
-        npzfile = np.load(file)
-        mem = npzfile[npzfile.files[0]]
-        pretrain_traj_list = [[(obs_dict, action, None, None, True)] for traj in mem for obs_dict, action in traj]
-        mem = None
-        npzfile = None
-    """
-    pretrain_traj_list = []
-
-    obs_queues = [[mp.Queue(maxsize=5) for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
-    action_queues = [[mp.Queue(maxsize=5) for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
-    traj_queues = [[mp.Queue(maxsize=5) for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
-    end_q = mp.Queue(maxsize=5)  # if end_q is not empty, then all process must stop
-
     env_list = [mp.Process(target=run_env,
                            name='sumo' + str(i),
                            args=(sumo_cfg,
