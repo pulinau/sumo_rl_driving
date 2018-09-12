@@ -384,7 +384,7 @@ def get_obs_dict(env):
        obs_dict["veh_relation_conflict"][veh_index] == 1 or \
        obs_dict["veh_relation_peer"][veh_index] == 1:
         pos = obs_dict["relative_position"][veh_index]
-        ttc = max(np.dot(pos, pos) - 5, 0) / max(np.dot((ego_v - v), pos), 0.0001)
+        ttc = max(np.linalg.norm(pos) - 5, 0) * np.linalg.norm(pos)/ max(np.dot((ego_v - v), pos), 0.0000001)
         if ttc < -0.01 or ttc > env.MAX_TTC_CONSIDERED:
           ttc = env.MAX_TTC_CONSIDERED
     else:
