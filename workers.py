@@ -266,13 +266,15 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
 
       # if agt.name == 'regulation' or agt.name == 'safety':
       #  print("training ", agt.name, " episode: {}".format(ep))
-      agt.replay()
 
-      if ep % 500 == 500 - 1:
-        agt.update_target()
-        agt.save_model()
+      if random.random() < 0.5:
+        agt.replay()
 
-      ep += 1
+        if ep % 500 == 500 - 1:
+          agt.update_target()
+          agt.save_model()
+
+        ep += 1
 
   except:
     end_q.put(True)
