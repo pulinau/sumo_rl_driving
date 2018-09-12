@@ -115,7 +115,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         if action_full >= 2 * len(ActionAccel):
           action = 8
 
-        if play:
+        if True: # play:
           print("action: ", action)
 
         if env.agt_ctrl == False:

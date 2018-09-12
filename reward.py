@@ -28,9 +28,11 @@ def get_reward_safety(env):
             np.linalg.norm(old_obs_dict["relative_position"][i]) > np.linalg.norm(obs_dict["relative_position"][i]) + 0.001 and
             np.linalg.norm(obs_dict["relative_position"][i]) <  4)
           ) and
-        (obs_dict["ttc"][i] < 4 or np.linalg.norm(obs_dict["relative_position"][i]) < 8)
+        (obs_dict["ttc"][i] < 4 or np.linalg.norm(obs_dict["relative_position"][i]) < 6)
         ) or (env.env_state == EnvState.CRASH and c == 1
-        ) or (action_dict["lane_change"] != ActionAccel.NOOP and obs_dict["ttc"][i] < 4):
+        ) or (action_dict["lane_change"] != ActionAccel.NOOP and (obs_dict["ttc"][i] < 4 or
+                                                                  np.linalg.norm(obs_dict["relative_position"][i]) < 8)
+        ):
       r = -1
     if obs_dict["is_new"][i] == 1 or r == -1:
       d = True

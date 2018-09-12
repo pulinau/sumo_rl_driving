@@ -105,7 +105,7 @@ class DQNAgent:
                                                 self.traj_end_ratio,
                                                 self.sample_q,
                                                 end_q))
-                               for _ in range(4)]
+                               for _ in range(1)]
       [p.start() for p in self.feed_samp_p_list]
 
       # half trained model to keep exploration steady
@@ -208,9 +208,9 @@ class DQNAgent:
       loss_hist.append(loss[0])
 
       ep = 0
-      factor = 2
-      max_train_ep = loss[0]/np.median(loss_hist) - factor
-      while loss[0] > factor * np.median(loss_hist) and ep < 100 * max_train_ep and model_index == len(self.model_list):
+      factor = 5
+      max_train_ep = loss[0]/max(np.median(loss_hist), 0.000000000001) - factor
+      while loss[0] > factor * np.median(loss_hist) and ep < min(10 * max_train_ep, 100) and model_index == len(self.model_list):
         ep += 1
         targets_f = model.predict_on_batch(states)
         # clamp incorrect target to zero

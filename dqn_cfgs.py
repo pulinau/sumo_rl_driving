@@ -126,20 +126,20 @@ tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
 
 def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(5, ))
-  ego_l1 = tf.keras.layers.Dense(128, activation=None)(ego_input)
+  ego_l1 = tf.keras.layers.Dense(320, activation=None)(ego_input)
 
   veh_inputs = [tf.keras.layers.Input(shape=(15,)) for _ in range(NUM_VEH_CONSIDERED)]
-  shared_Dense1 = tf.keras.layers.Dense(128, activation=None)
+  shared_Dense1 = tf.keras.layers.Dense(320, activation=None)
   veh_l = [shared_Dense1(x) for x in veh_inputs]
 
   veh_l = [tf.keras.layers.add([ego_l1, x]) for x in veh_l]
-  veh_l = [tf.keras.layers.LeakyReLU()(x) for x in veh_l]
+  veh_l = [tf.keras.layers.Activation("sigmoid")(x) for x in veh_l]
 
-  n_layers = 8
-  Dense_list = [tf.keras.layers.Dense(128, activation=None) for _ in range(n_layers)]
+  n_layers = 4
+  Dense_list = [tf.keras.layers.Dense(320, activation=None) for _ in range(n_layers)]
   for i in range(n_layers):
     veh_l = [Dense_list[i](x) for x in veh_l]
-    veh_l = [tf.keras.layers.LeakyReLU()(x) for x in veh_l]
+    veh_l = [tf.keras.layers.Activation("sigmoid")(x) for x in veh_l]
 
   shared_Dense2 = tf.keras.layers.Dense(reduced_action_size, activation=None)
   veh_y = [shared_Dense2(x) for x in veh_l]
@@ -347,13 +347,13 @@ cfg_safety = DQNCfg(name = "safety",
                     gamma = 0.9,
                     gamma_inc = 0.00000001,
                     gamma_max = 0.9,
-                    epsilon = 0.2,
+                    epsilon = 0.8,
                     epsilon_dec = 0.00001,
-                    epsilon_min = 0.2,
+                    epsilon_min = 0.4,
                     threshold = -0.05,
                     memory_size = 3200,
                     traj_end_pred = returnTrue(),
-                    replay_batch_size = 32,
+                    replay_batch_size = 320,
                     traj_end_ratio= 0.0001,
                     _build_model = build_model_safety,
                     model_rst_prob_list = [1/5000, 1/20000, 1/100000, 1/1000000],
@@ -370,9 +370,9 @@ cfg_regulation = DQNCfg(name = "regulation",
                         gamma = 0.90,
                         gamma_inc = 0.00000001,
                         gamma_max = 0.95,
-                        epsilon=0.2,
+                        epsilon=0.8,
                         epsilon_dec=0.0000001,
-                        epsilon_min=0.2,
+                        epsilon_min=0.4,
                         threshold = -0.5,
                         memory_size = 64000,
                         traj_end_pred = returnTrue(),

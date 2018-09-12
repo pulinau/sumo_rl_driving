@@ -30,7 +30,7 @@ if __name__ == "__main__":
     print("True")
     for dqn_cfg in dqn_cfg_list:
       dqn_cfg.play = True
-    max_ep = 10
+    max_ep = 6
     sim_inst = 1
   """
   if args.play != True:
