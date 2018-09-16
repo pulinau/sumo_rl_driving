@@ -374,7 +374,7 @@ def get_obs_dict(env):
                   obs_dict["veh_relation_conflict"][veh_index] = 1 # CONFLICT
 
     if (obs_dict["veh_relation_conflict"][veh_index] != 1 and
-        obs_dict["veh_relation_next"][veh_index] != 1 and
+        obs_dict["veh_relation_peer"][veh_index] != 1 and
         obs_dict["veh_relation_behind"][veh_index] != 1 and
         obs_dict["veh_relation_ahead"][veh_index] != 1 and
         obs_dict["veh_relation_right"][veh_index] != 1 and
@@ -412,14 +412,14 @@ def get_obs_dict(env):
 
       t0 = pos[0] / max(abs(ego_v[0] - v[0]), 0.0001) * np.sign(ego_v[0] - v[0])
       if abs(v[0] - ego_v[0]) < 0.0001:
-        if abs(pos[0]) < 1:
+        if abs(pos[0]) < 2:
           t0 = None
         else:
           t0 = env.MAX_TTC_CONSIDERED
 
       t1 = pos[1] / max(abs(ego_v[1] - v[1]), 0.0001) * np.sign(ego_v[1] - v[1])
       if abs(v[1] - ego_v[1]) < 0.0001:
-        if abs(pos[1]) < 1:
+        if abs(pos[1]) < 2:
           t1 = None
         else:
           t1 = env.MAX_TTC_CONSIDERED
