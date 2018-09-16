@@ -23,14 +23,16 @@ def get_reward_safety(env):
   for i, c in enumerate(obs_dict["collision"]):
     r = 0
     d = False
-    if (old_obs_dict is not None and (
-          old_obs_dict["ttc"][i] > obs_dict["ttc"][i] + 0.0000001
-          ) and
-        (obs_dict["ttc"][i] < 3 or np.linalg.norm(obs_dict["relative_position"][i]) < 6)
+    if (old_obs_dict is not None and
+        obs_dict["is_new"][i] == 0 and
+        old_obs_dict["ttc"][i] > obs_dict["ttc"][i] + 0.0000001 and
+        ((old_obs_dict["ttc"][i] < 3)
+          or (np.linalg.norm(old_obs_dict["relative_position"][i]) < 8 and obs_dict["veh_relation_none"] != 1))
         ) or (env.env_state == EnvState.CRASH and c == 1
-        ) or (action_dict["lane_change"] != ActionAccel.NOOP and (obs_dict["ttc"][i] < 3 or
-                                                                  np.linalg.norm(obs_dict["relative_position"][i]) < 8)
+        ) or (action_dict["lane_change"] != ActionAccel.NOOP and (obs_dict["ttc"][i] < 2)
         ):
+      print(obs_dict["veh_ids"][i], "old_ttc", old_obs_dict["ttc"][i], "ttc", obs_dict["ttc"][i],
+            "pos", np.linalg.norm(old_obs_dict["relative_position"][i]), "action", action_dict)
       r = -1
     if obs_dict["is_new"][i] == 1 or r == -1:
       d = True
@@ -52,10 +54,15 @@ def get_reward_regulation(env):
     if obs_dict["ego_correct_lane_gap"] != 0:
       r = 1/(1 + np.exp(-0.1*(obs_dict["ego_dist_to_end_of_lane"]-40))) - 1
 
-  if obs_dict["ego_dist_to_end_of_lane"] < 3 and \
+  old_tte = None
+  if old_obs_dict is not None:
+    old_tte = old_obs_dict["ego_dist_to_end_of_lane"] / (old_obs_dict["ego_speed"] + 0.00000001)
+  tte = obs_dict["ego_dist_to_end_of_lane"] / (obs_dict["ego_speed"] + 0.00000001)
+  if (tte < 3 or obs_dict["ego_dist_to_end_of_lane"] < 6) and \
      obs_dict["ego_has_priority"] != 1 and \
      obs_dict["ego_in_intersection"] != 1 and \
-     old_obs_dict["ego_dist_to_end_of_lane"] > obs_dict["ego_dist_to_end_of_lane"] + 0.01:
+     old_tte is not None and \
+     old_tte > tte + 0.00001:
       r = -1
 
   if obs_dict["ego_priority_changed"] == 1 or obs_dict["ego_edge_changed"] == 1:

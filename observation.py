@@ -36,6 +36,7 @@ def get_observation_space(env):
              "veh_relation_right": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "veh_relation_ahead": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
              "veh_relation_behind": spaces.MultiBinary(env.NUM_VEH_CONSIDERED),
+             "veh_relation_none": spaces.MultiBinary(env.NUM_VEH_CONSIDERED), # none of the above
              "ttc": spaces.Box(0, env.MAX_TTC_CONSIDERED, (env.NUM_VEH_CONSIDERED,), dtype=np.float32)
              })
   return observation_space
@@ -235,6 +236,7 @@ def get_obs_dict(env):
   obs_dict["veh_relation_right"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["veh_relation_ahead"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["veh_relation_behind"] = [0] * env.NUM_VEH_CONSIDERED
+  obs_dict["veh_relation_none"] = [0] * env.NUM_VEH_CONSIDERED
   obs_dict["ttc"] = [env.MAX_TTC_CONSIDERED] * env.NUM_VEH_CONSIDERED
 
   # sort veh within ROI by distance to ego
@@ -311,7 +313,25 @@ def get_obs_dict(env):
     obs_dict["relative_heading"][veh_index] = relative_heading
 
     obs_dict["relative_speed"][veh_index] = state_dict["speed"] * np.cos(obs_dict["relative_heading"][veh_index]) - ego_dict["speed"]
-    
+
+    # LEFT, RIGHT
+    if (state_dict["lane_id"] == lanelet_dict[ego_dict["lane_id"]]["left_lane_id"]
+        ) or (lanelet_dict[ego_dict["lane_id"]]["left_lane_id"] is not None and
+              state_dict["lane_id"] in lanelet_dict[lanelet_dict[ego_dict["lane_id"]]["left_lane_id"]]["next_lane_id_list"]):
+      obs_dict["veh_relation_left"][veh_index] = 1  # LEFT
+    if (state_dict["lane_id"] == lanelet_dict[ego_dict["lane_id"]]["right_lane_id"]
+       ) or (lanelet_dict[ego_dict["lane_id"]]["right_lane_id"] is not None and
+             state_dict["lane_id"] in lanelet_dict[lanelet_dict[ego_dict["lane_id"]]["right_lane_id"]]["next_lane_id_list"]):
+      obs_dict["veh_relation_right"][veh_index] = 1  # RIGHT
+
+    # AHEAD, BEHIND
+    if (state_dict["lane_id"] == ego_dict["lane_id"] and state_dict["lane_position"] > ego_dict["lane_position"]
+    ) or (state_dict["lane_id"] in lanelet_dict[ego_dict["lane_id"]]["next_lane_id_list"]):
+      obs_dict["veh_relation_ahead"][veh_index] = 1  # AHEAD
+    if (state_dict["lane_id"] == ego_dict["lane_id"] and state_dict["lane_position"] <= ego_dict["lane_position"]
+    ) or (ego_dict["lane_id"] in lanelet_dict[state_dict["lane_id"]]["next_lane_id_list"]):
+      obs_dict["veh_relation_behind"][veh_index] = 1  # BEHIND
+
     # check if the each of the possible relationship holds for the vehicle
     lane_id_list_veh_edge = edge_dict[state_dict["edge_id"]]["lane_id_list"]
     if state_dict["next_normal_edge_id"] != None:
@@ -321,7 +341,11 @@ def get_obs_dict(env):
     # PEER if vehicles merges into the same lane from different lanes, since we only have edge (not lane) information
     # within the route, we need to search inside the next edge to see if there're any lanes whose previous lane
     # belongs to the current edge of veh
-    if state_dict["edge_id"] != ego_dict["edge_id"] and \
+    if obs_dict["veh_relation_ahead"][veh_index] != 1 and \
+       obs_dict["veh_relation_behind"][veh_index] != 1 and \
+       obs_dict["veh_relation_left"][veh_index] != 1 and \
+       obs_dict["veh_relation_right"][veh_index] != 1 and \
+       state_dict["edge_id"] != ego_dict["edge_id"] and \
        state_dict["next_normal_edge_id"] == ego_dict["next_normal_edge_id"] and \
        ego_dict["next_normal_edge_id"] != None:
       for x in lane_id_list_ego_next_normal_edge:
@@ -330,7 +354,11 @@ def get_obs_dict(env):
             obs_dict["veh_relation_peer"][veh_index] = 1 # PEER
     
     # CONFLICT if approaching/in the same intersection as the ego lane, and its route conflict that of the ego route
-    if state_dict["edge_id"] != ego_dict["edge_id"] and \
+    if obs_dict["veh_relation_ahead"][veh_index] != 1 and \
+       obs_dict["veh_relation_behind"][veh_index] != 1 and \
+       obs_dict["veh_relation_left"][veh_index] != 1 and \
+       obs_dict["veh_relation_right"][veh_index] != 1 and \
+       state_dict["edge_id"] != ego_dict["edge_id"] and \
        state_dict["next_normal_edge_id"] != ego_dict["next_normal_edge_id"] and \
        ego_dict["next_normal_edge_id"] != None and \
        edge_dict[ego_dict["edge_id"]]["to_node_id"] == edge_dict[state_dict["edge_id"]]["to_node_id"]:
@@ -341,22 +369,19 @@ def get_obs_dict(env):
             for q in lane_id_list_ego_edge:
               lane_id1 = internal_lane_id_between_lanes(q, p, lanelet_dict)
               if lane_id0 != None and lane_id1 != None:
-                if waypoint_intersect(lanelet_dict[lane_id0]["waypoint"], lanelet_dict[lane_id1]["waypoint"]) == True:
+                if waypoint_intersect(lanelet_dict[v]["waypoint"] + lanelet_dict[lane_id0]["waypoint"] + lanelet_dict[u]["waypoint"],
+                                      lanelet_dict[q]["waypoint"] + lanelet_dict[lane_id1]["waypoint"] + lanelet_dict[p]["waypoint"]) == True:
                   obs_dict["veh_relation_conflict"][veh_index] = 1 # CONFLICT
-    
-    # LEFT, RIGHT
-    if state_dict["lane_id"] == lanelet_dict[ego_dict["lane_id"]]["left_lane_id"]:
-      obs_dict["veh_relation_left"][veh_index] = 1 # LEFT
-    if state_dict["lane_id"] == lanelet_dict[ego_dict["lane_id"]]["right_lane_id"]:
-      obs_dict["veh_relation_right"][veh_index] = 1 # RIGHT
-    
-    # AHEAD, BEHIND
-    if (state_dict["lane_id"] == ego_dict["lane_id"] and state_dict["lane_position"] > ego_dict["lane_position"]
-        ) or (state_dict["lane_id"] in lanelet_dict[ego_dict["lane_id"]]["next_lane_id_list"]):
-      obs_dict["veh_relation_ahead"][veh_index] = 1  # AHEAD
-    if (state_dict["lane_id"] == ego_dict["lane_id"] and state_dict["lane_position"] <= ego_dict["lane_position"]
-        ) or (ego_dict["lane_id"] in lanelet_dict[state_dict["lane_id"]]["next_lane_id_list"]):
-      obs_dict["veh_relation_behind"][veh_index] = 1  # BEHIND
+
+    if (obs_dict["veh_relation_conflict"][veh_index] != 1 and
+        obs_dict["veh_relation_next"][veh_index] != 1 and
+        obs_dict["veh_relation_behind"][veh_index] != 1 and
+        obs_dict["veh_relation_ahead"][veh_index] != 1 and
+        obs_dict["veh_relation_right"][veh_index] != 1 and
+        obs_dict["veh_relation_left"][veh_index] != 1 and
+        obs_dict["veh_relation_next"][veh_index] != 1 and
+        obs_dict["veh_relation_prev"][veh_index] != 1):
+      obs_dict["veh_relation_none"][veh_index] = 1
 
     # vehicle has priority over ego if the vehicle is
     # approaching/in the same intersection and it's inside a lane of higher priority
@@ -383,10 +408,37 @@ def get_obs_dict(env):
        obs_dict["veh_relation_next"][veh_index] == 1 or \
        obs_dict["veh_relation_conflict"][veh_index] == 1 or \
        obs_dict["veh_relation_peer"][veh_index] == 1:
-        pos = obs_dict["relative_position"][veh_index]
-        ttc = max(np.linalg.norm(pos) - 5, 0) * np.linalg.norm(pos)/ max(np.dot((ego_v - v), pos), 0.0000001)
-        if ttc < -0.01 or ttc > env.MAX_TTC_CONSIDERED:
+      pos = obs_dict["relative_position"][veh_index]
+
+      t0 = pos[0] / max(abs(ego_v[0] - v[0]), 0.0001) * np.sign(ego_v[0] - v[0])
+      if abs(v[0] - ego_v[0]) < 0.0001:
+        if abs(pos[0]) < 1:
+          t0 = None
+        else:
+          t0 = env.MAX_TTC_CONSIDERED
+
+      t1 = pos[1] / max(abs(ego_v[1] - v[1]), 0.0001) * np.sign(ego_v[1] - v[1])
+      if abs(v[1] - ego_v[1]) < 0.0001:
+        if abs(pos[1]) < 1:
+          t1 = None
+        else:
+          t1 = env.MAX_TTC_CONSIDERED
+
+      if t0 is None and t1 is None:
+        ttc = 0
+      else:
+        if t0 is None:
+          t0 = t1
+        if t1 is None:
+          t1 = t0
+
+        if abs(t1 - t0) < 2:
+          ttc = max(t0, t1)
+        else:
           ttc = env.MAX_TTC_CONSIDERED
+
+      if ttc < -1 or ttc > env.MAX_TTC_CONSIDERED:
+        ttc = env.MAX_TTC_CONSIDERED
     else:
       ttc = env.MAX_TTC_CONSIDERED
     obs_dict["ttc"][veh_index] = ttc

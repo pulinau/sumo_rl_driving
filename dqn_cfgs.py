@@ -115,7 +115,8 @@ def reshape_safety(obs_dict):
   o1  = np.append(o1, np.array([obs_dict["veh_relation_left"]]) - 0.5, axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_right"]]) - 0.5, axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_ahead"]]) - 0.5, axis=0)
-  o1 = np.append(o1, np.array([obs_dict["ttc"]]) / MAX_TTC_CONSIDERED - 0.5, axis=0)
+  o1 = np.append(o1, np.array([obs_dict["veh_relation_behind"]]) - 0.5, axis=0)
+  o1 = np.append(o1, np.sqrt(np.array([obs_dict["ttc"]]) / MAX_TTC_CONSIDERED) - 0.5, axis=0)
 
   o = [o0] + [x for x in o1.T]
   return [[x] for x in o]
@@ -128,18 +129,18 @@ def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(5, ))
   ego_l1 = tf.keras.layers.Dense(320, activation=None)(ego_input)
 
-  veh_inputs = [tf.keras.layers.Input(shape=(15,)) for _ in range(NUM_VEH_CONSIDERED)]
+  veh_inputs = [tf.keras.layers.Input(shape=(16,)) for _ in range(NUM_VEH_CONSIDERED)]
   shared_Dense1 = tf.keras.layers.Dense(320, activation=None)
   veh_l = [shared_Dense1(x) for x in veh_inputs]
 
   veh_l = [tf.keras.layers.add([ego_l1, x]) for x in veh_l]
-  veh_l = [tf.keras.layers.Activation("sigmoid")(x) for x in veh_l]
+  veh_l = [tf.keras.layers.LeakyReLU()(x) for x in veh_l]
 
   n_layers = 4
   Dense_list = [tf.keras.layers.Dense(320, activation=None) for _ in range(n_layers)]
   for i in range(n_layers):
     veh_l = [Dense_list[i](x) for x in veh_l]
-    veh_l = [tf.keras.layers.Activation("sigmoid")(x) for x in veh_l]
+    veh_l = [tf.keras.layers.LeakyReLU()(x) for x in veh_l]
 
   shared_Dense2 = tf.keras.layers.Dense(reduced_action_size, activation=None)
   veh_y = [shared_Dense2(x) for x in veh_l]
@@ -178,7 +179,7 @@ def build_model_regulation():
   y = tf.keras.layers.Dense(reduced_action_size, activation='linear')(l3)
 
   model = tf.keras.models.Model(inputs=[x], outputs=[y, y])
-  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.0001)
   model.compile(loss='logcosh', optimizer=opt)
   return model
 
@@ -349,8 +350,8 @@ cfg_safety = DQNCfg(name = "safety",
                     gamma_max = 0.9,
                     epsilon = 0.8,
                     epsilon_dec = 0.00001,
-                    epsilon_min = 0.4,
-                    threshold = -0.05,
+                    epsilon_min = 0.6,
+                    threshold = -0.1,
                     memory_size = 3200,
                     traj_end_pred = returnTrue(),
                     replay_batch_size = 320,
@@ -372,7 +373,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         gamma_max = 0.95,
                         epsilon=0.8,
                         epsilon_dec=0.0000001,
-                        epsilon_min=0.4,
+                        epsilon_min=0.6,
                         threshold = -0.5,
                         memory_size = 64000,
                         traj_end_pred = returnTrue(),
