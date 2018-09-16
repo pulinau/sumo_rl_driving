@@ -116,7 +116,9 @@ def reshape_safety(obs_dict):
   o1  = np.append(o1, np.array([obs_dict["veh_relation_right"]]) - 0.5, axis=0)
   o1  = np.append(o1, np.array([obs_dict["veh_relation_ahead"]]) - 0.5, axis=0)
   o1 = np.append(o1, np.array([obs_dict["veh_relation_behind"]]) - 0.5, axis=0)
-  o1 = np.append(o1, np.sqrt(np.array([obs_dict["ttc"]]) / MAX_TTC_CONSIDERED) - 0.5, axis=0)
+  ttc = np.array([obs_dict["ttc"]]) / MAX_TTC_CONSIDERED
+  ttc = np.sqrt(np.abs(ttc)) * np.sign(ttc)
+  o1 = np.append(o1, ttc - 0.5, axis=0)
 
   o = [o0] + [x for x in o1.T]
   return [[x] for x in o]
@@ -148,7 +150,7 @@ def build_model_safety():
   y = tf.keras.layers.minimum(veh_y)
 
   model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
-  opt = tf.keras.optimizers.RMSprop(lr=0.0001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
   model.compile(loss='logcosh', optimizer=opt)
 
   return model

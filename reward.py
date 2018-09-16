@@ -25,14 +25,15 @@ def get_reward_safety(env):
     d = False
     if (old_obs_dict is not None and
         obs_dict["is_new"][i] == 0 and
-        old_obs_dict["ttc"][i] > obs_dict["ttc"][i] + 0.0000001 and
+        abs(old_obs_dict["ttc"][i]) > abs(obs_dict["ttc"][i]) + 0.0000001 and
         ((old_obs_dict["ttc"][i] < 3)
           or (np.linalg.norm(old_obs_dict["relative_position"][i]) < 8 and obs_dict["veh_relation_none"] != 1))
         ) or (env.env_state == EnvState.CRASH and c == 1
-        ) or (action_dict["lane_change"] != ActionAccel.NOOP and (obs_dict["ttc"][i] < 2)
+        ) or (action_dict["lane_change"] != ActionLaneChange.NOOP and (obs_dict["ttc"][i] < 2)
         ):
       print(obs_dict["veh_ids"][i], "old_ttc", old_obs_dict["ttc"][i], "ttc", obs_dict["ttc"][i],
-            "pos", np.linalg.norm(old_obs_dict["relative_position"][i]), "action", action_dict)
+            "pos", np.linalg.norm(old_obs_dict["relative_position"][i]), "action", action_dict,
+            "collision", c)
       r = -1
     if obs_dict["is_new"][i] == 1 or r == -1:
       d = True
@@ -58,7 +59,7 @@ def get_reward_regulation(env):
   if old_obs_dict is not None:
     old_tte = old_obs_dict["ego_dist_to_end_of_lane"] / (old_obs_dict["ego_speed"] + 0.00000001)
   tte = obs_dict["ego_dist_to_end_of_lane"] / (obs_dict["ego_speed"] + 0.00000001)
-  if (tte < 3 or obs_dict["ego_dist_to_end_of_lane"] < 6) and \
+  if ((old_tte is not None and tte < 3) or obs_dict["ego_dist_to_end_of_lane"] < 6) and \
      obs_dict["ego_has_priority"] != 1 and \
      obs_dict["ego_in_intersection"] != 1 and \
      old_tte is not None and \
