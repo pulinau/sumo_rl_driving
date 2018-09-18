@@ -278,6 +278,9 @@ def get_obs_dict(env):
     if edge_dict[ego_dict["edge_id"]]["to_node_id"] != edge_dict[state_dict["edge_id"]]["to_node_id"] and \
        obs_dict["veh_relation_next"][veh_index] == 0 and \
        obs_dict["veh_relation_prev"][veh_index] == 0:
+      if veh_id in new_veh_id_list:
+        # if a vehicle is completely irrelevant, then restore the counter
+        new_index = veh_index
       continue
 
     if veh_id in old_veh_id_list:
@@ -387,8 +390,7 @@ def get_obs_dict(env):
     # approaching/in the same intersection and it's inside a lane of higher priority
     # if a vehicle has a speed of less than 0.1, it's considered not the first vehicle at the intersection
     if (obs_dict["veh_relation_conflict"] == 1 or obs_dict["veh_relation_peer"] == 1) and \
-       edge_dict[state_dict["edge_id"]]["to_node_id"] == edge_dict[ego_dict["edge_id"]]["to_node_id"] and \
-       state_dict["speed"] < 0.1:
+       edge_dict[state_dict["edge_id"]]["to_node_id"] == edge_dict[ego_dict["edge_id"]]["to_node_id"]:
       if edge_dict[state_dict["edge_id"]]["priority"] > edge_dict[ego_dict["edge_id"]]["priority"]:
         obs_dict["has_priority"][veh_index] = 1
       elif edge_dict[state_dict["edge_id"]]["priority"] == edge_dict[ego_dict["edge_id"]]["priority"]:
@@ -412,14 +414,14 @@ def get_obs_dict(env):
 
       t0 = pos[0] / max(abs(ego_v[0] - v[0]), 0.0001) * np.sign(ego_v[0] - v[0])
       if abs(v[0] - ego_v[0]) < 0.0001:
-        if abs(pos[0]) < 2:
+        if abs(pos[0]) < 6:
           t0 = None
         else:
           t0 = env.MAX_TTC_CONSIDERED
 
       t1 = pos[1] / max(abs(ego_v[1] - v[1]), 0.0001) * np.sign(ego_v[1] - v[1])
       if abs(v[1] - ego_v[1]) < 0.0001:
-        if abs(pos[1]) < 2:
+        if abs(pos[1]) < 6:
           t1 = None
         else:
           t1 = env.MAX_TTC_CONSIDERED

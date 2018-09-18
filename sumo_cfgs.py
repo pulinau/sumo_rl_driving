@@ -7,7 +7,7 @@ from sumo_gym import SumoCfg
 # --------------------------
 #          SUMO
 # --------------------------
-SUMO_BIN = "/home/ken/project/sumo-bin/bin/sumo"
+SUMO_BIN = "/home/ken/project/sumo-bin/bin/sumo-gui"
 SUMO_TIME_STEP = 0.1
 
 # "--net-file" and "route_file"

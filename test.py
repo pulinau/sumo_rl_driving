@@ -1,5 +1,5 @@
 from include import *
-from sumo_cfgs import *
+from sumo_cfgs_test import *
 from sumo_gym import *
 from observation import *
 from action import *

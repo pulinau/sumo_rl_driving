@@ -33,8 +33,11 @@ class decreaseProb():
 
 def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_list, play, max_ep, id):
   try:
-    max_step = 1500
+    max_step = 800
     env = MultiObjSumoEnv(sumo_cfg)
+
+    violation0_hist = []
+    violation1_hist = []
 
     for ep in range(max_ep):
       print("env id: {}".format(id), "episode: {}/{}".format(ep, max_ep))
@@ -51,10 +54,12 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       traj = []
 
       for step in range(max_step):
-
+        violated0 = False
+        violated1 = False
         if step == 0:
           if play:
             env.agt_ctrl = True
+
         """
           else:
             if random.uniform(0, 1) < 0.1:
@@ -106,14 +111,17 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           action_full = 17
         else:
           action_full = action
-        next_obs_dict, (reward_list, done_list), env_state, action_dict = env.step(
-          {"lane_change": ActionLaneChange(action_full // len(ActionAccel)),
-           "accel_level": ActionAccel(action_full % len(ActionAccel))})
+        next_obs_dict, (reward_list, done_list, violation_list), env_state, action_dict = \
+          env.step({"lane_change": ActionLaneChange(action_full // len(ActionAccel)),
+                   "accel_level": ActionAccel(action_full % len(ActionAccel))})
         action_full = action_dict["lane_change"].value * len(ActionAccel) + action_dict["accel_level"].value
         if action_full >= len(ActionAccel) and  action_full < 2 * len(ActionAccel):
           action = 7
         if action_full >= 2 * len(ActionAccel):
           action = 8
+
+        violated0 = violated0 or violation_list[0]
+        violated1 = violated1 or violation_list[1]
 
         if True: # play:
           print("action: ", action)
@@ -193,12 +201,18 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
             for obs_dict, action, reward_list, next_obs_dict, tent_action_list, done_list, important in traj],
            prob))
 
+      violation0_hist += [violated0]
+      violation1_hist += [violated1]
+
     end_q.put(True)
 
   except:
     end_q.put(True)
     raise
 
+  finally:
+    print("safety violation", violation0_hist)
+    print("regulation violation", violation1_hist)
 
 
 def select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, num_action, greedy=False):
