@@ -7,8 +7,8 @@ randomTrip = "~/project/sumo-bin/tools/randomTrips.py"
 #mean = "4"
 #" --binomial=" + mean + \
 
-for i in range(2048):
-    period = random.randrange(3, 6)/1000
+for i in range(5000):
+    period = random.randrange(2, 8)/1000
     temp0_file_name = "temp0.rou.xml"
     randomTripArg = " -n test.net.xml -r " + temp0_file_name + \
                     " -e 0.1" + \
@@ -18,7 +18,7 @@ for i in range(2048):
     
     os.remove("trips.trips.xml")
 
-    period = random.randrange(1, 2)
+    period = random.randrange(1, 10)/5
     temp1_file_name = "temp1.rou.xml"
     randomTripArg = " -n test.net.xml -r " + temp1_file_name + \
                     ' --prefix 1_' + \

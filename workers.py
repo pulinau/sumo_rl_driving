@@ -33,7 +33,7 @@ class decreaseProb():
 
 def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_list, play, max_ep, id):
   try:
-    max_step = 800
+    max_step = 1600
     env = MultiObjSumoEnv(sumo_cfg)
 
     violation0_hist = []
@@ -211,8 +211,9 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
     raise
 
   finally:
-    print("safety violation", violation0_hist)
-    print("regulation violation", violation1_hist)
+    f = open("result", "a")
+    f.write("safety violation: " +  str(violation0_hist))
+    f.write("regulation violation" +  str(violation1_hist))
 
 
 def select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, num_action, greedy=False):
@@ -260,11 +261,13 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
     agt = DQNAgent(sumo_cfg, dqn_cfg, end_q)
 
     ep = 0
+    step = 0
     while True:
       for obs_q, action_q in zip(obs_q_list, action_q_list):
         try:
           obs_dict, model_index = obs_q.get(block=False)
           action_q.put(agt.select_actions(obs_dict, model_index=model_index))
+          step += 1
         except queue.Empty:
           if not end_q.empty():
             return
@@ -289,6 +292,9 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
           agt.save_model()
 
         ep += 1
+
+      if step % 10000 == 10000-1:
+        agt.save_model(suffix=str(step//10000))
 
   except:
     end_q.put(True)

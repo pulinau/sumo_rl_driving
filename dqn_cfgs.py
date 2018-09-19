@@ -150,7 +150,7 @@ def build_model_safety():
   y = tf.keras.layers.minimum(veh_y)
 
   model = tf.keras.models.Model(inputs=[ego_input] + veh_inputs, outputs=veh_y + [y])
-  opt = tf.keras.optimizers.RMSprop(lr=0.00001)
+  opt = tf.keras.optimizers.RMSprop(lr=0.0001)
   model.compile(loss='logcosh', optimizer=opt)
 
   return model
@@ -312,6 +312,7 @@ def select_actions_speed_comfort(state):
 
 cfg_validity = DQNCfg(name = "validity",
                       play=False,
+                      version=None,
                       resume = False,
                       state_size=2,
                       action_size=reduced_action_size,
@@ -342,6 +343,7 @@ class returnTrue():
 
 cfg_safety = DQNCfg(name = "safety",
                     play = False,
+                    version = "current",
                     resume = False,
                     state_size = 5 + 12*NUM_VEH_CONSIDERED,
                     action_size = reduced_action_size,
@@ -365,6 +367,7 @@ cfg_safety = DQNCfg(name = "safety",
 
 cfg_regulation = DQNCfg(name = "regulation",
                         play = False,
+                        version = "current",
                         resume = False,
                         state_size = 4 + 2*NUM_LANE_CONSIDERED + 7*NUM_VEH_CONSIDERED,
                         action_size = reduced_action_size,
@@ -388,6 +391,7 @@ cfg_regulation = DQNCfg(name = "regulation",
 
 cfg_speed_comfort = DQNCfg(name = "speed_comfort",
                            play = False,
+                           version = None,
                            resume=False,
                            state_size = 2,
                            action_size = reduced_action_size,

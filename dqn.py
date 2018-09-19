@@ -18,6 +18,7 @@ class DQNCfg():
   def __init__(self, 
                name, 
                play,
+               version,
                resume,
                state_size, 
                action_size,
@@ -41,6 +42,7 @@ class DQNCfg():
                _select_actions = None):
     self.name = name
     self.play = play # whether it's training or playing
+    self.version = version
     self.resume = resume
     self.state_size = state_size
     self.action_size = action_size
@@ -116,10 +118,10 @@ class DQNAgent:
       self.loss_hist = deque(maxlen=10)
 
     if self.play == True:
-      self.model = self._load_model(self.name + ".sav")
+      self.model = self._load_model(self.name + ".sav." + self.version)
     elif self.resume == True:
-      self.model = self._load_model(self.name + ".sav")
-      self.target_model = self._load_model(self.name + ".sav")
+      self.model = self._load_model(self.name + ".sav." + self.version)
+      self.target_model = self._load_model(self.name + ".sav." + self.version)
     else:
       self.model = self._build_model()
       self.target_model = self._build_model()
@@ -250,9 +252,8 @@ class DQNAgent:
   def _load_model(self, filename):
     return tf.keras.models.load_model(filename, custom_objects={"tf": tf, "NUM_VEH_CONSIDERED": self.sumo_cfg.NUM_VEH_CONSIDERED})
 
-  def save_model(self, name=None):
+  def save_model(self, suffix='current'):
     if self._select_actions is not None or self.play == True:
       return
-    if name is None:
-      name = self.name + ".sav"
+    name = self.name + ".sav." + suffix
     self.model.save(name)

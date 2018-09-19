@@ -7,7 +7,7 @@ from sumo_gym import SumoCfg
 # --------------------------
 #          SUMO
 # --------------------------
-SUMO_BIN = "/home/ken/project/sumo-bin/bin/sumo-gui"
+SUMO_BIN = "/home/ken/project/sumo-bin/bin/sumo"
 SUMO_TIME_STEP = 0.1
 
 # "--net-file" and "route_file"
@@ -35,7 +35,7 @@ MAX_VEH_SPEED = 14
 #        observation
 # --------------------------
 NUM_LANE_CONSIDERED = 1 # number of lanes considered on each side of ego
-NUM_VEH_CONSIDERED = 8
+NUM_VEH_CONSIDERED = 16
 MAX_TTC_CONSIDERED = 60
 OBSERVATION_RADIUS = 100
 

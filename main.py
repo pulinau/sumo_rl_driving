@@ -17,6 +17,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("--play")
   parser.add_argument("--resume")
+  parser.add_argument("--version")
   args = parser.parse_args()
 
   env = MultiObjSumoEnv(sumo_cfg)
@@ -27,11 +28,13 @@ if __name__ == "__main__":
     for dqn_cfg in dqn_cfg_list:
       dqn_cfg.resume = True
   if args.play:
-    print("True")
     for dqn_cfg in dqn_cfg_list:
       dqn_cfg.play = True
     max_ep = 6
     sim_inst = 1
+  if args.version:
+    for dqn_cfg in dqn_cfg_list:
+      dqn_cfg.version = args.version
   """
   if args.play != True:
     with open("examples.npz", "rb") as file:
