@@ -123,7 +123,7 @@ def get_lanelet_dict(sumo_net_xml_file):
       lane_id = lane.getID()
       if lane_id[0] == ':':
         if len(lanelet_dict[lane_id]["prev_normal_lane_id_list"]) == 0:
-          lanelet_dict[lane_id]["edge_priority"] = None
+          lanelet_dict[lane_id]["edge_priority"] = 1 # 1 is the baseline priority
         else:
           lanelet_dict[lane_id]["edge_priority"] = lanelet_dict[lanelet_dict[lane_id]["prev_normal_lane_id_list"][0]]["edge_priority"]
 
@@ -299,7 +299,7 @@ def get_obs_dict(env):
 
     if state_dict["edge_id"][0] == ':':
       obs_dict["in_intersection"][veh_index] = 1
-    
+
     # transform the position to ego coordinate
     ego_angle_rad = ego_dict["angle"]/180 * np.pi
     rotation_mat = np.array([[np.cos(ego_angle_rad), -np.sin(ego_angle_rad)],
@@ -353,8 +353,9 @@ def get_obs_dict(env):
        ego_dict["next_normal_edge_id"] != None:
       for x in lane_id_list_ego_next_normal_edge:
         for y in lane_id_list_veh_edge:
-          if internal_lane_id_between_lanes(y, x, lanelet_dict) != None:
-            obs_dict["veh_relation_peer"][veh_index] = 1 # PEER
+          for z in lane_id_list_ego_edge:
+            if internal_lane_id_between_lanes(y, x, lanelet_dict) != None and internal_lane_id_between_lanes(z, x, lanelet_dict) != None:
+              obs_dict["veh_relation_peer"][veh_index] = 1 # PEER
     
     # CONFLICT if approaching/in the same intersection as the ego lane, and its route conflict that of the ego route
     if obs_dict["veh_relation_ahead"][veh_index] != 1 and \
@@ -372,8 +373,23 @@ def get_obs_dict(env):
             for q in lane_id_list_ego_edge:
               lane_id1 = internal_lane_id_between_lanes(q, p, lanelet_dict)
               if lane_id0 != None and lane_id1 != None:
-                if waypoint_intersect(lanelet_dict[v]["waypoint"] + lanelet_dict[lane_id0]["waypoint"] + lanelet_dict[u]["waypoint"],
-                                      lanelet_dict[q]["waypoint"] + lanelet_dict[lane_id1]["waypoint"] + lanelet_dict[p]["waypoint"]) == True:
+                if v[0] == ":":
+                  waypoint0 = lanelet_dict[lane_id0]["waypoint"] + lanelet_dict[u]["waypoint"]
+                else:
+                  waypoint0 = lanelet_dict[v]["waypoint"] + lanelet_dict[lane_id0]["waypoint"] + lanelet_dict[u]["waypoint"]
+                waypoint0 = np.array(waypoint0)
+                waypoint0 = waypoint0[np.argmin(np.linalg.norm(waypoint0 - np.array(state_dict["position"]))) + 1:]
+                waypoint0 = np.insert(waypoint0, 0, state_dict["position"], axis=0)
+
+                if q[0] == ":":
+                  waypoint1 = lanelet_dict[lane_id1]["waypoint"] + lanelet_dict[p]["waypoint"]
+                else:
+                  waypoint1 =lanelet_dict[q]["waypoint"] + lanelet_dict[lane_id1]["waypoint"] + lanelet_dict[p]["waypoint"]
+                waypoint1 = np.array(waypoint1)
+                waypoint1 = waypoint1[np.argmin(np.linalg.norm(waypoint1 - np.array(ego_dict["position"]))) + 1:]
+                waypoint1 = np.insert(waypoint1, 0, ego_dict["position"], axis=0)
+
+                if waypoint_intersect(waypoint0, waypoint1) == True:
                   obs_dict["veh_relation_conflict"][veh_index] = 1 # CONFLICT
 
     if (obs_dict["veh_relation_conflict"][veh_index] != 1 and
@@ -389,11 +405,11 @@ def get_obs_dict(env):
     # vehicle has priority over ego if the vehicle is
     # approaching/in the same intersection and it's inside a lane of higher priority
     # if a vehicle has a speed of less than 0.1, it's considered not the first vehicle at the intersection
-    if (obs_dict["veh_relation_conflict"] == 1 or obs_dict["veh_relation_peer"] == 1) and \
+    if (obs_dict["veh_relation_conflict"][veh_index] == 1 or obs_dict["veh_relation_peer"][veh_index] == 1) and \
        edge_dict[state_dict["edge_id"]]["to_node_id"] == edge_dict[ego_dict["edge_id"]]["to_node_id"]:
-      if edge_dict[state_dict["edge_id"]]["priority"] > edge_dict[ego_dict["edge_id"]]["priority"]:
+      if lanelet_dict[state_dict["lane_id"]]["edge_priority"] > lanelet_dict[ego_dict["lane_id"]]["edge_priority"]:
         obs_dict["has_priority"][veh_index] = 1
-      elif edge_dict[state_dict["edge_id"]]["priority"] == edge_dict[ego_dict["edge_id"]]["priority"]:
+      elif lanelet_dict[state_dict["lane_id"]]["edge_priority"] == lanelet_dict[ego_dict["lane_id"]]["edge_priority"]:
         if state_dict["right_signal"] == 0 and state_dict["left_signal"] == 0 and \
            (ego_dict["right_signal"] != 0 or ego_dict["left_signal"] != 0):
           obs_dict["has_priority"][veh_index] = 1

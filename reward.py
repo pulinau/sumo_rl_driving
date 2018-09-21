@@ -33,16 +33,17 @@ def get_reward_safety(env):
 
     if (old_obs_dict is not None and
         obs_dict["is_new"][i] == 0 and
-        (obs_dict["has_priority"][i] == 1 or
-         obs_dict["veh_relation_ahead"][i] == 1 or
+        obs_dict["veh_relation_none"] != 1 and
+        (obs_dict["veh_relation_ahead"][i] == 1 or
          obs_dict["veh_relation_behind"][i] == 1 or
          obs_dict["veh_relation_left"][i] == 1 or
          obs_dict["veh_relation_right"][i] == 1 or
-         obs_dict["dist_to_end_of_lane"][i] < 20
-        ) and ((abs(old_obs_dict["ttc"][i]) > abs(obs_dict["ttc"][i]) + 0.0000001 and
-         np.linalg.norm(old_obs_dict["relative_position"][i]) < 8 and obs_dict["veh_relation_none"] != 1
-         ) or (abs(old_obs_dict["ttc"][i]) > abs(obs_dict["ttc"][i]) + 0.001 and old_obs_dict["ttc"][i] < 3)
-        )) or (env.env_state == EnvState.CRASH and c == 1
+         (obs_dict["dist_to_end_of_lane"][i] < 20 and obs_dict["ego_dist_to_end_of_lane"] < 20)
+         ) and
+        ((abs(old_obs_dict["ttc"][i]) > abs(obs_dict["ttc"][i]) + 0.0000001 and
+          np.linalg.norm(old_obs_dict["relative_position"][i]) < 8
+          ) or (abs(old_obs_dict["ttc"][i]) > abs(obs_dict["ttc"][i]) + 0.001 and old_obs_dict["ttc"][i] < 3))
+        ) or (env.env_state == EnvState.CRASH and c == 1
         ) or (action_dict["lane_change"] != ActionLaneChange.NOOP and (obs_dict["ttc"][i] < 2)
         ):
       print(obs_dict["veh_ids"][i], "old_ttc", old_obs_dict["ttc"][i], "ttc", obs_dict["ttc"][i],

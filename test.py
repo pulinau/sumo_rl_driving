@@ -1,5 +1,5 @@
 from include import *
-from sumo_cfgs_test import *
+from sumo_cfgs import *
 from sumo_gym import *
 from observation import *
 from action import *
@@ -23,5 +23,10 @@ obs = env.reset(0)
 
 env.agt_ctrl = False
 
-obs, reward_list, env_state, action_dict = \
-  env.step({"lane_change": ActionLaneChange.NOOP, "accel_level": ActionAccel.NOOP})
+
+for _ in range(600):
+  obs, reward_list, env_state, action_dict = \
+    env.step({"lane_change": ActionLaneChange.NOOP, "accel_level": ActionAccel.NOOP})
+  if env_state != EnvState.NORMAL:
+    env.reset(0)
+  print(obs)
