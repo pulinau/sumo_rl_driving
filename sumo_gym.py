@@ -146,7 +146,7 @@ class MultiObjSumoEnv(SumoGymEnv):
         veh_dict = get_veh_dict(self)
       self.veh_dict_hist.append(veh_dict)
       self.obs_dict_hist.append(obs_dict)
-      if self.agt_ctrl == False and self.env_state == EnvState.NORMAL:
+      if self.agt_ctrl == False:
         action_dict = infer_action(self)
       self.action_dict_hist.append(action_dict)
       info = action_dict
