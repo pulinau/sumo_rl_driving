@@ -36,13 +36,16 @@ def get_reward_safety(env):
         obs_dict["veh_relation_none"] != 1 and
         (obs_dict["veh_relation_ahead"][i] == 1 or
          obs_dict["veh_relation_behind"][i] == 1 or
-         obs_dict["veh_relation_left"][i] == 1 or
-         obs_dict["veh_relation_right"][i] == 1 or
-         (obs_dict["dist_to_end_of_lane"][i] < 20 and obs_dict["ego_dist_to_end_of_lane"] < 20)
+         ((obs_dict["veh_relation_conflict"][i] == 1 or obs_dict["veh_relation_peer"][i] == 1) and
+          (obs_dict["ego_has_priority"] == 0 or obs_dict["in_intersection"][i] == 1) and
+          old_obs_dict["dist_to_end_of_lane"][i] < 20 and
+          old_obs_dict["ego_dist_to_end_of_lane"] < 20 and
+          (obs_dict["ego_in_intersection"] != 1 or (obs_dict["ego_in_intersection"] == 1 and obs_dict["in_intersection"][i] == 1)))
          ) and
-        ((abs(old_obs_dict["ttc"][i]) > abs(obs_dict["ttc"][i]) + 0.0000001 and
-          np.linalg.norm(old_obs_dict["relative_position"][i]) < 8
-          ) or (abs(old_obs_dict["ttc"][i]) > abs(obs_dict["ttc"][i]) + 0.001 and old_obs_dict["ttc"][i] < 3))
+        (abs(old_obs_dict["ttc"][i]) > abs(obs_dict["ttc"][i]) + 0.0000001 and
+         (np.linalg.norm(old_obs_dict["relative_position"][i]) < 8 or old_obs_dict["ttc"][i] < 3) and
+         action_dict["accel_level"] != ActionAccel.MAXDECEL
+         )
         ) or (env.env_state == EnvState.CRASH and c == 1
         ) or (action_dict["lane_change"] != ActionLaneChange.NOOP and (obs_dict["ttc"][i] < 2)
         ):
@@ -66,20 +69,24 @@ def get_reward_regulation(env):
   old_obs_dict = None
   if len(env.obs_dict_hist) > 1:
     old_obs_dict = env.obs_dict_hist[-2]
+  action_dict = env.action_dict_hist[-1]
 
   if obs_dict["ego_dist_to_end_of_lane"] < 100:
     if obs_dict["ego_correct_lane_gap"] != 0:
       r = 1/(1 + np.exp(-0.1*(obs_dict["ego_dist_to_end_of_lane"]-60))) - 1
 
+
   old_tte = None
   if old_obs_dict is not None:
     old_tte = old_obs_dict["ego_dist_to_end_of_lane"] / (old_obs_dict["ego_speed"] + 0.00000001)
   tte = obs_dict["ego_dist_to_end_of_lane"] / (obs_dict["ego_speed"] + 0.00000001)
-  if ((old_tte is not None and tte < 3) or obs_dict["ego_dist_to_end_of_lane"] < 6) and \
+  if ((old_tte is not None and old_tte < 3) or old_obs_dict["ego_dist_to_end_of_lane"] < 2) and \
      obs_dict["ego_has_priority"] != 1 and \
      obs_dict["ego_in_intersection"] != 1 and \
-     old_tte is not None and \
-     old_tte > tte + 0.00001:
+     old_tte > tte + 0.00001 and \
+     action_dict["accel_level"] != ActionAccel.MAXDECEL:
+      print("regulation: old_tte", old_tte, "tte", tte)
+      done = True
       r = -1
 
   if (obs_dict["ego_dist_to_end_of_lane"] < 0.01 and obs_dict["ego_correct_lane_gap"] != 0

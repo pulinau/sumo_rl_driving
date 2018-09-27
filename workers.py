@@ -45,7 +45,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         init_step = 0
         model_index_list = [None] * len(dqn_cfg_list)
       else:
-        init_step = random.randrange(160)
+        init_step = random.randrange(80)
         model_index_list = [None] * len(dqn_cfg_list)
         for i in range(len(dqn_cfg_list)):
           if dqn_cfg_list[i].model_rst_prob_list is not None:
@@ -296,8 +296,8 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
 
         ep += 1
 
-      if step % 50000 == 50000-1:
-        agt.save_model(suffix=str(step//50000))
+      if step % 30000 == 1:
+        agt.save_model(suffix=str(step//30000))
 
   except:
     end_q.put(True)

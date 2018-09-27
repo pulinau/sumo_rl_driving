@@ -122,10 +122,18 @@ def get_lanelet_dict(sumo_net_xml_file):
     for lane in edge.getLanes():
       lane_id = lane.getID()
       if lane_id[0] == ':':
-        if len(lanelet_dict[lane_id]["prev_normal_lane_id_list"]) == 0:
-          lanelet_dict[lane_id]["edge_priority"] = 1 # 1 is the baseline priority
-        else:
+        if len(lanelet_dict[lane_id]["prev_normal_lane_id_list"]) > 0:
           lanelet_dict[lane_id]["edge_priority"] = lanelet_dict[lanelet_dict[lane_id]["prev_normal_lane_id_list"][0]]["edge_priority"]
+
+  for edge in edges:
+    for lane in edge.getLanes():
+      lane_id = lane.getID()
+      if lane_id[0] == ':':
+        if len(lanelet_dict[lane_id]["prev_normal_lane_id_list"]) == 0:
+          if len(lanelet_dict[lane_id]["prev_lane_id_list"]) > 0:
+            lanelet_dict[lane_id]["edge_priority"] = lanelet_dict[lanelet_dict[lane_id]["prev_lane_id_list"][0]]["edge_priority"]
+          else:
+            lanelet_dict[lane_id]["edge_priority"] = 1 # 1 is the default edge priority
 
   return lanelet_dict
   
@@ -415,6 +423,10 @@ def get_obs_dict(env):
           obs_dict["has_priority"][veh_index] = 1
         if state_dict["right_signal"] != 0 and ego_dict["left_signal"] != 0:
           obs_dict["has_priority"][veh_index] = 1
+        # if not the first vehicle approaching the intersection, then no priority
+        if obs_dict["dist_to_end_of_lane"][veh_index] > 6 and state_dict["speed"] < 0.01:
+          obs_dict["has_priority"][veh_index] = 0
+
 
 
     # time to collision (just an estimate)
@@ -430,14 +442,14 @@ def get_obs_dict(env):
 
       t0 = pos[0] / max(abs(ego_v[0] - v[0]), 0.0001) * np.sign(ego_v[0] - v[0])
       if abs(v[0] - ego_v[0]) < 0.0001:
-        if abs(pos[0]) < 6:
+        if abs(pos[0]) < 3:
           t0 = None
         else:
           t0 = env.MAX_TTC_CONSIDERED
 
       t1 = pos[1] / max(abs(ego_v[1] - v[1]), 0.0001) * np.sign(ego_v[1] - v[1])
       if abs(v[1] - ego_v[1]) < 0.0001:
-        if abs(pos[1]) < 6:
+        if abs(pos[1]) < 3:
           t1 = None
         else:
           t1 = env.MAX_TTC_CONSIDERED
@@ -450,7 +462,7 @@ def get_obs_dict(env):
         if t1 is None:
           t1 = t0
 
-        if abs(t1 - t0) < 2:
+        if abs(t1 - t0) < 2.5:
           ttc = max(t0, t1)
         else:
           ttc = env.MAX_TTC_CONSIDERED

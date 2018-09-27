@@ -125,8 +125,12 @@ def infer_action(env):
       lane_change = ActionLaneChange.NOOP.value
   else:
     lane_change = ActionLaneChange.NOOP.value
-  ego_max_accel = min(env.tc.vehicle.getAccel(env.EGO_VEH_ID), env.MAX_VEH_ACCEL)
-  ego_max_decel = min(env.tc.vehicle.getDecel(env.EGO_VEH_ID), env.MAX_VEH_DECEL)
+  try:
+    ego_max_accel = min(env.tc.vehicle.getAccel(env.EGO_VEH_ID), env.MAX_VEH_ACCEL)
+    ego_max_decel = min(env.tc.vehicle.getDecel(env.EGO_VEH_ID), env.MAX_VEH_DECEL)
+  except:
+    ego_max_accel = env.MAX_VEH_ACCEL
+    ego_max_decel = env.MAX_VEH_DECEL
   
   #print("max veh accel: ", env.tc.vehicle.getAccel(env.EGO_VEH_ID), "max accel capability: ", env.MAX_VEH_ACCEL)
   #print("max veh decel: ", env.tc.vehicle.getDecel(env.EGO_VEH_ID), "max decel capability: ", env.MAX_VEH_DECEL)

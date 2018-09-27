@@ -152,8 +152,8 @@ class DQNAgent:
     act_values = model.predict(self.reshape(obs_dict))[-1][0]
     sorted_idx = np.argsort(act_values)[::-1]
 
-    if self.play == True and self.name == "safety":
-      print(act_values)
+    if self.play == True:
+      print(self.name, act_values)
 
     action_set = set(np.where(act_values >= np.max(act_values) + self.threshold)[0])
 
@@ -210,7 +210,7 @@ class DQNAgent:
       loss_hist.append(loss[0])
 
       ep = 0
-      factor = 1.2
+      factor = 1.5
       max_train_ep = loss[0]/max(np.median(loss_hist), 0.000000000001) - factor
       while loss[0] > factor * np.median(loss_hist) and ep < min(10 * max_train_ep, 10) and model_index == len(self.model_list):
         ep += 1
