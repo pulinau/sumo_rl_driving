@@ -435,7 +435,7 @@ def get_obs_dict(env):
     angle = obs_dict["relative_heading"][veh_index] + np.pi / 2
     v = np.array([speed * np.cos(angle), speed * np.sin(angle)])
     if obs_dict["veh_relation_ahead"][veh_index] == 1 or \
-       obs_dict["veh_relation_next"][veh_index] == 1 or \
+       obs_dict["veh_relation_behind"][veh_index] == 1 or \
        obs_dict["veh_relation_conflict"][veh_index] == 1 or \
        obs_dict["veh_relation_peer"][veh_index] == 1:
       pos = obs_dict["relative_position"][veh_index]

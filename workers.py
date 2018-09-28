@@ -36,8 +36,9 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
     max_step = 1600
     env = MultiObjSumoEnv(sumo_cfg)
 
-    violation0_hist = []
-    violation1_hist = []
+    violation_safety_hist = []
+    violation_yield_hist = []
+    violated_turn_hist = []
 
     for ep in range(max_ep):
       print("env id: {}".format(id), "episode: {}/{}".format(ep, max_ep))
@@ -54,8 +55,9 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
       traj = []
 
       for step in range(max_step):
-        violated0 = False
-        violated1 = False
+        violated_safety = False
+        violated_yield = False
+        violated_turn = False
         if step == 0:
           if play:
             env.agt_ctrl = True
@@ -120,8 +122,9 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
         if action_full >= 2 * len(ActionAccel):
           action = 8
 
-        violated0 = violated0 or violation_list[0]
-        violated1 = violated1 or violation_list[1]
+        violated_safety = violated_safety or violation_list[0]
+        violated_yield = violated_yield or violation_list[1]
+        violated_turn = violated_turn or violation_list[2]
 
         if True: # play:
           print("action: ", action)
@@ -201,8 +204,9 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
             for obs_dict, action, reward_list, next_obs_dict, tent_action_list, done_list, important in traj],
            prob))
 
-      violation0_hist += [violated0]
-      violation1_hist += [violated1]
+      violation_safety_hist += [violated_safety]
+      violation_yield_hist += [violated_yield]
+      violated_turn_hist += [violated_turn]
 
     end_q.put(True)
 
@@ -212,8 +216,9 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
 
   finally:
     f = open("result", "a")
-    f.write("safety violation: " +  str(violation0_hist))
-    f.write("regulation violation" +  str(violation1_hist))
+    f.write("safety violation: " +  str(violation_safety_hist))
+    f.write("regulation violation (yield): " +  str(violation_yield_hist))
+    f.write("regulation violation (turn): " + str(violation_turn_hist))
 
 
 def select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, num_action, greedy=False):
