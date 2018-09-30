@@ -301,8 +301,8 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_
 
         ep += 1
 
-      if step % 30000 == 1:
-        agt.save_model(suffix=str(step//30000))
+      if step % 20000 == 1:
+        agt.save_model(suffix=str(step//20000))
 
   except:
     end_q.put(True)

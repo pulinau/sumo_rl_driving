@@ -16,7 +16,7 @@ ROU_XML_FILE_LIST = ["/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test" + 
 #ROU_XML_FILE_LIST = ["/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test" + str(i) + ".rou.xml" for i in range(1)]
 SUMO_CMD = [SUMO_BIN,
             "--no-warnings", "true",
-            #"--time-to-teleport", "-1",
+            "--time-to-teleport", "-1",
             "--collision.action", "warn",
             "--collision.mingap-factor", "0",
             "--collision.check-junctions", "true",
