@@ -53,7 +53,8 @@ def act(env, veh_id, action_dict):
   """ take one simulation step with vehicles acting according to veh_id_and_action_list = [(veh_id0, action0), (veh_id1, action1), ...], 
       return True if an invalid action is taken or any of the vehicles collide.
   """
-  if veh_id not in env.tc.vehicle.getIDList():
+  if veh_id not in env.tc.vehicle.getIDList() or \
+     veh_id in env.tc.simulation.getStartingTeleportIDList():
     return EnvState.DONE
       
   # if car is controlled by RL agent

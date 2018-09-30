@@ -210,7 +210,7 @@ class DQNAgent:
       loss_hist.append(loss[0])
 
       ep = 0
-      factor = 1.5
+      factor = 1.2
       max_train_ep = loss[0]/max(np.median(loss_hist), 0.000000000001) - factor
       while loss[0] > factor * np.median(loss_hist) and ep < min(10 * max_train_ep, 10) and model_index == len(self.model_list):
         ep += 1

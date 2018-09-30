@@ -37,8 +37,8 @@ def get_reward_safety(env):
         (obs_dict["veh_relation_ahead"][i] == 1 or
          ((obs_dict["veh_relation_conflict"][i] == 1 or obs_dict["veh_relation_peer"][i] == 1) and
           (obs_dict["ego_has_priority"] == 0 or obs_dict["in_intersection"][i] == 1) and
-          old_obs_dict["dist_to_end_of_lane"][i] < 20 and
-          old_obs_dict["ego_dist_to_end_of_lane"] < 20 and
+          old_obs_dict["dist_to_end_of_lane"][i] < 30 and
+          old_obs_dict["ego_dist_to_end_of_lane"] < 30 and
           (obs_dict["ego_in_intersection"] != 1 or (obs_dict["ego_in_intersection"] == 1 and obs_dict["in_intersection"][i] == 1)))
          ) and
         (abs(old_obs_dict["ttc"][i]) > abs(obs_dict["ttc"][i]) + 0.0000001 and
@@ -46,7 +46,7 @@ def get_reward_safety(env):
          action_dict["accel_level"] != ActionAccel.MAXDECEL
          )
         ) or (env.env_state == EnvState.CRASH and c == 1
-        ) or (action_dict["lane_change"] != ActionLaneChange.NOOP and (obs_dict["ttc"][i] < 1.5)
+        ) or (action_dict["lane_change"] != ActionLaneChange.NOOP and (obs_dict["ttc"][i] < 1)
         ):
       print(obs_dict["veh_ids"][i], "old_ttc", old_obs_dict["ttc"][i], "ttc", obs_dict["ttc"][i],
             "pos", np.linalg.norm(old_obs_dict["relative_position"][i]), "action", action_dict,

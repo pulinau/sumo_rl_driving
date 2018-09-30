@@ -194,7 +194,9 @@ def select_actions_speed_comfort(state):
   ego_correct_lane_gap = state[0][0][1]
   if ego_speed < MAX_VEH_SPEED-1.4:
     if ego_correct_lane_gap == 0:
-      valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value]
+      valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value]
       sorted_idx  = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
@@ -205,7 +207,9 @@ def select_actions_speed_comfort(state):
                      7, 8]
     elif ego_correct_lane_gap > 0:
       valid = [7,
-               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value]
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value]
       sorted_idx  = [7,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
@@ -218,7 +222,9 @@ def select_actions_speed_comfort(state):
                      ]
     else:
       valid = [8,
-               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value]
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
+               ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value]
       sorted_idx  = [8,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                      ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
@@ -352,9 +358,9 @@ cfg_safety = DQNCfg(name = "safety",
                     gamma = 0.9,
                     gamma_inc = 0.00000001,
                     gamma_max = 0.9,
-                    epsilon = 0.8,
+                    epsilon = 0.4,
                     epsilon_dec = 0.00001,
-                    epsilon_min = 0.8,
+                    epsilon_min = 0.4,
                     threshold = -0.05,
                     memory_size = 3200,
                     traj_end_pred = returnTrue(),
@@ -379,7 +385,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         epsilon=0.8,
                         epsilon_dec=0.0000001,
                         epsilon_min=0.8,
-                        threshold = -0.2,
+                        threshold = -0.1,
                         memory_size = 64000,
                         traj_end_pred = returnTrue(),
                         replay_batch_size = 160,
