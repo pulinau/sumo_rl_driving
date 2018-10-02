@@ -30,7 +30,10 @@ class SumoCfg():
                OBSERVATION_RADIUS, 
                # reward
                MAX_COMFORT_ACCEL_LEVEL, 
-               MAX_COMFORT_DECEL_LEVEL):
+               MAX_COMFORT_DECEL_LEVEL,
+               # color
+               DEFAULT_COLOR,
+               YIELD_COLOR):
     self.SUMO_CMD = SUMO_CMD
     self.SUMO_TIME_STEP = SUMO_TIME_STEP
     self.NET_XML_FILE = NET_XML_FILE
@@ -47,6 +50,9 @@ class SumoCfg():
     
     self.MAX_COMFORT_ACCEL_LEVEL = MAX_COMFORT_ACCEL_LEVEL
     self.MAX_COMFORT_DECEL_LEVEL = MAX_COMFORT_DECEL_LEVEL
+
+    self.DEFAULT_COLOR = DEFAULT_COLOR
+    self.YIELD_COLOR = YIELD_COLOR
 
 class SumoGymEnv(gym.Env):
   """SUMO environment"""
@@ -150,7 +156,7 @@ class MultiObjSumoEnv(SumoGymEnv):
         action_dict = infer_action(self)
       self.action_dict_hist.append(action_dict)
       info = action_dict
-      #"""
+      """
       print(self.obs_dict_hist[-1]["veh_ids"])
       print("peer", self.obs_dict_hist[-1]["veh_relation_peer"])
       print("conflict", self.obs_dict_hist[-1]["veh_relation_conflict"])
@@ -160,7 +166,7 @@ class MultiObjSumoEnv(SumoGymEnv):
       print("has_priority", self.obs_dict_hist[-1]["has_priority"])
       print(self.obs_dict_hist[-1]["ttc"])
       print(get_reward_list(self)[0][1])
-      #"""
+      """
       return obs_dict, get_reward_list(self), self.env_state, info
     except (traci.FatalTraCIError, traci.TraCIException):
       self.env_state = EnvState.ERROR

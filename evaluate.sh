@@ -1,6 +1,9 @@
 #!/bin/sh
 
-for i in {0..9}
+rm -rf result
+rm -rf output.log eval.log
+
+for i in `seq 0 6`
 do
-  python3 main.py --play=True --version=$i 2>>eval.log
+  python3 main.py --play=True --version=$i 1>>output.log 2>eval.log
 done

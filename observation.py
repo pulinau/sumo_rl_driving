@@ -153,6 +153,9 @@ def get_edge_dict(sumo_net_xml_file):
 def get_obs_dict(env):
   
   veh_dict = get_veh_dict(env)
+  # set the color to default
+  [env.tc.vehicle.setColor(k, env.DEFAULT_COLOR) for k, v in veh_dict.items() if k!=env.EGO_VEH_ID]
+
   lanelet_dict = deepcopy(env.lanelet_dict)
   edge_dict = deepcopy(env.edge_dict)
   if len(env.obs_dict_hist) > 0:
@@ -426,6 +429,10 @@ def get_obs_dict(env):
         # if not the first vehicle approaching the intersection, then no priority
         if obs_dict["dist_to_end_of_lane"][veh_index] > 6 and state_dict["speed"] < 0.01:
           obs_dict["has_priority"][veh_index] = 0
+
+    # change the color of the high-priority vehicle
+    if obs_dict["has_priority"][veh_index] == 1:
+      env.tc.vehicle.setColor(obs_dict["veh_ids"][veh_index], env.YIELD_COLOR)
 
 
 

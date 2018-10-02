@@ -16,7 +16,7 @@ ROU_XML_FILE_LIST = ["/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test" + 
 #ROU_XML_FILE_LIST = ["/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test" + str(i) + ".rou.xml" for i in range(1)]
 SUMO_CMD = [SUMO_BIN,
             "--no-warnings", "true",
-            "--time-to-teleport", "40",
+            "--time-to-teleport", "-1",
             "--collision.action", "warn",
             "--collision.mingap-factor", "0",
             "--collision.check-junctions", "true",
@@ -45,6 +45,9 @@ OBSERVATION_RADIUS = 100
 MAX_COMFORT_ACCEL_LEVEL = ActionAccel.MINACCEL
 MAX_COMFORT_DECEL_LEVEL = ActionAccel.MINDECEL
 
+DEFAULT_COLOR = (255, 255, 0)
+YIELD_COLOR = (255, 180, 0)
+
 sumo_cfg = SumoCfg(
                # sumo
                SUMO_CMD,
@@ -62,4 +65,6 @@ sumo_cfg = SumoCfg(
                OBSERVATION_RADIUS,
                # reward
                MAX_COMFORT_ACCEL_LEVEL,
-               MAX_COMFORT_DECEL_LEVEL)
+               MAX_COMFORT_DECEL_LEVEL,
+               DEFAULT_COLOR,
+               YIELD_COLOR)

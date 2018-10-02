@@ -33,12 +33,12 @@ class decreaseProb():
 
 def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_list, play, max_ep, id):
   try:
-    max_step = 1600
+    max_step = 3200
     env = MultiObjSumoEnv(sumo_cfg)
 
     violation_safety_hist = []
     violation_yield_hist = []
-    violated_turn_hist = []
+    violation_turn_hist = []
 
     for ep in range(max_ep):
       print("env id: {}".format(id), "episode: {}/{}".format(ep, max_ep))
@@ -206,7 +206,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
 
       violation_safety_hist += [violated_safety]
       violation_yield_hist += [violated_yield]
-      violated_turn_hist += [violated_turn]
+      violation_turn_hist += [violated_turn]
 
     end_q.put(True)
 
@@ -216,9 +216,9 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
 
   finally:
     f = open("result", "a")
-    f.write("safety violation: " +  str(violation_safety_hist))
-    f.write("regulation violation (yield): " +  str(violation_yield_hist))
-    f.write("regulation violation (turn): " + str(violation_turn_hist))
+    f.writelines(["safety violation: " +  str(violation_safety_hist)])
+    f.writelines(["regulation violation (yield): " +  str(violation_yield_hist)])
+    f.writelines(["regulation violation (turn): " + str(violation_turn_hist)])
 
 
 def select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, num_action, greedy=False):
