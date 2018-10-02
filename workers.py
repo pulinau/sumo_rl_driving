@@ -216,9 +216,9 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
 
   finally:
     f = open("result", "a")
-    f.writelines(["safety violation: " +  str(violation_safety_hist)])
-    f.writelines(["regulation violation (yield): " +  str(violation_yield_hist)])
-    f.writelines(["regulation violation (turn): " + str(violation_turn_hist)])
+    f.writelines(["safety violation: " +  str(violation_safety_hist) + "\n"])
+    f.writelines(["regulation violation (yield): " +  str(violation_yield_hist) + "\n"])
+    f.writelines(["regulation violation (turn): " + str(violation_turn_hist) + "\n"])
 
 
 def select_action(dqn_cfg_list, is_explr_list, action_set_list, sorted_idx_list, num_action, greedy=False):
