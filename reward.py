@@ -42,7 +42,7 @@ def get_reward_safety(env):
           (obs_dict["ego_in_intersection"] != 1 or (obs_dict["ego_in_intersection"] == 1 and obs_dict["in_intersection"][i] == 1)))
          ) and
         (abs(old_obs_dict["ttc"][i]) > abs(obs_dict["ttc"][i]) + 0.0000001 and
-         (np.linalg.norm(old_obs_dict["relative_position"][i]) < 8 or old_obs_dict["ttc"][i] < 3) and
+         (np.linalg.norm(old_obs_dict["relative_position"][i]) < 10 or old_obs_dict["ttc"][i] < 3) and
          action_dict["accel_level"] != ActionAccel.MAXDECEL
          )
         ) or (env.env_state == EnvState.CRASH and c == 1
