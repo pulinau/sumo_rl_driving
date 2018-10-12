@@ -90,7 +90,7 @@ def act(env, veh_id, action_dict):
       ego_next_speed = dec_speed(ego_speed, (-accel_level.value + ActionAccel.NOOP.value)/(-ActionAccel.MAXDECEL.value + ActionAccel.NOOP.value) * ego_max_decel * env.SUMO_TIME_STEP, 0)
     else:
       # if car is controlled by RL agent, then ActionAccel.NOOP maintains the current speed
-      ego_next_speed = ego_speed
+      ego_next_speed = ego_speed - 0.001
     #env.tc.vehicle.slowDown(veh_id, ego_next_speed, int(env.SUMO_TIME_STEP * 1000)-1)
     env.tc.vehicle.setSpeed(veh_id, ego_next_speed)
 
