@@ -192,6 +192,7 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           prob = returnX(1)
           print("Sim ", id, " terminated, step: ", step, action_dict, action_info, reward_list, done_list, env_state,
                 env.agt_ctrl)
+          violated_yield = True
           break
         if step == max_step - 1:
           prob = returnX(1)

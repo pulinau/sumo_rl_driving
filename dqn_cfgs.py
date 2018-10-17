@@ -172,13 +172,9 @@ tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.3
 
 def build_model_regulation():
   x = tf.keras.layers.Input(shape=(5 + 2*NUM_LANE_CONSIDERED, ))
-  l1 = tf.keras.layers.Dense(16, activation=None)(x)
-  l1 = tf.keras.layers.Activation('tanh')(l1)
-  l2 = tf.keras.layers.Dense(16, activation=None)(l1)
-  l2 = tf.keras.layers.Activation('tanh')(l2)
-  l3 = tf.keras.layers.Dense(16, activation=None)(l2)
-  l3 = tf.keras.layers.Activation('tanh')(l3)
-  y = tf.keras.layers.Dense(reduced_action_size, activation='linear')(l3)
+  l1 = tf.keras.layers.Dense(64, activation=None)(x)
+  l1 = tf.keras.layers.Activation('sigmoid')(l1)
+  y = tf.keras.layers.Dense(reduced_action_size, activation='linear')(l1)
 
   model = tf.keras.models.Model(inputs=[x], outputs=[y, y])
   opt = tf.keras.optimizers.RMSprop(lr=0.0001)
@@ -388,7 +384,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         threshold = -0.2,
                         memory_size = 64000,
                         traj_end_pred = returnTrue(),
-                        replay_batch_size = 160,
+                        replay_batch_size = 640,
                         traj_end_ratio= 0.0001,
                         _build_model = build_model_regulation,
                         model_rst_prob_list = [],

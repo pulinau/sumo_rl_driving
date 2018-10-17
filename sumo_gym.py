@@ -164,6 +164,7 @@ class MultiObjSumoEnv(SumoGymEnv):
       print("next", self.obs_dict_hist[-1]["veh_relation_next"])
       print("in_intersection", self.obs_dict_hist[-1]["in_intersection"])
       print("has_priority", self.obs_dict_hist[-1]["has_priority"])
+      print("ego_has_priority", self.obs_dict_hist[-1]["ego_has_priority"])
       print(self.obs_dict_hist[-1]["ttc"])
       print(get_reward_list(self)[0][1])
       """
