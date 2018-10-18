@@ -1,7 +1,9 @@
 #!/bin/sh
 
+# cleanup
 rm -rf result*
 rm -rf output.log eval.log
+pkill -f main.py
 
 for i in `seq 0 9`
 do
