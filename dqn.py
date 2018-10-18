@@ -126,6 +126,10 @@ class DQNAgent:
       self.model = self._build_model()
       self.target_model = self._build_model()
 
+  def __del__(self):
+    if self.play != True:
+      [p.join() for p in self.feed_samp_p_list]
+
   def remember(self, traj, prob):
     """remember experice with probability prob"""
     if self._select_actions is not None or self.play == True:

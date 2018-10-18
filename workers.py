@@ -87,10 +87,15 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
               obs_q.put((deepcopy(obs_dict), model_index))
 
             for action_q in action_q_list:
-              while action_q.empty():
-                if not end_q.empty():
-                  return
-              (action_set, sorted_idx) = action_q.get()
+              while True:
+                try:
+                  (action_set, sorted_idx) = action_q.get(block=False)
+                  break
+                except queue.Empty:
+                  if not end_q.empty():
+                    return
+                  else:
+                    continue
               action_set_list += [action_set]
               sorted_idx_list += [sorted_idx]
 
@@ -143,11 +148,15 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
           tent_action_info_list = []
 
           for i, action_q in enumerate(action_q_list):
-            while action_q.empty():
-              if not end_q.empty():
-                return
-            (action_set, sorted_idx) = action_q.get()
-
+            while True:
+              try:
+                (action_set, sorted_idx) = action_q.get(block=False)
+                break
+              except queue.Empty:
+                if not end_q.empty():
+                  return
+                else:
+                  continue
             action_set_list += [action_set]
             sorted_idx_list += [sorted_idx]
 
@@ -163,10 +172,15 @@ def run_env(sumo_cfg, dqn_cfg_list, end_q, obs_q_list, action_q_list, traj_q_lis
             obs_q.put((deepcopy(next_obs_dict), model_index))
 
           for action_q in action_q_list:
-            while action_q.empty():
-              if not end_q.empty():
-                return
-            (action_set, sorted_idx) = action_q.get()
+            while True:
+              try:
+                (action_set, sorted_idx) = action_q.get(block=False)
+                break
+              except queue.Empty:
+                if not end_q.empty():
+                  return
+                else:
+                  continue
             action_set_list += [action_set]
             sorted_idx_list += [sorted_idx]
 
