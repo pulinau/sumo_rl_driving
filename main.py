@@ -30,7 +30,7 @@ if __name__ == "__main__":
   if args.play:
     for dqn_cfg in dqn_cfg_list:
       dqn_cfg.play = True
-    max_ep = 20
+    max_ep = 10
     sim_inst = 10
   if args.version:
     for dqn_cfg in dqn_cfg_list:
@@ -73,12 +73,13 @@ if __name__ == "__main__":
 
     while any([p.is_alive() for p in env_list]):
       if any([not p.is_alive() for p in agt_list]):
-        [p.kill() for p in env_list]
-        [p.kill() for p in agt_list]
+        [p.terminate() for p in env_list]
+        [p.terminate() for p in agt_list]
+        print("dqn agt terminated")
         break
 
     [p.join() for p in env_list]
-    [p.kill() for p in agt_list]
+    [p.terminate() for p in agt_list]
 
   except:
     raise
