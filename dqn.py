@@ -124,7 +124,7 @@ class DQNAgent:
 
   def __del__(self):
     if self.play != True:
-      [p.kill() for p in self.feed_samp_p_list]
+      [p.terminate() for p in self.feed_samp_p_list]
 
   def remember(self, traj, prob):
     """remember experice with probability prob"""
