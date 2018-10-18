@@ -30,8 +30,8 @@ if __name__ == "__main__":
   if args.play:
     for dqn_cfg in dqn_cfg_list:
       dqn_cfg.play = True
-    max_ep = 6
-    sim_inst = 1
+    max_ep = 20
+    sim_inst = 10
   if args.version:
     for dqn_cfg in dqn_cfg_list:
       dqn_cfg.version = args.version

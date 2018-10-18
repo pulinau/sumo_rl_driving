@@ -16,7 +16,7 @@ def disable_collision_check(env, veh_id):
   
 def enable_collision_check(env, veh_id):
   env.tc.vehicle.setSpeedMode(veh_id, 0b11111)
-  env.tc.vehicle.setLaneChangeMode(veh_id, 0b011001010101)
+  env.tc.vehicle.setLaneChangeMode(veh_id, 0b000010000000)
 
 def is_illegal_action(env, veh_id, action_dict):
   """ illegal action is an action that will lead to problems such as a env.tc exception
