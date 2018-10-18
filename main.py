@@ -49,14 +49,12 @@ if __name__ == "__main__":
   obs_queues = [[mp.Queue(maxsize=5) for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
   action_queues = [[mp.Queue(maxsize=5) for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
   traj_queues = [[mp.Queue(maxsize=5) for j in range(sim_inst)] for i in range(len(dqn_cfg_list))]
-  end_q = mp.Queue()  # if end_q is not empty, then all process must stop
 
   try:
     env_list = [mp.Process(target=run_env,
                            name='sumo' + str(i),
                            args=(sumo_cfg,
                                  dqn_cfg_list,
-                                 end_q,
                                  [obs_q[i] for obs_q in obs_queues],
                                  [action_q[i] for action_q in action_queues],
                                  [traj_q[i] for traj_q in traj_queues],
@@ -65,18 +63,22 @@ if __name__ == "__main__":
 
     agt_list = [mp.Process(target=run_QAgent,
                            name='dqn ' + dqn_cfg.name,
-                           args=(sumo_cfg, dqn_cfg, pretrain_traj_list, end_q, obs_q_list, action_q_list, traj_q_list,
+                           args=(sumo_cfg, dqn_cfg, pretrain_traj_list, obs_q_list, action_q_list, traj_q_list,
                                  cuda_vis_devs))
                 for dqn_cfg, obs_q_list, action_q_list, traj_q_list, cuda_vis_devs in
                 zip(dqn_cfg_list, obs_queues, action_queues, traj_queues, ['', '0', '0', ''])]
 
     [p.start() for p in env_list]
     [p.start() for p in agt_list]
+
+    while any([p.is_alive() for p in env_list]):
+      if any([not p.is_alive() for p in agt_list]):
+        [p.kill() for p in env_list]
+        [p.kill() for p in agt_list]
+        break
+
     [p.join() for p in env_list]
-    [p.join() for p in agt_list]
+    [p.kill() for p in agt_list]
 
   except:
-    end_q.put(True)
-    [p.join() for p in env_list]
-    [p.join() for p in agt_list]
     raise

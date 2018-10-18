@@ -65,11 +65,9 @@ class DQNCfg():
     self.reshape = reshape
     self._select_actions = _select_actions
 
-def feed_samp(replay_mem, samp_size, traj_end_ratio, samp_q, end_q):
+def feed_samp(replay_mem, samp_size, traj_end_ratio, samp_q):
   try:
     while True:
-      if not end_q.empty():
-        return
       if replay_mem.size() == 0:
         time.sleep(5)
         continue
@@ -77,11 +75,10 @@ def feed_samp(replay_mem, samp_size, traj_end_ratio, samp_q, end_q):
         samp_q.put(replay_mem.sample(samp_size, traj_end_ratio))
         # print("replay mem size: ", replay_mem.size())
   except:
-    end_q.put(True)
     raise
 
 class DQNAgent:
-  def __init__(self, sumo_cfg, dqn_cfg, end_q):
+  def __init__(self, sumo_cfg, dqn_cfg):
     _attrs = class_vars(dqn_cfg)
     for _attr in _attrs:
       setattr(self, _attr, getattr(dqn_cfg, _attr))
@@ -105,8 +102,7 @@ class DQNAgent:
                                           args=(self.memory,
                                                 self.replay_batch_size,
                                                 self.traj_end_ratio,
-                                                self.sample_q,
-                                                end_q))
+                                                self.sample_q))
                                for _ in range(1)]
       [p.start() for p in self.feed_samp_p_list]
 
@@ -128,7 +124,7 @@ class DQNAgent:
 
   def __del__(self):
     if self.play != True:
-      [p.join() for p in self.feed_samp_p_list]
+      [p.kill() for p in self.feed_samp_p_list]
 
   def remember(self, traj, prob):
     """remember experice with probability prob"""
