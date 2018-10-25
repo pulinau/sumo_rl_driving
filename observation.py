@@ -469,7 +469,8 @@ def get_obs_dict(env):
         if t1 is None:
           t1 = t0
 
-        if abs(t1 - t0) < 2.5:
+        if abs(t1 - t0) < 2.5 or \
+           obs_dict["veh_relation_ahead"][veh_index] == 1 or obs_dict["veh_relation_behind"][veh_index] == 1:
           ttc = max(t0, t1)
         else:
           ttc = env.MAX_TTC_CONSIDERED

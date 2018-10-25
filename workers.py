@@ -8,6 +8,7 @@ from sumo_gym import *
 from dqn import *
 
 import random
+random.seed()
 import multiprocessing as mp
 import queue
 from copy import deepcopy

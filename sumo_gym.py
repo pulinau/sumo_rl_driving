@@ -2,7 +2,7 @@
 __author__ = "Changjian Li"
 
 import random
-
+random.seed()
 from action import get_action_space, disable_collision_check, enable_collision_check, act, infer_action
 from observation import get_observation_space, get_veh_dict, get_obs_dict, get_lanelet_dict, get_edge_dict
 from reward import get_reward_list
