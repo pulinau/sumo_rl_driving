@@ -160,8 +160,10 @@ def reshape_regulation(obs_dict):
   lane_gap_1hot = [-0.5] * (2*NUM_LANE_CONSIDERED + 1)
   lane_gap_1hot[obs_dict["ego_correct_lane_gap"] + NUM_LANE_CONSIDERED] = 0.5
 
+  tte = min(obs_dict["ego_dist_to_end_of_lane"] / (obs_dict["ego_speed"] + 1e-6), MAX_TTC_CONSIDERED)/MAX_TTC_CONSIDERED
   o = np.array([np.sqrt(obs_dict["ego_speed"]/MAX_VEH_SPEED) - 0.5,
                 np.sqrt(min(obs_dict["ego_dist_to_end_of_lane"] / OBSERVATION_RADIUS, 1.0)) - 0.5,
+                np.sqrt(tte) - 0.5,
                 obs_dict["ego_in_intersection"] - 0.5,
                 obs_dict["ego_has_priority"] - 0.5,
                 ] + lane_gap_1hot, dtype = np.float32)
@@ -172,7 +174,7 @@ tf_cfg_regulation = tf.ConfigProto()
 tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.3
 
 def build_model_regulation():
-  x = tf.keras.layers.Input(shape=(5 + 2*NUM_LANE_CONSIDERED, ))
+  x = tf.keras.layers.Input(shape=(6 + 2*NUM_LANE_CONSIDERED, ))
   for i in range(3):
     l = tf.keras.layers.Dense(64, activation=None)(x)
     l = tf.keras.layers.Activation('sigmoid')(l)
@@ -349,7 +351,7 @@ cfg_safety = DQNCfg(name = "safety",
                     play = False,
                     version = "current",
                     resume = False,
-                    state_size = 5 + 12*NUM_VEH_CONSIDERED,
+                    state_size = 5 + 17*NUM_VEH_CONSIDERED,
                     action_size = reduced_action_size,
                     low_target=-1,
                     high_target=0,
@@ -373,7 +375,7 @@ cfg_regulation = DQNCfg(name = "regulation",
                         play = False,
                         version = "current",
                         resume = False,
-                        state_size = 4 + 2*NUM_LANE_CONSIDERED + 7*NUM_VEH_CONSIDERED,
+                        state_size = 6 + 2*NUM_LANE_CONSIDERED,
                         action_size = reduced_action_size,
                         low_target=-1,
                         high_target=0,
