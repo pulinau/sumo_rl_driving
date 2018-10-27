@@ -98,6 +98,7 @@ def reshape_safety(obs_dict):
                  ], dtype = np.float32)
   o1 = np.reshape(np.array([], dtype = np.float32), (0, NUM_VEH_CONSIDERED))
   o1  = np.append(o1, np.array([obs_dict["exists_vehicle"]]) - 0.5, axis=0)
+  o1 = np.append(o1, np.array([obs_dict["in_intersection"]]) - 0.5, axis=0)
   o1 = np.append(o1, np.array([obs_dict["brake_signal"]]) - 0.5, axis=0)
   o1 = np.append(o1, np.array([obs_dict["left_signal"]]) - 0.5, axis=0)
   o1 = np.append(o1, np.array([obs_dict["right_signal"]]) - 0.5, axis=0)
@@ -131,7 +132,7 @@ def build_model_safety():
   ego_input = tf.keras.layers.Input(shape=(5, ))
   ego_l1 = tf.keras.layers.Dense(64, activation=None)(ego_input)
 
-  veh_inputs = [tf.keras.layers.Input(shape=(16,)) for _ in range(NUM_VEH_CONSIDERED)]
+  veh_inputs = [tf.keras.layers.Input(shape=(17,)) for _ in range(NUM_VEH_CONSIDERED)]
   shared_Dense1 = tf.keras.layers.Dense(64, activation=None)
   veh_l = [shared_Dense1(x) for x in veh_inputs]
 
@@ -172,9 +173,10 @@ tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.3
 
 def build_model_regulation():
   x = tf.keras.layers.Input(shape=(5 + 2*NUM_LANE_CONSIDERED, ))
-  l1 = tf.keras.layers.Dense(64, activation=None)(x)
-  l1 = tf.keras.layers.Activation('sigmoid')(l1)
-  y = tf.keras.layers.Dense(reduced_action_size, activation='linear')(l1)
+  for i in range(3):
+    l = tf.keras.layers.Dense(64, activation=None)(x)
+    l = tf.keras.layers.Activation('sigmoid')(l)
+  y = tf.keras.layers.Dense(reduced_action_size, activation='linear')(l)
 
   model = tf.keras.models.Model(inputs=[x], outputs=[y, y])
   opt = tf.keras.optimizers.RMSprop(lr=0.0001)
@@ -357,7 +359,7 @@ cfg_safety = DQNCfg(name = "safety",
                     epsilon = 0.6,
                     epsilon_dec = 1e-5,
                     epsilon_min = 0.6,
-                    threshold = -0.15,
+                    threshold = -0.20,
                     memory_size = 3200,
                     traj_end_pred = returnTrue(),
                     replay_batch_size = 320,
@@ -381,10 +383,10 @@ cfg_regulation = DQNCfg(name = "regulation",
                         epsilon=0.8,
                         epsilon_dec=1e-5,
                         epsilon_min=0.8,
-                        threshold = -0.2,
+                        threshold = -0.15,
                         memory_size = 64000,
                         traj_end_pred = returnTrue(),
-                        replay_batch_size = 640,
+                        replay_batch_size = 320,
                         traj_end_ratio= 0.0001,
                         _build_model = build_model_regulation,
                         model_rst_prob_list = [],

@@ -397,8 +397,8 @@ def get_obs_dict(env):
                 else:
                   waypoint1 =lanelet_dict[q]["waypoint"] + lanelet_dict[lane_id1]["waypoint"] + lanelet_dict[p]["waypoint"]
                 waypoint1 = np.array(waypoint1)
-                waypoint1 = waypoint1[np.argmin(np.linalg.norm(waypoint1 - np.array(ego_dict["position"]))) + 1:]
-                waypoint1 = np.insert(waypoint1, 0, ego_dict["position"], axis=0)
+                waypoint1 = waypoint1[np.argmin(np.linalg.norm(waypoint1 - np.array(ego_dict["position"]))):]
+                # waypoint1 = np.insert(waypoint1, 0, ego_dict["position"], axis=0)
 
                 if waypoint_intersect(waypoint0, waypoint1) == True:
                   obs_dict["veh_relation_conflict"][veh_index] = 1 # CONFLICT
@@ -449,14 +449,14 @@ def get_obs_dict(env):
 
       t0 = pos[0] / max(abs(ego_v[0] - v[0]), 0.0001) * np.sign(ego_v[0] - v[0])
       if abs(v[0] - ego_v[0]) < 0.0001:
-        if abs(pos[0]) < 3:
+        if abs(pos[0]) < 2.5:
           t0 = None
         else:
           t0 = env.MAX_TTC_CONSIDERED
 
       t1 = pos[1] / max(abs(ego_v[1] - v[1]), 0.0001) * np.sign(ego_v[1] - v[1])
       if abs(v[1] - ego_v[1]) < 0.0001:
-        if abs(pos[1]) < 3:
+        if abs(pos[1]) < 2.5:
           t1 = None
         else:
           t1 = env.MAX_TTC_CONSIDERED
