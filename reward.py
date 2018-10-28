@@ -40,7 +40,7 @@ def get_reward_safety(env):
           obs_dict["ego_in_intersection"] == 1)
          ) and
         ((abs(old_obs_dict["ttc"][i]) > abs(obs_dict["ttc"][i]) + 1e-6 and
-          (np.linalg.norm(old_obs_dict["relative_position"][i]) < 10 or old_obs_dict["ttc"][i] < 3) and
+          (np.linalg.norm(old_obs_dict["relative_position"][i]) < 8 or old_obs_dict["ttc"][i] < 4) and
           (action_dict["accel_level"] != ActionAccel.MAXDECEL or obs_dict["veh_relation_behind"][i] == 1)) or
          (np.linalg.norm(old_obs_dict["relative_position"][i]) > np.linalg.norm(obs_dict["relative_position"][i]) + 1e-6 and
           np.linalg.norm(old_obs_dict["relative_position"][i]) < 7 and
@@ -82,7 +82,7 @@ def get_reward_regulation(env):
     old_tte = old_obs_dict["ego_dist_to_end_of_lane"] / (old_obs_dict["ego_speed"] + 1e-6)
   tte = obs_dict["ego_dist_to_end_of_lane"] / (obs_dict["ego_speed"] + 1e-6)
   if old_tte is not None and \
-     (old_tte < 3 or old_obs_dict["ego_dist_to_end_of_lane"] < 1) and \
+     (old_tte < 4 or old_obs_dict["ego_dist_to_end_of_lane"] < 1) and \
      obs_dict["ego_has_priority"] != 1 and \
      obs_dict["ego_in_intersection"] != 1 and \
      old_tte > tte + 1e-6 and \

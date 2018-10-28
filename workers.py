@@ -291,7 +291,7 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, obs_q_list, action_q_list,
       # if agt.name == 'regulation' or agt.name == 'safety':
       #  print("training ", agt.name, " episode: {}".format(ep))
 
-      if random.random() < 0.5:
+      if random.random() < 1:
         agt.replay()
 
         if ep % 500 == 500 - 1:
