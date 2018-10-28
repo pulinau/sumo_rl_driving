@@ -271,7 +271,7 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, obs_q_list, action_q_list,
     agt = DQNAgent(sumo_cfg, dqn_cfg)
 
     ep = 0
-    step = 0
+    step = -1
     while True:
       for obs_q, action_q in zip(obs_q_list, action_q_list):
         try:
@@ -300,7 +300,7 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, obs_q_list, action_q_list,
 
         ep += 1
 
-      if step % 40000 == 1:
+      if step % 40000 < len(obs_q_list):
         agt.save_model(suffix=str(step//40000))
 
   except:
