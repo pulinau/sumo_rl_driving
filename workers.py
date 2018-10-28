@@ -273,14 +273,11 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, obs_q_list, action_q_list,
     ep = 0
     step = 0
     while True:
-      step_updated = False
       for obs_q, action_q in zip(obs_q_list, action_q_list):
         try:
           obs_dict, model_index = obs_q.get(block=False)
           action_q.put(agt.select_actions(obs_dict, model_index=model_index))
-          if not step_updated:
-            step += 1
-            step_updated = True
+          step += 1
         except queue.Empty:
           continue
 
@@ -303,8 +300,8 @@ def run_QAgent(sumo_cfg, dqn_cfg, pretrain_traj_list, obs_q_list, action_q_list,
 
         ep += 1
 
-      if step % 20000 == 1:
-        agt.save_model(suffix=str(step//20000))
+      if step % 40000 == 1:
+        agt.save_model(suffix=str(step//40000))
 
   except:
     raise
