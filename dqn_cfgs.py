@@ -9,14 +9,15 @@ from sumo_cfgs import *
 from dqn import DQNCfg
 
 def reshape_validity(obs_dict):
-  out = np.array([obs_dict["ego_exists_left_lane"], obs_dict["ego_exists_right_lane"]], dtype=np.int32)
+  out = np.array([obs_dict["ego_exists_left_lane"], obs_dict["ego_exists_right_lane"], obs_dict["ego_in_intersection"]], dtype=np.int32)
   return [np.reshape(out, (1, -1))]
 
 def select_actions_validity(state):
     ego_exists_left_lane = state[0][0][0]
     ego_exists_right_lane = state[0][0][1]
+    ego_in_intersection = state[0][0][2]
 
-    if ego_exists_left_lane == 0 and ego_exists_right_lane == 0:
+    if (ego_exists_left_lane == 0 and ego_exists_right_lane == 0) or ego_in_intersection == 1:
       valid = [ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MINACCEL.value,
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MEDACCEL.value,
                ActionLaneChange.NOOP.value * len(ActionAccel) + ActionAccel.MAXACCEL.value,
