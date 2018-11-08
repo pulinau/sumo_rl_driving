@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on Tue Sep 18 22:58:23 2018 by SUMO duarouter Version UNKNOWN
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/duarouterConfiguration.xsd">
+
+    <input>
+        <net-file value="test.net.xml"/>
+        <route-files value="trips.trips.xml"/>
+    </input>
+
+    <output>
+        <output-file value="temp0.rou.xml"/>
+        <alternatives-output value="temp0.rou.alt.xml"/>
+    </output>
+
+    <processing>
+        <ignore-errors value="true"/>
+    </processing>
+
+    <time>
+        <begin value="0"/>
+        <end value="0.1"/>
+    </time>
+
+    <report>
+        <no-warnings value="true"/>
+        <no-step-log value="true"/>
+    </report>
+
+</configuration>
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <vType id="DefaultCar" speedFactor="normc(1,0.15)"/>
+    <vType id="EgoCar" color="0,1,0"/>
+<vehicle id="ego" depart="0.00" departLane="random" departPos="base" departSpeed="max" type="EgoCar">
+        <route edges="-gneE3 gneE1"/>
+    </vehicle>
+    <vehicle id="3" depart="0.01" departLane="best" departPos="random_free" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="4" depart="0.02" departLane="best" departPos="random_free" departSpeed="max" type="DefaultCar">
+        <route edges="gneE0 gneE2"/>
+    </vehicle>
+    <vehicle id="5" depart="0.03" departLane="best" departPos="random_free" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="6" depart="0.03" departLane="best" departPos="random_free" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="7" depart="0.04" departLane="best" departPos="random_free" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="8" depart="0.04" departLane="best" departPos="random_free" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE1"/>
+    </vehicle>
+    <vehicle id="9" depart="0.04" departLane="best" departPos="random_free" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 -gneE0"/>
+    </vehicle>
+    <vehicle id="10" depart="0.05" departLane="best" departPos="random_free" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE2"/>
+    </vehicle>
+    <vehicle id="11" depart="0.05" departLane="best" departPos="random_free" departSpeed="max" type="DefaultCar">
+        <route edges="gneE0 gneE3"/>
+    </vehicle>
+    <vehicle id="12" depart="0.06" departLane="best" departPos="random_free" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE2"/>
+    </vehicle>
+    <vehicle id="14" depart="0.07" departLane="best" departPos="random_free" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE3"/>
+    </vehicle>
+    <vehicle id="15" depart="0.07" departLane="best" departPos="random_free" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE2"/>
+    </vehicle>
+    <vehicle id="16" depart="0.08" departLane="best" departPos="random_free" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE2"/>
+    </vehicle>
+    <vehicle id="1_0" depart="0.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE3"/>
+    </vehicle>
+    <vehicle id="1_1" depart="1.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_2" depart="2.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_4" depart="4.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="1_6" depart="6.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE3"/>
+    </vehicle>
+    <vehicle id="1_8" depart="8.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="gneE0 gneE3"/>
+    </vehicle>
+    <vehicle id="1_9" depart="9.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="1_10" depart="10.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="gneE0 gneE3"/>
+    </vehicle>
+    <vehicle id="1_13" depart="13.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE2"/>
+    </vehicle>
+    <vehicle id="1_14" depart="14.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_15" depart="15.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE3"/>
+    </vehicle>
+    <vehicle id="1_16" depart="16.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_18" depart="18.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_20" depart="20.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="1_22" depart="22.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE1"/>
+    </vehicle>
+    <vehicle id="1_23" depart="23.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="1_24" depart="24.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE3"/>
+    </vehicle>
+    <vehicle id="1_25" depart="25.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE3"/>
+    </vehicle>
+    <vehicle id="1_26" depart="26.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_27" depart="27.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE3"/>
+    </vehicle>
+    <vehicle id="1_28" depart="28.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="1_29" depart="29.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE3"/>
+    </vehicle>
+    <vehicle id="1_40" depart="40.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="gneE0 gneE3"/>
+    </vehicle>
+    <vehicle id="1_41" depart="41.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE3"/>
+    </vehicle>
+    <vehicle id="1_42" depart="42.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE2"/>
+    </vehicle>
+    <vehicle id="1_43" depart="43.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE2"/>
+    </vehicle>
+    <vehicle id="1_44" depart="44.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="gneE0 gneE2"/>
+    </vehicle>
+    <vehicle id="1_46" depart="46.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="1_47" depart="47.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE2"/>
+    </vehicle>
+    <vehicle id="1_48" depart="48.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE3"/>
+    </vehicle>
+    <vehicle id="1_49" depart="49.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_50" depart="50.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE2"/>
+    </vehicle>
+    <vehicle id="1_51" depart="51.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE3"/>
+    </vehicle>
+    <vehicle id="1_52" depart="52.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_53" depart="53.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE2"/>
+    </vehicle>
+    <vehicle id="1_54" depart="54.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_55" depart="55.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_56" depart="56.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_57" depart="57.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="gneE0 gneE1"/>
+    </vehicle>
+    <vehicle id="1_58" depart="58.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_60" depart="60.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_61" depart="61.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_62" depart="62.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE2"/>
+    </vehicle>
+    <vehicle id="1_63" depart="63.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE3"/>
+    </vehicle>
+    <vehicle id="1_64" depart="64.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="gneE0 gneE2"/>
+    </vehicle>
+    <vehicle id="1_65" depart="65.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="gneE0 gneE3"/>
+    </vehicle>
+    <vehicle id="1_66" depart="66.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE2"/>
+    </vehicle>
+    <vehicle id="1_67" depart="67.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE2"/>
+    </vehicle>
+    <vehicle id="1_68" depart="68.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE3"/>
+    </vehicle>
+    <vehicle id="1_69" depart="69.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_80" depart="80.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_83" depart="83.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE2"/>
+    </vehicle>
+    <vehicle id="1_84" depart="84.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE2"/>
+    </vehicle>
+    <vehicle id="1_85" depart="85.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_88" depart="88.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE2"/>
+    </vehicle>
+    <vehicle id="1_90" depart="90.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE2"/>
+    </vehicle>
+    <vehicle id="1_91" depart="91.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_92" depart="92.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="gneE0 gneE1"/>
+    </vehicle>
+    <vehicle id="1_93" depart="93.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_94" depart="94.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="1_96" depart="96.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_99" depart="99.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="1_100" depart="100.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="gneE0 gneE3"/>
+    </vehicle>
+    <vehicle id="1_101" depart="101.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE3"/>
+    </vehicle>
+    <vehicle id="1_105" depart="105.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_107" depart="107.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_108" depart="108.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_109" depart="109.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_120" depart="120.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE2"/>
+    </vehicle>
+    <vehicle id="1_121" depart="121.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_122" depart="122.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="1_123" depart="123.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="gneE0 gneE3"/>
+    </vehicle>
+    <vehicle id="1_124" depart="124.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE1"/>
+    </vehicle>
+    <vehicle id="1_125" depart="125.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE1"/>
+    </vehicle>
+    <vehicle id="1_126" depart="126.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE3"/>
+    </vehicle>
+    <vehicle id="1_127" depart="127.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE2"/>
+    </vehicle>
+    <vehicle id="1_128" depart="128.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE2"/>
+    </vehicle>
+    <vehicle id="1_129" depart="129.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE2"/>
+    </vehicle>
+    <vehicle id="1_130" depart="130.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="gneE0 gneE3"/>
+    </vehicle>
+    <vehicle id="1_136" depart="136.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_139" depart="139.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="1_140" depart="140.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE2"/>
+    </vehicle>
+    <vehicle id="1_141" depart="141.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE3 gneE1"/>
+    </vehicle>
+    <vehicle id="1_142" depart="142.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="gneE0 gneE1"/>
+    </vehicle>
+    <vehicle id="1_144" depart="144.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 -gneE0"/>
+    </vehicle>
+    <vehicle id="1_145" depart="145.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE3"/>
+    </vehicle>
+    <vehicle id="1_147" depart="147.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE2 gneE1"/>
+    </vehicle>
+    <vehicle id="1_149" depart="149.20" departLane="best" departPos="base" departSpeed="max" type="DefaultCar">
+        <route edges="-gneE1 gneE3"/>
+    </vehicle>
+</routes>
