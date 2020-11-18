@@ -89,7 +89,7 @@ class DQNAgent:
 
     assert self.memory_size >= self.replay_batch_size
 
-    tf.keras.backend.set_session(tf.Session(config=self.tf_cfg))
+    tf.compat.v1.keras.backend.set_session(tf.compat.v1.Session(config=self.tf_cfg))
     if self.play == True:
       self.epsilon = 0
     else:

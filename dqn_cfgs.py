@@ -125,7 +125,7 @@ def reshape_safety(obs_dict):
   o = [o0] + [x for x in o1.T]
   return [[x] for x in o]
 
-tf_cfg_safety = tf.ConfigProto()
+tf_cfg_safety = tf.compat.v1.ConfigProto()
 tf_cfg_safety.gpu_options.per_process_gpu_memory_fraction = 0.4
 #tf_cfg_safety = tf.ConfigProto(device_count = {"GPU": 0})
 
@@ -171,7 +171,7 @@ def reshape_regulation(obs_dict):
 
   return [[o]]
 
-tf_cfg_regulation = tf.ConfigProto()
+tf_cfg_regulation = tf.compat.v1.ConfigProto()
 tf_cfg_regulation.gpu_options.per_process_gpu_memory_fraction = 0.3
 
 def build_model_regulation():

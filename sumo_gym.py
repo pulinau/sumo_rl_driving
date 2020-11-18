@@ -64,6 +64,7 @@ class SumoGymEnv(gym.Env):
     self.action_space = get_action_space()
     self.obsevation_space = get_observation_space(self)
 
+    #print(self.NET_XML_FILE)
     self.lanelet_dict = get_lanelet_dict(self.NET_XML_FILE)
     self.edge_dict = get_edge_dict(self.NET_XML_FILE)
 

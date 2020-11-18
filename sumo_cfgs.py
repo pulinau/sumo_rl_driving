@@ -7,13 +7,13 @@ from sumo_gym import SumoCfg
 # --------------------------
 #          SUMO
 # --------------------------
-SUMO_BIN = "/home/ken/project/sumo-bin/bin/sumo"
+SUMO_BIN = "sumo"
 SUMO_TIME_STEP = 0.1
 
 # "--net-file" and "route_file"
-NET_XML_FILE = "/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test.net.xml"
-ROU_XML_FILE_LIST = ["/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test" + str(i) + ".rou.xml" for i in range(4000)]
-#ROU_XML_FILE_LIST = ["/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test" + str(i) + ".rou.xml" for i in range(1)]
+NET_XML_FILE = "/home/pulinau/sumo_openai_gym/traffic/test.net.xml"
+ROU_XML_FILE_LIST = ["/home/pulinau/sumo_openai_gym/traffic/test" + str(i) + ".rou.xml" for i in range(4000)]
+#ROU_XML_FILE_LIST = ["~/sumo_openai_gym/traffic/test" + str(i) + ".rou.xml" for i in range(1)]
 SUMO_CMD = [SUMO_BIN,
             "--no-warnings", "true",
             "--time-to-teleport", "-1",
