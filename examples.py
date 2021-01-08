@@ -13,7 +13,7 @@ def run_env(sumo_cfg, max_ep):
 
   for ep in range(max_ep):
     print("env id: {}".format(id), "episode: {}/{}".format(ep, max_ep))
-    obs_dict = env.reset()
+    obs_dict = env.reset(0)
     traj = []
     max_step = 2000
 

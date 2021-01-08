@@ -85,7 +85,7 @@ def get_lanelet_dict(sumo_net_xml_file):
       lanelet_dict[lane_id]["prev_lane_id_list"] = []
       lanelet_dict[lane_id]["prev_normal_lane_id_list"] = []
   for edge in edges:
-    print(edge.getFromNode())
+    #print(edge.getFromNode())
     for lane in edge.getLanes():
       lane_id = lane.getID()
       lane_index = lane.getIndex()

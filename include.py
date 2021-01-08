@@ -1,5 +1,5 @@
 import sys
-SUMO_TOOLS_DIR = "/usr/share/sumo/tools"
+SUMO_TOOLS_DIR = "/usr/local/share/sumo/tools"
 try:
   sys.path.append(SUMO_TOOLS_DIR)
 except ImportError:

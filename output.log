@@ -1,1 +1,99 @@
-/home/pulinau/sumo_openai_gym/traffic/test.net.xml
+ Retrying in 1 seconds
+Could not connect to TraCI server at localhost:38777 [Errno 111] Connection refused
+ Retrying in 1 seconds
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 20 ACT 20 BUF 2)                     
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 0ms, vehicles TOT 3 ACT 3 BUF 0)                       Interrupt signal received, trying to exit gracefully.
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 9 ACT 9 BUF 0)                       
+Step #0.00 (1ms ~= 100.00*RT, ~2000.00UPS, TraCI: 0ms, vehicles TOT 2 ACT 2 BUF 0)        Interrupt signal received, trying to exit gracefully.
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 1 ACT 1 BUF 0)                       
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 2 ACT 2 BUF 0)                       Interrupt signal received, trying to exit gracefully.
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 2 ACT 2 BUF 0)                       
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 1 ACT 1 BUF 0)                       Interrupt signal received, trying to exit gracefully.
+Step #0.00 (1ms ~= 100.00*RT, ~1000.00UPS, TraCI: 0ms, vehicles TOT 1 ACT 1 BUF 0)        
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 2 ACT 2 BUF 0)                       Interrupt signal received, trying to exit gracefully.
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 7 ACT 7 BUF 0)                       
+Step #0.00 (1ms ~= 100.00*RT, ~3000.00UPS, TraCI: 0ms, vehicles TOT 3 ACT 3 BUF 0)        Interrupt signal received, trying to exit gracefully.
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 18 ACT 18 BUF 1)                     
+Step #0.00 (1ms ~= 100.00*RT, ~3000.00UPS, TraCI: 0ms, vehicles TOT 3 ACT 3 BUF 0)        Interrupt signal received, trying to exit gracefully.
+Step #0.00 (2ms ~= 50.00*RT, ~500.00UPS, TraCI: 3ms, vehicles TOT 1 ACT 1 BUF 0)          
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 0ms, vehicles TOT 3 ACT 3 BUF 0)                       Interrupt signal received, trying to exit gracefully.
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 2 ACT 2 BUF 0)                       
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 0ms, vehicles TOT 7 ACT 7 BUF 0)                       Interrupt signal received, trying to exit gracefully.
+Step #0.00 (1ms ~= 100.00*RT, ~3000.00UPS, TraCI: 2ms, vehicles TOT 3 ACT 3 BUF 0)        
+Step #0.00 (1ms ~= 100.00*RT, ~21000.00UPS, TraCI: 0ms, vehicles TOT 21 ACT 21 BUF 2)     Interrupt signal received, trying to exit gracefully.
+Step #0.00Interrupt signal received, trying to exit gracefully.
+ Retrying in 1 seconds
+env id: 9 episode: 0/50000
+action:  3
+ Retrying in 1 seconds
+env id: 2 episode: 0/50000
+regulation: old_tte 3.9781456915252793  tte 3.874512559717703
+regulation: old_tte 3.874512559717703  tte 3.7610734891357955
+regulation: old_tte 3.7610734891357955  tte 3.7395482789753074
+action:  1
+ Retrying in 1 seconds
+env id: 3 episode: 0/50000
+regulation: old_tte 2.740289501949657  tte 2.6405521906927554
+action:  3
+ Retrying in 1 seconds
+env id: 6 episode: 0/50000
+action:  3
+ Retrying in 1 seconds
+env id: 8 episode: 0/50000
+regulation: old_tte 3.9588252134293276  tte 3.8938307523446776
+regulation: old_tte 3.8938307523446776  tte 3.7944463961953905
+regulation: old_tte 3.7944463961953905  tte 3.737855754276863
+regulation: old_tte 3.737855754276863  tte 3.6746096179415177
+regulation: old_tte 3.6746096179415177  tte 3.6148770329895847
+regulation: old_tte 3.6148770329895847  tte 3.4991651426558814
+regulation: old_tte 3.4991651426558814  tte 3.415072232886891
+regulation: old_tte 3.415072232886891  tte 3.3153656036390546
+action:  3
+ Retrying in 1 seconds
+env id: 1 episode: 0/50000
+action:  3
+ Retrying in 1 seconds
+env id: 5 episode: 0/50000
+regulation: old_tte 3.968056882711162  tte 3.8483191311331737
+regulation: old_tte 3.8483191311331737  tte 3.751197825498468
+regulation: old_tte 3.751197825498468  tte 3.6561802970304633
+regulation: old_tte 3.6561802970304633  tte 3.558758099439891
+regulation: old_tte 3.558758099439891  tte 3.4794571877890155
+regulation: old_tte 3.4794571877890155  tte 3.369683878278586
+regulation: old_tte 3.369683878278586  tte 3.257089503079295
+regulation: old_tte 3.257089503079295  tte 3.1634211924339395
+regulation: old_tte 3.1634211924339395  tte 3.060246851049705
+regulation: old_tte 3.060246851049705  tte 3.002587430266131
+4 old_ttc 3.5444328649553123 ttc 3.3192569728242156 pos 25.265282659087333 action {'lane_change': <ActionLaneChange.NOOP: 0>, 'accel_level': <ActionAccel.MEDDECEL: 1>} collision 0
+regulation: old_tte 2.7456380102222524  tte 2.7019319581259102
+4 old_ttc 3.034172195869022 ttc 2.8430583490714265 pos 23.015556767067594 action {'lane_change': <ActionLaneChange.NOOP: 0>, 'accel_level': <ActionAccel.MEDDECEL: 1>} collision 0
+regulation: old_tte 2.7206252656813144  tte 2.6902078146051127
+4 old_ttc 2.7580756565676894 ttc 2.747946324455331 pos 17.905739771743583 action {'lane_change': <ActionLaneChange.NOOP: 0>, 'accel_level': <ActionAccel.MEDDECEL: 1>} collision 0
+regulation: old_tte 2.773632638347317  tte 2.764010225093642
+4 old_ttc 2.886816972697395 ttc 2.865391613461735 pos 15.56962041990404 action {'lane_change': <ActionLaneChange.NOOP: 0>, 'accel_level': <ActionAccel.MEDDECEL: 1>} collision 0
+regulation: old_tte 2.9055432777788033  tte 2.8846276232485155
+4 old_ttc 2.969792481307816 ttc 2.870419136489654 pos 14.077165039998704 action {'lane_change': <ActionLaneChange.NOOP: 0>, 'accel_level': <ActionAccel.NOOP: 3>} collision 0
+regulation: old_tte 2.99109943698503  tte 2.8917306091101427
+action:  3
+ Retrying in 1 seconds
+env id: 4 episode: 0/50000
+regulation: old_tte 3.9690816663583424  tte 3.872559311834155
+regulation: old_tte 3.872559311834155  tte 3.7750836499038205
+regulation: old_tte 3.7750836499038205  tte 3.6519841071190857
+regulation: old_tte 3.6519841071190857  tte 3.5573579353073854
+regulation: old_tte 3.5573579353073854  tte 3.4602677501918655
+regulation: old_tte 3.4602677501918655  tte 3.362184101757762
+regulation: old_tte 3.362184101757762  tte 3.252862317418016
+regulation: old_tte 3.252862317418016  tte 3.1666470664722577
+regulation: old_tte 3.1666470664722577  tte 3.0756482591796446
+1 old_ttc 3.9455153826450795 ttc 3.744111651590171 pos 43.596986930581444 action {'lane_change': <ActionLaneChange.NOOP: 0>, 'accel_level': <ActionAccel.MEDDECEL: 1>} collision 0
+regulation: old_tte 3.0756482591796446  tte 3.009386626482323
+regulation: old_tte 2.752984314555693  tte 2.653247681227376
+action:  7
+ Retrying in 1 seconds
+env id: 7 episode: 0/50000
+action:  0
+ Retrying in 1 seconds
+env id: 0 episode: 0/50000
+action:  3
+action:  4

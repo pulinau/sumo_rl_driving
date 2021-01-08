@@ -4,10 +4,10 @@ from sumo_gym import *
 from observation import *
 from action import *
 
-SUMO_BIN = "sumo-gui"
+SUMO_BIN = "sumo"
 
-NET_XML_FILE = "~/sumo_openai_gym/roundabout/roundabout.net.xml"
-ROU_XML_FILE_LIST = ["~/sumo_openai_gym/roundabout/test" + str(i) + ".rou.xml" for i in range(1)]
+NET_XML_FILE = "/home/pulinau/sumo_openai_gym/ringroad/ringroad.net.xml"
+ROU_XML_FILE_LIST = ["/home/pulinau/sumo_openai_gym/ringroad/test" + str(i) + ".rou.xml" for i in range(1)]
 
 SUMO_CMD = [SUMO_BIN,
             #"-c", "/home/ken/project/sumo-rl/sumo_openai_gym/traffic/test.sumocfg",
